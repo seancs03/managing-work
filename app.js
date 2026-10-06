@@ -9,6 +9,7 @@ const switchProfileButton = document.getElementById("switch-profile-button");
 const exerciseList = document.getElementById("exercise-list");
 const workoutTitle = document.getElementById("workout-title");
 const workoutList = document.getElementById("workout-list");
+const workoutPlanner = document.querySelector(".workout-planner");
 const weekSelect = document.getElementById("week-select");
 const workoutContextMenu = document.getElementById("workout-context-menu");
 const deleteWorkoutButton = document.getElementById("delete-workout-button");
@@ -20,6 +21,9 @@ const storageNotice = document.getElementById("storage-notice");
 const sessionDate = document.getElementById("session-date");
 const workoutAction = document.getElementById("workout-action");
 const startOverButton = document.getElementById("start-over-button");
+const startOverDialog = document.getElementById("start-over-dialog");
+const cancelStartOverButton = document.getElementById("cancel-start-over-button");
+const confirmStartOverButton = document.getElementById("confirm-start-over-button");
 const shadowButton = document.getElementById("shadow-button");
 const shadowDialog = document.getElementById("shadow-dialog");
 const shadowForm = document.getElementById("shadow-form");
@@ -27,7 +31,8 @@ const shadowWeekSelect = document.getElementById("shadow-week-select");
 const shadowWorkoutSelect = document.getElementById("shadow-workout-select");
 const clearShadowButton = document.getElementById("clear-shadow-button");
 const workoutLayout = document.querySelector(".workout-layout");
-const summaryColumn = document.getElementById("summary-column");
+const sessionNotesSection = document.getElementById("session-notes");
+const sessionNoteInputs = Array.from(document.querySelectorAll("[data-session-note]"));
 const sessionStatusLabel = document.getElementById("session-status-label");
 let storageKey = "";
 
@@ -48,6 +53,7 @@ function createWorkout(title, templateId = makeId()) {
     createdAt: new Date().toISOString(),
     startedAt: new Date().toISOString(),
     shadowWorkoutId: null,
+    sessionNotes: ["", ""],
     exercises: [],
   };
 }
@@ -71,6 +77,11 @@ function normalizeWorkout(source) {
       ? source.startedAt
       : new Date().toISOString(),
     shadowWorkoutId: typeof source.shadowWorkoutId === "string" ? source.shadowWorkoutId : null,
+    sessionNotes: Array.isArray(source.sessionNotes)
+      ? Array.from({ length: 2 }, (_, index) => (
+        typeof source.sessionNotes[index] === "string" ? source.sessionNotes[index].slice(0, 500) : ""
+      ))
+      : ["", ""],
     exercises: Array.isArray(source.exercises)
       ? source.exercises
         .filter((exercise) => exercise && typeof exercise === "object")
@@ -97,6 +108,8 @@ function normalizeWorkout(source) {
 }
 
 function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) {
+  if (sourceWorkout.week !== 1) return false;
+
   sourceWorkout.exercises.forEach((exercise) => {
     exercise.planId ||= makeId();
     exercise.sets.forEach((set) => {
@@ -342,11 +355,11 @@ function makeInput(exercise, set, field, setNumber) {
   const input = document.createElement("input");
   input.className = "set-input";
   input.type = isWeight || field === "reps" ? "text" : "number";
-  input.inputMode = isRpe ? "decimal" : isLlpReps ? "numeric" : "text";
+  input.inputMode = isRpe ? "decimal" : isLlpReps || field === "reps" ? "numeric" : "text";
   if (!isWeight && field !== "reps") input.min = "1";
   if (isRpe) input.max = "10";
   if (!isWeight && field !== "reps") input.step = isRpe ? "0.5" : "1";
-  if (isWeight || field === "reps") input.maxLength = 24;
+  if (isWeight) input.maxLength = 24;
   if (isLlpReps) {
     input.classList.add("llp-reps-input");
   }
@@ -679,24 +692,8 @@ function updateExerciseProgress() {
   }
 }
 
-function renderSummary() {
-  const exercises = workout?.exercises ?? [];
-  document.getElementById("exercise-count").textContent = String(exercises.length);
-  const completedSets = exercises.flatMap((exercise) => exercise.sets).filter(isSetComplete);
-  document.getElementById("set-count").textContent = String(completedSets.length);
-  const totalVolume = completedSets.reduce((total, set) => {
-    const weight = Number(set.weight);
-    const reps = Number(set.reps);
-    return Number.isFinite(weight) && Number.isFinite(reps) ? total + weight * reps : total;
-  }, 0);
-  const volume = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(totalVolume);
-  const volumeNode = document.getElementById("total-volume");
-  volumeNode.replaceChildren(document.createTextNode(volume), document.createTextNode(" "));
-  volumeNode.append(createElement("span", "", "kg"));
-  updateExerciseProgress();
-}
-
 function render() {
+  workoutPlanner.hidden = workout?.status === "in-progress";
   renderWeekOptions();
   renderWorkoutChoices();
   workoutTitle.value = workout?.title ?? "";
@@ -715,11 +712,14 @@ function render() {
   shadowButton.title = workout?.shadowWorkoutId
     ? `Shadowing ${workouts.find((item) => item.id === workout.shadowWorkoutId)?.title ?? "another workout"}`
     : "Choose a workout to shadow";
-  summaryColumn.hidden = workout?.status === "in-progress";
+  sessionNotesSection.hidden = !workout;
+  sessionNoteInputs.forEach((input, index) => {
+    input.value = workout?.sessionNotes[index] ?? "";
+  });
   workoutLayout.classList.toggle("is-training", workout?.status === "in-progress");
   addExerciseForm.hidden = !workout || workout.status === "in-progress";
   renderExercises();
-  renderSummary();
+  updateExerciseProgress();
 }
 
 function selectWorkout(id) {
@@ -891,6 +891,15 @@ workoutTitle.addEventListener("input", () => {
   saveWorkout();
 });
 
+sessionNotesSection.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-session-note]");
+  if (!input || !workout) return;
+  const noteIndex = Number(input.dataset.sessionNote);
+  if (!Number.isInteger(noteIndex) || noteIndex < 0 || noteIndex >= 2) return;
+  workout.sessionNotes[noteIndex] = input.value.slice(0, 500);
+  saveWorkout();
+});
+
 workoutAction.addEventListener("click", () => {
   if (!workout || workoutAction.disabled) return;
   if (workout.status === "in-progress") {
@@ -911,6 +920,18 @@ workoutAction.addEventListener("click", () => {
 
 startOverButton.addEventListener("click", () => {
   if (!workout) return;
+  startOverDialog.showModal();
+  cancelStartOverButton.focus();
+});
+
+cancelStartOverButton.addEventListener("click", () => {
+  startOverDialog.close();
+  startOverButton.focus();
+});
+
+confirmStartOverButton.addEventListener("click", () => {
+  if (!workout) return;
+  startOverDialog.close();
   workout.exercises.forEach((exercise) => {
     exercise.sets.forEach((set) => {
       set.weight = "";
@@ -959,7 +980,7 @@ exerciseList.addEventListener("input", (event) => {
     if (!set) return;
     set[input.dataset.field] = input.value;
     updateInputValidity(input);
-    renderSummary();
+    updateExerciseProgress();
     saveWorkout();
     return;
   }

@@ -393,9 +393,9 @@ h1 {
 
 .workout-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 292px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 27px;
+  gap: 19px;
 }
 
 .workout-planner {
@@ -634,7 +634,7 @@ h1 {
   display: none;
 }
 
-.summary-column[hidden] {
+.session-notes-card[hidden] {
   display: none;
 }
 
@@ -1145,6 +1145,68 @@ body.intensity-theme .session-controls :focus-visible {
   gap: 13px;
 }
 
+.session-notes-card {
+  margin-top: 19px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--card);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.035);
+}
+
+.session-notes-heading {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.session-notes-heading .section-kicker {
+  margin-bottom: 5px;
+  font-size: 9px;
+}
+
+.session-notes-heading h2 {
+  margin: 0;
+  font: 700 17px "Manrope", sans-serif;
+  letter-spacing: -0.4px;
+}
+
+.session-notes-caption {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.session-notes-paper {
+  padding: 0 10px 0 35px;
+  border-left: 2px solid rgba(240, 25, 45, 0.45);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 39px,
+    #493033 39px,
+    #493033 40px
+  );
+}
+
+.session-notes-paper input {
+  width: 100%;
+  height: 40px;
+  padding: 7px 2px 5px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font: 12px/1.5 "DM Sans", sans-serif;
+}
+
+.session-notes-paper input:focus-visible {
+  outline: 2px solid #ff3345;
+  outline-offset: 2px;
+}
+
 .summary-card {
   padding: 21px 20px 16px;
   border: 1px solid var(--line);
@@ -1488,6 +1550,21 @@ body.intensity-theme .session-controls :focus-visible {
 
   .summary-column {
     grid-template-columns: 1fr;
+  }
+
+  .session-notes-card {
+    padding: 16px;
+  }
+
+  .session-notes-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .session-notes-paper {
+    padding-right: 3px;
+    padding-left: 24px;
   }
 
   .summary-card {

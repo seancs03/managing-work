@@ -83,6 +83,17 @@
           </div>
         </form>
       </dialog>
+      <dialog id="start-over-dialog" class="shadow-dialog" aria-labelledby="start-over-dialog-title">
+        <div class="shadow-form">
+          <h2 id="start-over-dialog-title">Start over?</h2>
+          <p class="shadow-description">This clears the logged weight, reps, RPE, and LLP details for this workout. Your exercise and set plan will stay in place.</p>
+          <div class="shadow-dialog-actions">
+            <span class="shadow-dialog-spacer"></span>
+            <button id="cancel-start-over-button" class="start-over-button" type="button">Cancel</button>
+            <button id="confirm-start-over-button" class="workout-action-button" type="button">Start over</button>
+          </div>
+        </div>
+      </dialog>
 
       <div class="workout-layout">
         <section class="workout-column" aria-label="Current workout">
@@ -94,8 +105,8 @@
             </div>
             <div class="session-controls">
               <p id="session-date" class="session-date"></p>
-              <button id="start-over-button" class="start-over-button" type="button" hidden>Start over</button>
               <div class="workout-start-controls">
+                <button id="start-over-button" class="start-over-button" type="button" hidden>Start over</button>
                 <button id="shadow-button" class="start-over-button" type="button" hidden>Shadow</button>
                 <button id="workout-action" class="workout-action-button" type="button" disabled>Start workout</button>
               </div>
@@ -122,41 +133,18 @@
             <button class="add-exercise-button" type="submit"><span aria-hidden="true">+</span> Add exercise</button>
           </form>
         </section>
-
-        <aside id="summary-column" class="summary-column" aria-label="Workout summary">
-          <section class="summary-card" aria-labelledby="summary-title">
-            <div class="summary-card-heading">
-              <div>
-                <p class="section-kicker">AT A GLANCE</p>
-                <h2 id="summary-title">Session notes</h2>
-              </div>
-              <span class="summary-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M7 4v3m10-3v3M5 9h14M6 6h12a1 1 0 0 1 1 1v12H5V7a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="m9 14 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
-            <div class="summary-stats">
-              <div class="summary-stat">
-                <span id="exercise-count" class="stat-value">0</span>
-                <span class="stat-label">Exercises</span>
-              </div>
-              <div class="summary-stat">
-                <span id="set-count" class="stat-value">0</span>
-                <span class="stat-label">Sets logged</span>
-              </div>
-            </div>
-            <div class="volume-stat">
-              <span class="volume-label">Total volume <span>(kg × reps)</span></span>
-              <span id="total-volume" class="volume-value">0 <span>kg</span></span>
-            </div>
-            <p class="summary-footnote">Volume includes numeric weight and reps only.</p>
-          </section>
-
-          <p class="privacy-note"><span aria-hidden="true">◈</span> Private by design. Your log is stored in this browser.</p>
-        </aside>
       </div>
+      <section id="session-notes" class="session-notes-card" aria-labelledby="session-notes-title" hidden>
+        <div class="session-notes-heading">
+          <h2 id="session-notes-title">Session notes</h2>
+        </div>
+        <div class="session-notes-paper" aria-label="Four lines for session notes">
+          <label class="sr-only" for="session-note-1">Session note line 1</label>
+          <input id="session-note-1" data-session-note="0" type="text" maxlength="500">
+          <label class="sr-only" for="session-note-2">Session note line 2</label>
+          <input id="session-note-2" data-session-note="1" type="text" maxlength="500">
+        </div>
+      </section>
       </main>
     </div>
   </body>
