@@ -765,10 +765,10 @@ h1 {
 .bail-exercise-button {
   min-height: 32px;
   padding: 0 10px;
-  border: 1px solid #7d1823;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #1d1b1b;
-  color: #ff5261;
+  background: var(--card);
+  color: var(--ink);
   cursor: pointer;
   font-size: 9px;
   font-weight: 800;
@@ -776,9 +776,9 @@ h1 {
 }
 
 .bail-exercise-button:hover:not(:disabled) {
-  border-color: #ff5261;
-  background: #351116;
-  color: #ffffff;
+  border-color: var(--ink);
+  background: var(--paper);
+  color: var(--ink);
 }
 
 .bail-exercise-button.is-bailed,
