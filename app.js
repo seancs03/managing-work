@@ -355,11 +355,11 @@ function makeInput(exercise, set, field, setNumber) {
   const input = document.createElement("input");
   input.className = "set-input";
   input.type = isWeight || field === "reps" ? "text" : "number";
-  input.inputMode = isRpe ? "decimal" : isLlpReps ? "numeric" : "text";
+  input.inputMode = isRpe ? "decimal" : isLlpReps || field === "reps" ? "numeric" : "text";
   if (!isWeight && field !== "reps") input.min = "1";
   if (isRpe) input.max = "10";
   if (!isWeight && field !== "reps") input.step = isRpe ? "0.5" : "1";
-  if (isWeight || field === "reps") input.maxLength = 24;
+  if (isWeight) input.maxLength = 24;
   if (isLlpReps) {
     input.classList.add("llp-reps-input");
   }
