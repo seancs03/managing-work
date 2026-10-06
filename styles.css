@@ -755,6 +755,49 @@ h1 {
   border-bottom: 1px solid #eeeeee;
 }
 
+.exercise-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.bail-exercise-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #7d1823;
+  border-radius: 6px;
+  background: #1d1b1b;
+  color: #ff5261;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+}
+
+.bail-exercise-button:hover:not(:disabled) {
+  border-color: #ff5261;
+  background: #351116;
+  color: #ffffff;
+}
+
+.bail-exercise-button.is-bailed,
+.bail-exercise-button:disabled {
+  border-color: #493033;
+  background: #301416;
+  color: #ff5261;
+  cursor: default;
+}
+
+.exercise-name-editor:disabled {
+  opacity: 0.8;
+}
+
+.add-set-button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .exercise-title-wrap {
   min-width: 0;
   display: flex;
@@ -983,6 +1026,14 @@ body.intensity-theme .session-controls :focus-visible {
 .set-input[aria-invalid="true"] {
   border-color: #555555;
   background: #eeeeee;
+}
+
+.set-input:disabled {
+  border-color: #493033;
+  background: #241315;
+  color: #ff5261;
+  opacity: 1;
+  -webkit-text-fill-color: #ff5261;
 }
 
 .llp-checkbox {

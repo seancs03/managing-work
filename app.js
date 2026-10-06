@@ -30,11 +30,15 @@ const shadowForm = document.getElementById("shadow-form");
 const shadowWeekSelect = document.getElementById("shadow-week-select");
 const shadowWorkoutSelect = document.getElementById("shadow-workout-select");
 const clearShadowButton = document.getElementById("clear-shadow-button");
+const bailDialog = document.getElementById("bail-dialog");
+const cancelBailButton = document.getElementById("cancel-bail-button");
+const confirmBailButton = document.getElementById("confirm-bail-button");
 const workoutLayout = document.querySelector(".workout-layout");
 const sessionNotesSection = document.getElementById("session-notes");
 const sessionNoteInputs = Array.from(document.querySelectorAll("[data-session-note]"));
 const sessionStatusLabel = document.getElementById("session-status-label");
 let storageKey = "";
+let pendingBailExerciseId = null;
 
 function makeId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
@@ -89,6 +93,7 @@ function normalizeWorkout(source) {
           id: typeof exercise.id === "string" ? exercise.id : makeId(),
           planId: typeof exercise.planId === "string" ? exercise.planId : makeId(),
           name: typeof exercise.name === "string" ? exercise.name.slice(0, 60) : "Exercise",
+          bailed: exercise.bailed === true,
           sets: Array.isArray(exercise.sets)
             ? exercise.sets
               .filter((set) => set && typeof set === "object")
@@ -158,6 +163,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
         id: existingExercise?.id ?? makeId(),
         planId: planExercise.planId,
         name: planExercise.name,
+        bailed: existingExercise?.bailed === true,
         sets: planExercise.sets.map((planSet, setIndex) => {
           const existingSet = existingSets.find((item) =>
             !usedSets.has(item) && item.planId === planSet.planId,
@@ -354,7 +360,7 @@ function makeInput(exercise, set, field, setNumber) {
   const isLlpReps = field === "llpReps";
   const input = document.createElement("input");
   input.className = "set-input";
-  input.type = isWeight || field === "reps" ? "text" : "number";
+  input.type = "text";
   input.inputMode = isRpe ? "decimal" : isLlpReps || field === "reps" ? "numeric" : "text";
   input.enterKeyHint = "next";
   if (!isWeight && field !== "reps") input.min = "1";
@@ -365,6 +371,7 @@ function makeInput(exercise, set, field, setNumber) {
     input.classList.add("llp-reps-input");
   }
   input.value = set[field];
+  input.disabled = exercise.bailed === true;
   const shadowSet = findShadowSet(exercise, set);
   const shadowValue = shadowSet?.[field] == null ? "" : String(shadowSet[field]).trim();
   if (set[field] === "" && shadowValue !== "") {
@@ -396,6 +403,7 @@ function appendLlpRepsInput(cell, exercise, set, setNumber) {
 
 function getFieldError(field, value) {
   if (String(value).trim() === "") return "";
+  if (String(value).trim().toLocaleUpperCase() === "X") return "";
   if (field === "weight" || field === "reps") {
     const numericValue = Number(value);
     if (Number.isFinite(numericValue)) {
@@ -560,6 +568,7 @@ function renderSetRow(exercise, set, index) {
   llpCheckbox.className = "llp-checkbox";
   llpCheckbox.type = "checkbox";
   llpCheckbox.checked = set.llp === true;
+  llpCheckbox.disabled = exercise.bailed === true;
   llpCheckbox.dataset.exerciseId = exercise.id;
   llpCheckbox.dataset.setId = set.id;
   llpCheckbox.dataset.llp = "true";
@@ -596,6 +605,7 @@ function renderExerciseCard(exercise, index) {
   nameInput.type = "text";
   nameInput.maxLength = 60;
   nameInput.value = exercise.name;
+  nameInput.disabled = exercise.bailed === true;
   nameInput.id = `exercise-name-${exercise.id}`;
   nameInput.dataset.exerciseId = exercise.id;
   nameInput.dataset.exerciseName = "true";
@@ -609,12 +619,25 @@ function renderExerciseCard(exercise, index) {
   titleWrap.append(headingWrap);
   header.append(titleWrap);
 
+  const headerActions = createElement("div", "exercise-header-actions");
+  const bailButton = createElement("button", `bail-exercise-button${exercise.bailed ? " is-bailed" : ""}`, "BAILED");
+  bailButton.type = "button";
+  bailButton.dataset.action = "bail-exercise";
+  bailButton.dataset.exerciseId = exercise.id;
+  bailButton.disabled = exercise.bailed === true;
+  bailButton.setAttribute(
+    "aria-label",
+    exercise.bailed ? `${exercise.name} marked as bailed` : `Mark ${exercise.name} as bailed`,
+  );
+  headerActions.append(bailButton);
+
   const removeExercise = createElement("button", "icon-button", "×");
   removeExercise.type = "button";
   removeExercise.dataset.action = "remove-exercise";
   removeExercise.dataset.exerciseId = exercise.id;
   removeExercise.setAttribute("aria-label", `Remove ${exercise.name || "exercise"}`);
-  header.append(removeExercise);
+  headerActions.append(removeExercise);
+  header.append(headerActions);
 
   const tableWrap = createElement("div", "table-wrap");
   const table = createElement("table", "sets-table");
@@ -652,6 +675,7 @@ function renderExerciseCard(exercise, index) {
   addSet.type = "button";
   addSet.dataset.action = "add-set";
   addSet.dataset.exerciseId = exercise.id;
+  addSet.disabled = exercise.bailed === true;
   addSet.append(createElement("span", "", "+"), document.createTextNode("Add set"));
   footer.append(addSet);
   card.append(header, tableWrap, footer);
@@ -741,7 +765,8 @@ weekSelect.addEventListener("change", () => {
 });
 
 function findNextWorkoutInput(currentInput = null) {
-  const inputs = Array.from(exerciseList.querySelectorAll("input[data-field]"));
+  const inputs = Array.from(exerciseList.querySelectorAll("input[data-field]"))
+    .filter((input) => !input.disabled);
   if (inputs.length === 0) return null;
 
   const currentIndex = currentInput ? inputs.indexOf(currentInput) : -1;
@@ -934,6 +959,7 @@ confirmStartOverButton.addEventListener("click", () => {
   if (!workout) return;
   startOverDialog.close();
   workout.exercises.forEach((exercise) => {
+    exercise.bailed = false;
     exercise.sets.forEach((set) => {
       set.weight = "";
       set.reps = "";
@@ -1058,6 +1084,13 @@ exerciseList.addEventListener("click", (event) => {
   if (!button) return;
   const exercise = workout.exercises.find((item) => item.id === button.dataset.exerciseId);
   if (!exercise) return;
+  if (button.dataset.action === "bail-exercise") {
+    if (exercise.bailed) return;
+    pendingBailExerciseId = exercise.id;
+    bailDialog.showModal();
+    cancelBailButton.focus();
+    return;
+  }
 
   let focusId = "";
   let announcement = "";
@@ -1090,6 +1123,35 @@ exerciseList.addEventListener("click", (event) => {
   document.getElementById("announcements").textContent = announcement;
   const focusTarget = focusId && document.getElementById(focusId);
   (focusTarget || exerciseNameInput).focus();
+});
+
+cancelBailButton.addEventListener("click", () => {
+  pendingBailExerciseId = null;
+  bailDialog.close();
+  exerciseList.querySelector(".bail-exercise-button:not(:disabled)")?.focus();
+});
+
+confirmBailButton.addEventListener("click", () => {
+  const exercise = workout?.exercises.find((item) => item.id === pendingBailExerciseId);
+  pendingBailExerciseId = null;
+  bailDialog.close();
+  if (!exercise) return;
+  exercise.bailed = true;
+  exercise.sets.forEach((set) => {
+    set.weight = "X";
+    set.reps = "X";
+    set.rpe = "X";
+    set.llp = true;
+    set.llpReps = "X";
+  });
+  render();
+  saveWorkout();
+  document.getElementById("announcements").textContent = `${exercise.name} marked as bailed.`;
+  (exerciseList.querySelector(".exercise-name-editor:not(:disabled)") || workoutAction).focus();
+});
+
+bailDialog.addEventListener("close", () => {
+  pendingBailExerciseId = null;
 });
 
 welcomeScreen.addEventListener("click", (event) => {
