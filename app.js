@@ -28,7 +28,6 @@ const shadowButton = document.getElementById("shadow-button");
 const shadowDialog = document.getElementById("shadow-dialog");
 const shadowForm = document.getElementById("shadow-form");
 const shadowWeekSelect = document.getElementById("shadow-week-select");
-const shadowWorkoutSelect = document.getElementById("shadow-workout-select");
 const clearShadowButton = document.getElementById("clear-shadow-button");
 const bailDialog = document.getElementById("bail-dialog");
 const cancelBailButton = document.getElementById("cancel-bail-button");
@@ -468,13 +467,15 @@ function findShadowSet(exercise, set) {
 function getShadowSources(week = null) {
   return workouts.filter((item) => item.id !== workout?.id
     && item.templateId === workout?.templateId
+    && item.week !== workout?.week
     && (week === null || item.week === week));
 }
 
-function renderShadowWorkoutOptions() {
+function renderShadowWeekOptions() {
   const sources = getShadowSources();
   shadowWeekSelect.replaceChildren();
-  for (let week = 1; week <= 12; week += 1) {
+  const availableWeeks = [...new Set(sources.map((item) => item.week))].sort((a, b) => a - b);
+  for (const week of availableWeeks) {
     const option = document.createElement("option");
     option.value = String(week);
     option.textContent = `Week ${week}`;
@@ -485,30 +486,8 @@ function renderShadowWorkoutOptions() {
   const defaultWeek = selectedSource?.week ?? previousWeekSource?.week ?? sources[0]?.week ?? workout?.week ?? 1;
   shadowWeekSelect.value = String(defaultWeek);
   shadowWeekSelect.disabled = sources.length === 0;
-  renderShadowDayOptions();
-  clearShadowButton.hidden = !workout?.shadowWorkoutId;
-}
-
-function renderShadowDayOptions() {
-  const sources = getShadowSources(Number(shadowWeekSelect.value));
-  shadowWorkoutSelect.replaceChildren();
-  if (sources.length === 0) {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "No matching workout day in this week";
-    option.selected = true;
-    shadowWorkoutSelect.append(option);
-  }
-  sources.forEach((item) => {
-    const option = document.createElement("option");
-    option.value = item.id;
-    option.textContent = `Week ${item.week} — ${item.title}`;
-    option.selected = item.id === workout?.shadowWorkoutId;
-    shadowWorkoutSelect.append(option);
-  });
-  shadowWorkoutSelect.disabled = sources.length === 0;
-  shadowWorkoutSelect.required = sources.length > 0;
   shadowForm.querySelector('[type="submit"]').disabled = sources.length === 0;
+  clearShadowButton.hidden = !workout?.shadowWorkoutId;
 }
 
 function renderWorkoutChoices() {
@@ -873,17 +852,15 @@ deleteWorkoutButton.addEventListener("click", () => {
 
 shadowButton.addEventListener("click", () => {
   if (!workout) return;
-  renderShadowWorkoutOptions();
+  renderShadowWeekOptions();
   shadowDialog.showModal();
-  if (!shadowWorkoutSelect.disabled) shadowWorkoutSelect.focus();
+  if (!shadowWeekSelect.disabled) shadowWeekSelect.focus();
 });
-
-shadowWeekSelect.addEventListener("change", renderShadowDayOptions);
 
 shadowForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const sourceWorkout = workouts.find(
-    (item) => item.id === shadowWorkoutSelect.value
+    (item) => item.week === Number(shadowWeekSelect.value)
       && item.id !== workout?.id
       && item.templateId === workout?.templateId,
   );
