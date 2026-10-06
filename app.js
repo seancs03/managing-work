@@ -356,6 +356,7 @@ function makeInput(exercise, set, field, setNumber) {
   input.className = "set-input";
   input.type = isWeight || field === "reps" ? "text" : "number";
   input.inputMode = isRpe ? "decimal" : isLlpReps || field === "reps" ? "numeric" : "text";
+  input.enterKeyHint = "next";
   if (!isWeight && field !== "reps") input.min = "1";
   if (isRpe) input.max = "10";
   if (!isWeight && field !== "reps") input.step = isRpe ? "0.5" : "1";
@@ -1024,7 +1025,7 @@ exerciseList.addEventListener("change", (event) => {
 
 exerciseList.addEventListener("keydown", (event) => {
   const input = event.target.closest("input[data-field]");
-  if (!input || event.key !== "Enter" || getFieldError(input.dataset.field, input.value)) return;
+  if (!input || !["Enter", "Next"].includes(event.key) || getFieldError(input.dataset.field, input.value)) return;
   if (["weight", "reps", "rpe", "llpReps"].includes(input.dataset.field)) {
     event.preventDefault();
     focusNextWorkoutInput(input);
