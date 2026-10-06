@@ -98,8 +98,6 @@ function buildWorkoutProofPdf(sourceWorkout) {
     if (commands.length) pages.push(commands.join("\n"));
     commands = [];
     y = pageHeight - 52;
-    addText(`${sourceWorkout.title} - Workout Proof (continued)`, margin, y, 15, true);
-    y -= 22;
   };
   const ensureSpace = (height) => {
     if (y - height < margin) newPage();
