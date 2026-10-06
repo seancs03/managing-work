@@ -20,6 +20,9 @@ const storageNotice = document.getElementById("storage-notice");
 const sessionDate = document.getElementById("session-date");
 const workoutAction = document.getElementById("workout-action");
 const startOverButton = document.getElementById("start-over-button");
+const startOverDialog = document.getElementById("start-over-dialog");
+const cancelStartOverButton = document.getElementById("cancel-start-over-button");
+const confirmStartOverButton = document.getElementById("confirm-start-over-button");
 const shadowButton = document.getElementById("shadow-button");
 const shadowDialog = document.getElementById("shadow-dialog");
 const shadowForm = document.getElementById("shadow-form");
@@ -911,8 +914,18 @@ workoutAction.addEventListener("click", () => {
 
 startOverButton.addEventListener("click", () => {
   if (!workout) return;
-  const confirmed = window.confirm(`Start over with ${workout.title}? This will clear all logged set details for this workout.`);
-  if (!confirmed) return;
+  startOverDialog.showModal();
+  cancelStartOverButton.focus();
+});
+
+cancelStartOverButton.addEventListener("click", () => {
+  startOverDialog.close();
+  startOverButton.focus();
+});
+
+confirmStartOverButton.addEventListener("click", () => {
+  if (!workout) return;
+  startOverDialog.close();
   workout.exercises.forEach((exercise) => {
     exercise.sets.forEach((set) => {
       set.weight = "";
