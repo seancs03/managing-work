@@ -542,7 +542,7 @@ function makeInput(exercise, set, field, setNumber) {
   const isLlpReps = field === "llpReps";
   const input = document.createElement("input");
   input.className = "set-input";
-  input.type = "text";
+  input.type = isRpe && !exercise.bailed ? "number" : "text";
   input.inputMode = isRpe ? "decimal" : isLlpReps || field === "reps" ? "numeric" : "text";
   input.enterKeyHint = "next";
   if (!isWeight && field !== "reps") input.min = "1";
