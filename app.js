@@ -916,6 +916,7 @@ function render() {
     : workout?.status === "completed" ? "Resume workout" : "Start workout";
   startOverButton.hidden = !workout || workout.status === "planned";
   shadowButton.hidden = !workout;
+  shadowButton.textContent = workout?.shadowWorkoutId ? "Remove shadow" : "Shadow";
   shadowButton.title = workout?.shadowWorkoutId
     ? `Shadowing ${workouts.find((item) => item.id === workout.shadowWorkoutId)?.title ?? "another workout"}`
     : "Choose a workout to shadow";
@@ -1089,6 +1090,10 @@ deleteWorkoutDialog.addEventListener("close", () => {
 
 shadowButton.addEventListener("click", () => {
   if (!workout) return;
+  if (workout.shadowWorkoutId) {
+    removeWorkoutShadow();
+    return;
+  }
   renderShadowWeekOptions();
   shadowDialog.showModal();
   if (!shadowWeekSelect.disabled) shadowWeekSelect.focus();
@@ -1112,14 +1117,18 @@ shadowForm.addEventListener("submit", (event) => {
 });
 
 clearShadowButton.addEventListener("click", () => {
+  removeWorkoutShadow(true);
+});
+
+function removeWorkoutShadow(closeDialog = false) {
   if (!workout) return;
   workout.shadowWorkoutId = null;
-  shadowDialog.close();
+  if (closeDialog) shadowDialog.close();
   render();
   saveWorkout();
   document.getElementById("announcements").textContent = "Workout shadow removed.";
   shadowButton.focus();
-});
+}
 
 shadowDialog.querySelector("[data-shadow-cancel]").addEventListener("click", () => {
   shadowDialog.close();
@@ -1385,7 +1394,7 @@ exerciseList.addEventListener("click", (event) => {
     const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "" };
     exercise.sets.push(set);
     syncWorkoutPlan(workout, workouts, false);
-    focusId = `${set.id}-weight`;
+    focusId = `add-set-${exercise.id}`;
     announcement = `Set ${exercise.sets.length} added to ${exercise.name}.`;
   } else if (button.dataset.action === "remove-set") {
     const removedIndex = exercise.sets.findIndex((set) => set.id === button.dataset.setId);
