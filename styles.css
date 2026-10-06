@@ -647,6 +647,7 @@ h1 {
 }
 
 .session-heading {
+  position: relative;
   min-height: 84px;
   padding: 19px 23px 17px;
   display: flex;
@@ -656,6 +657,20 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 12px 12px 0 0;
   background: var(--card);
+}
+
+.session-controls {
+  padding-right: 30px;
+}
+
+.delete-workout-day-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.delete-workout-day-button[hidden] {
+  display: none;
 }
 
 .session-heading .section-kicker {

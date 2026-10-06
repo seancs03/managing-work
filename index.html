@@ -122,6 +122,16 @@
           </div>
         </div>
       </dialog>
+      <dialog id="delete-workout-dialog" class="shadow-dialog" aria-labelledby="delete-workout-dialog-title">
+        <div class="shadow-form">
+          <h2 id="delete-workout-dialog-title">Delete this workout day from all weeks?</h2>
+          <div class="shadow-dialog-actions">
+            <span class="shadow-dialog-spacer"></span>
+            <button id="cancel-delete-workout-button" class="start-over-button" type="button">Cancel</button>
+            <button id="confirm-delete-workout-button" class="workout-action-button" type="button">Delete workout day</button>
+          </div>
+        </div>
+      </dialog>
 
       <div class="workout-layout">
         <section class="workout-column" aria-label="Current workout">
@@ -139,6 +149,7 @@
                 <button id="workout-action" class="workout-action-button" type="button" disabled>Start workout</button>
               </div>
             </div>
+            <button id="delete-workout-day-button" class="icon-button delete-workout-day-button" type="button" aria-label="Delete workout day" title="Delete this workout day from all weeks" hidden>×</button>
           </div>
 
           <div id="exercise-list" class="exercise-list"></div>
