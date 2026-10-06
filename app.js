@@ -620,7 +620,7 @@ function renderExerciseCard(exercise, index) {
   header.append(titleWrap);
 
   const headerActions = createElement("div", "exercise-header-actions");
-  const bailButton = createElement("button", `bail-exercise-button${exercise.bailed ? " is-bailed" : ""}`, "BAILED");
+  const bailButton = createElement("button", `bail-exercise-button${exercise.bailed ? " is-bailed" : ""}`, "BAIL");
   bailButton.type = "button";
   bailButton.dataset.action = "bail-exercise";
   bailButton.dataset.exerciseId = exercise.id;
