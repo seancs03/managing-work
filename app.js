@@ -101,6 +101,8 @@ function normalizeWorkout(source) {
 }
 
 function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) {
+  if (sourceWorkout.week !== 1) return false;
+
   sourceWorkout.exercises.forEach((exercise) => {
     exercise.planId ||= makeId();
     exercise.sets.forEach((set) => {
