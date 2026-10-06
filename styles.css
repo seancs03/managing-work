@@ -664,33 +664,9 @@ h1 {
 }
 
 .delete-workout-day-button {
-  width: 25px;
-  height: 25px;
-  padding: 0;
   position: absolute;
-  top: 8px;
-  right: 8px;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--card);
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 17px;
-  line-height: 1;
-}
-
-.delete-workout-day-button:hover,
-.delete-workout-day-button:focus-visible {
-  border-color: var(--danger);
-  background: var(--paper);
-  color: var(--danger);
-}
-
-.delete-workout-day-button:focus-visible {
-  outline: 2px solid var(--danger);
-  outline-offset: 2px;
+  top: 4px;
+  right: 4px;
 }
 
 .delete-workout-day-button[hidden] {
