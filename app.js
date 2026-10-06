@@ -1400,8 +1400,7 @@ exerciseList.addEventListener("click", (event) => {
     const removedIndex = exercise.sets.findIndex((set) => set.id === button.dataset.setId);
     exercise.sets = exercise.sets.filter((set) => set.id !== button.dataset.setId);
     syncWorkoutPlan(workout, workouts, false);
-    const nextSet = exercise.sets[Math.min(removedIndex, exercise.sets.length - 1)];
-    focusId = nextSet ? `${nextSet.id}-weight` : `add-set-${exercise.id}`;
+    focusId = `add-set-${exercise.id}`;
     announcement = `Set removed from ${exercise.name}.`;
   } else {
     return;
