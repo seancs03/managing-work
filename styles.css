@@ -1179,41 +1179,32 @@ body.intensity-theme .session-controls :focus-visible {
   font-size: 10px;
 }
 
-.session-notes-list {
-  margin: 0;
-  padding-left: 24px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px 24px;
+.session-notes-paper {
+  padding: 0 10px 0 35px;
+  border-left: 2px solid rgba(240, 25, 45, 0.45);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 39px,
+    #493033 39px,
+    #493033 40px
+  );
 }
 
-.session-notes-list li {
-  padding-left: 3px;
-  color: #ff3345;
-}
-
-.session-notes-list textarea {
+.session-notes-paper input {
   width: 100%;
-  min-height: 72px;
-  padding: 10px;
-  resize: vertical;
-  border: 1px solid #493033;
-  border-radius: 7px;
+  height: 40px;
+  padding: 7px 2px 5px;
+  border: 0;
   outline: none;
-  background: #1d1b1b;
+  background: transparent;
   color: #ffffff;
   font: 12px/1.5 "DM Sans", sans-serif;
 }
 
-.session-notes-list textarea::placeholder {
-  color: #a8a0a1;
-}
-
-.session-notes-list textarea:focus-visible {
-  border-color: #ff3345;
+.session-notes-paper input:focus-visible {
   outline: 2px solid #ff3345;
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(240, 25, 45, 0.2);
 }
 
 .summary-card {
@@ -1407,10 +1398,6 @@ body.intensity-theme .session-controls :focus-visible {
     font-size: 9px;
   }
 
-  .session-notes-list {
-    gap: 10px;
-  }
-
   .workout-planner-heading {
     align-items: flex-start;
     flex-direction: column;
@@ -1575,8 +1562,9 @@ body.intensity-theme .session-controls :focus-visible {
     gap: 5px;
   }
 
-  .session-notes-list {
-    grid-template-columns: 1fr;
+  .session-notes-paper {
+    padding-right: 3px;
+    padding-left: 24px;
   }
 
   .summary-card {
