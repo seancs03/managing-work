@@ -94,6 +94,18 @@ function normalizeWorkout(source) {
           planId: typeof exercise.planId === "string" ? exercise.planId : makeId(),
           name: typeof exercise.name === "string" ? exercise.name.slice(0, 60) : "Exercise",
           bailed: exercise.bailed === true,
+          bailSnapshot: Array.isArray(exercise.bailSnapshot)
+            ? exercise.bailSnapshot
+              .filter((set) => set && typeof set === "object")
+              .map((set) => ({
+                id: typeof set.id === "string" ? set.id : "",
+                weight: set.weight == null ? "" : String(set.weight).trim(),
+                reps: set.reps == null ? "" : String(set.reps).trim(),
+                rpe: set.rpe == null ? "" : String(set.rpe).trim(),
+                llp: set.llp === true,
+                llpReps: set.llpReps == null ? "" : String(set.llpReps).trim(),
+              }))
+            : null,
           sets: Array.isArray(exercise.sets)
             ? exercise.sets
               .filter((set) => set && typeof set === "object")
@@ -164,6 +176,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
         planId: planExercise.planId,
         name: planExercise.name,
         bailed: existingExercise?.bailed === true,
+        bailSnapshot: existingExercise?.bailSnapshot ?? null,
         sets: planExercise.sets.map((planSet, setIndex) => {
           const existingSet = existingSets.find((item) =>
             !usedSets.has(item) && item.planId === planSet.planId,
@@ -620,14 +633,17 @@ function renderExerciseCard(exercise, index) {
   header.append(titleWrap);
 
   const headerActions = createElement("div", "exercise-header-actions");
-  const bailButton = createElement("button", `bail-exercise-button${exercise.bailed ? " is-bailed" : ""}`, "BAIL");
+  const bailButton = createElement(
+    "button",
+    `bail-exercise-button${exercise.bailed ? " is-bailed" : ""}`,
+    exercise.bailed ? "UNDO BAIL" : "BAIL",
+  );
   bailButton.type = "button";
   bailButton.dataset.action = "bail-exercise";
   bailButton.dataset.exerciseId = exercise.id;
-  bailButton.disabled = exercise.bailed === true;
   bailButton.setAttribute(
     "aria-label",
-    exercise.bailed ? `${exercise.name} marked as bailed` : `Mark ${exercise.name} as bailed`,
+    exercise.bailed ? `Undo bail for ${exercise.name}` : `Mark ${exercise.name} as bailed`,
   );
   headerActions.append(bailButton);
 
@@ -960,6 +976,7 @@ confirmStartOverButton.addEventListener("click", () => {
   startOverDialog.close();
   workout.exercises.forEach((exercise) => {
     exercise.bailed = false;
+    exercise.bailSnapshot = null;
     exercise.sets.forEach((set) => {
       set.weight = "";
       set.reps = "";
@@ -1085,7 +1102,31 @@ exerciseList.addEventListener("click", (event) => {
   const exercise = workout.exercises.find((item) => item.id === button.dataset.exerciseId);
   if (!exercise) return;
   if (button.dataset.action === "bail-exercise") {
-    if (exercise.bailed) return;
+    if (exercise.bailed) {
+      exercise.sets.forEach((set) => {
+        const snapshot = exercise.bailSnapshot?.find((item) => item.id === set.id);
+        if (!snapshot) {
+          set.weight = "";
+          set.reps = "";
+          set.rpe = "";
+          set.llp = false;
+          set.llpReps = "";
+          return;
+        }
+        set.weight = snapshot.weight;
+        set.reps = snapshot.reps;
+        set.rpe = snapshot.rpe;
+        set.llp = snapshot.llp;
+        set.llpReps = snapshot.llpReps;
+      });
+      exercise.bailed = false;
+      exercise.bailSnapshot = null;
+      render();
+      saveWorkout();
+      document.getElementById("announcements").textContent = `Bail undone for ${exercise.name}.`;
+      exerciseList.querySelector(`[data-action="bail-exercise"][data-exercise-id="${exercise.id}"]`)?.focus();
+      return;
+    }
     pendingBailExerciseId = exercise.id;
     bailDialog.showModal();
     cancelBailButton.focus();
@@ -1136,6 +1177,14 @@ confirmBailButton.addEventListener("click", () => {
   pendingBailExerciseId = null;
   bailDialog.close();
   if (!exercise) return;
+  exercise.bailSnapshot = exercise.sets.map((set) => ({
+    id: set.id,
+    weight: set.weight,
+    reps: set.reps,
+    rpe: set.rpe,
+    llp: set.llp,
+    llpReps: set.llpReps,
+  }));
   exercise.bailed = true;
   exercise.sets.forEach((set) => {
     set.weight = "X";
@@ -1147,7 +1196,7 @@ confirmBailButton.addEventListener("click", () => {
   render();
   saveWorkout();
   document.getElementById("announcements").textContent = `${exercise.name} marked as bailed.`;
-  (exerciseList.querySelector(".exercise-name-editor:not(:disabled)") || workoutAction).focus();
+  exerciseList.querySelector(`[data-action="bail-exercise"][data-exercise-id="${exercise.id}"]`)?.focus();
 });
 
 bailDialog.addEventListener("close", () => {
