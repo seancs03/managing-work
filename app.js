@@ -13,6 +13,11 @@ const workoutPlanner = document.querySelector(".workout-planner");
 const weekSelect = document.getElementById("week-select");
 const workoutContextMenu = document.getElementById("workout-context-menu");
 const deleteWorkoutButton = document.getElementById("delete-workout-button");
+const deleteWorkoutDayButton = document.getElementById("delete-workout-day-button");
+const deleteWorkoutDialog = document.getElementById("delete-workout-dialog");
+const deleteWorkoutDialogTitle = document.getElementById("delete-workout-dialog-title");
+const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout-button");
+const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout-button");
 const addWorkoutForm = document.getElementById("add-workout-form");
 const newWorkoutNameInput = document.getElementById("new-workout-name");
 const addExerciseForm = document.getElementById("add-exercise-form");
@@ -46,6 +51,8 @@ const sessionStatusLabel = document.getElementById("session-status-label");
 let storageKey = "";
 let pendingBailExerciseId = null;
 let pendingDeleteExerciseId = null;
+let pendingDeleteWorkoutId = null;
+let pendingDeleteWorkoutReturnFocus = null;
 
 function makeId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
@@ -671,6 +678,16 @@ function openWorkoutContextMenu(button, x, y) {
   deleteWorkoutButton.focus();
 }
 
+function openDeleteWorkoutDialog(workoutId, returnFocus = null) {
+  const targetWorkout = workouts.find((item) => item.id === workoutId);
+  if (!targetWorkout) return;
+  pendingDeleteWorkoutId = workoutId;
+  pendingDeleteWorkoutReturnFocus = returnFocus;
+  deleteWorkoutDialogTitle.textContent = `Delete ${targetWorkout.title} from all weeks?`;
+  deleteWorkoutDialog.showModal();
+  cancelDeleteWorkoutButton.focus();
+}
+
 function renderWeekOptions() {
   weekSelect.replaceChildren();
   for (let week = 1; week <= 12; week += 1) {
@@ -863,6 +880,7 @@ function render() {
   renderWorkoutChoices();
   workoutTitle.value = workout?.title ?? "";
   workoutTitle.disabled = !workout;
+  deleteWorkoutDayButton.hidden = !workout;
   sessionDate.textContent = workout ? formatDate(workout.startedAt) : "";
   sessionStatusLabel.textContent = workout?.status === "in-progress"
     ? "WORKOUT IN PROGRESS"
@@ -971,12 +989,19 @@ workoutList.addEventListener("keydown", (event) => {
   openWorkoutContextMenu(button, bounds.left, bounds.bottom);
 });
 
-deleteWorkoutButton.addEventListener("click", () => {
-  if (!contextWorkoutId) return;
-  const deletedWorkout = workouts.find((item) => item.id === contextWorkoutId);
-  const deletedTemplateId = deletedWorkout?.templateId;
+function confirmDeleteWorkoutDay() {
+  const deletedWorkout = workouts.find((item) => item.id === pendingDeleteWorkoutId);
+  pendingDeleteWorkoutId = null;
+  pendingDeleteWorkoutReturnFocus = null;
+  deleteWorkoutDialog.close();
+  if (!deletedWorkout) return;
+  const deletedTemplateId = deletedWorkout.templateId;
   const deletedWorkoutIds = new Set(
-    workouts.filter((item) => item.templateId === deletedTemplateId).map((item) => item.id),
+    workouts
+      .filter((item) => deletedTemplateId
+        ? item.templateId === deletedTemplateId
+        : item.id === deletedWorkout.id)
+      .map((item) => item.id),
   );
   workouts = workouts.filter((item) => !deletedWorkoutIds.has(item.id));
   workouts.forEach((item) => {
@@ -993,6 +1018,35 @@ deleteWorkoutButton.addEventListener("click", () => {
   document.getElementById("announcements").textContent =
     `${deletedWorkout?.title ?? "Workout"} deleted from all 12 weeks.`;
   (workoutList.querySelector(".workout-choice") || newWorkoutNameInput).focus();
+}
+
+deleteWorkoutButton.addEventListener("click", () => {
+  if (!contextWorkoutId) return;
+  const targetId = contextWorkoutId;
+  closeWorkoutContextMenu();
+  openDeleteWorkoutDialog(targetId, workoutList.querySelector(`[data-workout-id="${targetId}"]`));
+});
+
+deleteWorkoutDayButton.addEventListener("click", () => {
+  if (!workout) return;
+  openDeleteWorkoutDialog(workout.id, deleteWorkoutDayButton);
+});
+
+cancelDeleteWorkoutButton.addEventListener("click", () => {
+  const returnFocus = pendingDeleteWorkoutReturnFocus;
+  pendingDeleteWorkoutId = null;
+  pendingDeleteWorkoutReturnFocus = null;
+  deleteWorkoutDialog.close();
+  returnFocus?.focus();
+});
+
+confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkoutDay);
+
+deleteWorkoutDialog.addEventListener("close", () => {
+  const returnFocus = pendingDeleteWorkoutReturnFocus;
+  pendingDeleteWorkoutId = null;
+  pendingDeleteWorkoutReturnFocus = null;
+  if (returnFocus?.isConnected) returnFocus.focus();
 });
 
 shadowButton.addEventListener("click", () => {
