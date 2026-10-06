@@ -1394,7 +1394,7 @@ exerciseList.addEventListener("click", (event) => {
     const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "" };
     exercise.sets.push(set);
     syncWorkoutPlan(workout, workouts, false);
-    focusId = `${set.id}-weight`;
+    focusId = `add-set-${exercise.id}`;
     announcement = `Set ${exercise.sets.length} added to ${exercise.name}.`;
   } else if (button.dataset.action === "remove-set") {
     const removedIndex = exercise.sets.findIndex((set) => set.id === button.dataset.setId);
