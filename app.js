@@ -61,10 +61,12 @@ function makeId() {
   return `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function createWorkout(title, templateId = makeId()) {
+function createWorkout(title, templateId = makeId(), templateStartWeek = selectedWeek) {
   return {
     id: makeId(),
     templateId,
+    templateStartWeek,
+    planCustomized: false,
     title,
     week: selectedWeek,
     status: "planned",
@@ -222,6 +224,12 @@ function normalizeWorkout(source) {
   return {
     id: typeof source.id === "string" ? source.id : makeId(),
     templateId: typeof source.templateId === "string" ? source.templateId : null,
+    templateStartWeek: Number.isInteger(source.templateStartWeek)
+      && source.templateStartWeek >= 1
+      && source.templateStartWeek <= 12
+      ? source.templateStartWeek
+      : null,
+    planCustomized: source.planCustomized === true,
     title: typeof source.title === "string" ? source.title.slice(0, 60) : "Workout",
     status: ["planned", "in-progress", "completed"].includes(source.status) ? source.status : "planned",
     week: Number.isInteger(source.week) && source.week >= 1 && source.week <= 12 ? source.week : 1,
@@ -276,7 +284,12 @@ function normalizeWorkout(source) {
 }
 
 function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) {
-  if (sourceWorkout.week !== 1) return false;
+  const templateStartWeek = sourceWorkout.templateStartWeek ?? sourceWorkout.week;
+  sourceWorkout.templateStartWeek = templateStartWeek;
+  if (sourceWorkout.week !== templateStartWeek) {
+    sourceWorkout.planCustomized = true;
+    return false;
+  }
 
   sourceWorkout.exercises.forEach((exercise) => {
     exercise.planId ||= makeId();
@@ -287,9 +300,9 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
 
   let peers = allWorkouts.filter((item) => item.templateId === sourceWorkout.templateId);
   if (createMissingWeeks) {
-    for (let week = 1; week <= 12; week += 1) {
+    for (let week = templateStartWeek; week <= 12; week += 1) {
       if (peers.some((item) => item.week === week)) continue;
-      const peer = createWorkout(sourceWorkout.title, sourceWorkout.templateId);
+      const peer = createWorkout(sourceWorkout.title, sourceWorkout.templateId, templateStartWeek);
       peer.week = week;
       peer.exercises = sourceWorkout.exercises.map((exercise) => ({
         id: makeId(),
@@ -311,7 +324,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
   }
 
   peers.forEach((peer) => {
-    if (peer === sourceWorkout) return;
+    if (peer === sourceWorkout || peer.week <= templateStartWeek || peer.planCustomized) return;
     const usedExercises = new Set();
     peer.exercises = sourceWorkout.exercises.map((planExercise, exerciseIndex) => {
       const existingExercise = peer.exercises.find((item) =>
@@ -348,6 +361,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
       };
     });
     peer.title = sourceWorkout.title;
+    peer.templateStartWeek = templateStartWeek;
   });
 }
 
@@ -380,6 +394,10 @@ function prepareWorkoutTemplates(allWorkouts) {
   templates.forEach((members) => {
     const source = members.find((item) => item.week === 1)
       ?? members.reduce((earliest, item) => item.week < earliest.week ? item : earliest);
+    const templateStartWeek = source.week;
+    members.forEach((item) => {
+      item.templateStartWeek = templateStartWeek;
+    });
     syncWorkoutPlan(source, allWorkouts);
   });
   return JSON.stringify(allWorkouts) !== originalWorkouts;
@@ -976,7 +994,11 @@ addWorkoutForm.addEventListener("submit", (event) => {
   newWorkoutNameInput.value = "";
   render();
   saveWorkout();
-  document.getElementById("announcements").textContent = `${title} added to all 12 weeks.`;
+  document.getElementById("announcements").textContent = selectedWeek === 1
+    ? `${title} added to all 12 weeks.`
+    : selectedWeek < 12
+      ? `${title} added to Week ${selectedWeek} and mirrored to Weeks ${selectedWeek + 1}-12.`
+      : `${title} added to Week ${selectedWeek}.`;
   exerciseNameInput.focus();
 });
 
