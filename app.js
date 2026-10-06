@@ -61,10 +61,12 @@ function makeId() {
   return `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function createWorkout(title, templateId = makeId()) {
+function createWorkout(title, templateId = makeId(), templateStartWeek = selectedWeek) {
   return {
     id: makeId(),
     templateId,
+    templateStartWeek,
+    planCustomized: false,
     title,
     week: selectedWeek,
     status: "planned",
@@ -222,6 +224,12 @@ function normalizeWorkout(source) {
   return {
     id: typeof source.id === "string" ? source.id : makeId(),
     templateId: typeof source.templateId === "string" ? source.templateId : null,
+    templateStartWeek: Number.isInteger(source.templateStartWeek)
+      && source.templateStartWeek >= 1
+      && source.templateStartWeek <= 12
+      ? source.templateStartWeek
+      : null,
+    planCustomized: source.planCustomized === true,
     title: typeof source.title === "string" ? source.title.slice(0, 60) : "Workout",
     status: ["planned", "in-progress", "completed"].includes(source.status) ? source.status : "planned",
     week: Number.isInteger(source.week) && source.week >= 1 && source.week <= 12 ? source.week : 1,
@@ -276,7 +284,12 @@ function normalizeWorkout(source) {
 }
 
 function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) {
-  if (sourceWorkout.week !== 1) return false;
+  const templateStartWeek = sourceWorkout.templateStartWeek ?? sourceWorkout.week;
+  sourceWorkout.templateStartWeek = templateStartWeek;
+  if (sourceWorkout.week !== templateStartWeek) {
+    sourceWorkout.planCustomized = true;
+    return false;
+  }
 
   sourceWorkout.exercises.forEach((exercise) => {
     exercise.planId ||= makeId();
@@ -287,9 +300,9 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
 
   let peers = allWorkouts.filter((item) => item.templateId === sourceWorkout.templateId);
   if (createMissingWeeks) {
-    for (let week = 1; week <= 12; week += 1) {
+    for (let week = templateStartWeek; week <= 12; week += 1) {
       if (peers.some((item) => item.week === week)) continue;
-      const peer = createWorkout(sourceWorkout.title, sourceWorkout.templateId);
+      const peer = createWorkout(sourceWorkout.title, sourceWorkout.templateId, templateStartWeek);
       peer.week = week;
       peer.exercises = sourceWorkout.exercises.map((exercise) => ({
         id: makeId(),
@@ -311,7 +324,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
   }
 
   peers.forEach((peer) => {
-    if (peer === sourceWorkout) return;
+    if (peer === sourceWorkout || peer.week <= templateStartWeek || peer.planCustomized) return;
     const usedExercises = new Set();
     peer.exercises = sourceWorkout.exercises.map((planExercise, exerciseIndex) => {
       const existingExercise = peer.exercises.find((item) =>
@@ -348,6 +361,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
       };
     });
     peer.title = sourceWorkout.title;
+    peer.templateStartWeek = templateStartWeek;
   });
 }
 
@@ -380,6 +394,10 @@ function prepareWorkoutTemplates(allWorkouts) {
   templates.forEach((members) => {
     const source = members.find((item) => item.week === 1)
       ?? members.reduce((earliest, item) => item.week < earliest.week ? item : earliest);
+    const templateStartWeek = source.week;
+    members.forEach((item) => {
+      item.templateStartWeek = templateStartWeek;
+    });
     syncWorkoutPlan(source, allWorkouts);
   });
   return JSON.stringify(allWorkouts) !== originalWorkouts;
@@ -671,6 +689,10 @@ function closeWorkoutContextMenu(returnFocus = false) {
 
 function openWorkoutContextMenu(button, x, y) {
   contextWorkoutId = button.dataset.workoutId;
+  const contextWorkout = workouts.find((item) => item.id === contextWorkoutId);
+  deleteWorkoutButton.textContent = contextWorkout?.week === 1
+    ? "Delete day from all weeks"
+    : `Delete day from Week ${contextWorkout?.week ?? selectedWeek}`;
   workoutContextMenu.hidden = false;
   const bounds = workoutContextMenu.getBoundingClientRect();
   workoutContextMenu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
@@ -683,7 +705,9 @@ function openDeleteWorkoutDialog(workoutId, returnFocus = null) {
   if (!targetWorkout) return;
   pendingDeleteWorkoutId = workoutId;
   pendingDeleteWorkoutReturnFocus = returnFocus;
-  deleteWorkoutDialogTitle.textContent = `Delete ${targetWorkout.title} from all weeks?`;
+  deleteWorkoutDialogTitle.textContent = targetWorkout.week === 1
+    ? `Delete ${targetWorkout.title} from all 12 weeks?`
+    : `Delete ${targetWorkout.title} from Week ${targetWorkout.week}?`;
   deleteWorkoutDialog.showModal();
   cancelDeleteWorkoutButton.focus();
 }
@@ -895,6 +919,15 @@ function render() {
   shadowButton.title = workout?.shadowWorkoutId
     ? `Shadowing ${workouts.find((item) => item.id === workout.shadowWorkoutId)?.title ?? "another workout"}`
     : "Choose a workout to shadow";
+  deleteWorkoutDayButton.title = workout?.week === 1
+    ? "Delete this workout day from all 12 weeks"
+    : `Delete this workout day from Week ${workout?.week ?? ""}`;
+  deleteWorkoutDayButton.setAttribute(
+    "aria-label",
+    workout?.week === 1
+      ? "Delete workout day from all 12 weeks"
+      : `Delete workout day from Week ${workout?.week ?? ""}`,
+  );
   sessionNotesSection.hidden = !workout;
   sessionNoteInputs.forEach((input, index) => {
     input.value = workout?.sessionNotes[index] ?? "";
@@ -961,7 +994,11 @@ addWorkoutForm.addEventListener("submit", (event) => {
   newWorkoutNameInput.value = "";
   render();
   saveWorkout();
-  document.getElementById("announcements").textContent = `${title} added to all 12 weeks.`;
+  document.getElementById("announcements").textContent = selectedWeek === 1
+    ? `${title} added to all 12 weeks.`
+    : selectedWeek < 12
+      ? `${title} added to Week ${selectedWeek} and mirrored to Weeks ${selectedWeek + 1}-12.`
+      : `${title} added to Week ${selectedWeek}.`;
   exerciseNameInput.focus();
 });
 
@@ -995,13 +1032,12 @@ function confirmDeleteWorkoutDay() {
   pendingDeleteWorkoutReturnFocus = null;
   deleteWorkoutDialog.close();
   if (!deletedWorkout) return;
+  const deletesAllWeeks = deletedWorkout.week === 1;
   const deletedTemplateId = deletedWorkout.templateId;
   const deletedWorkoutIds = new Set(
-    workouts
-      .filter((item) => deletedTemplateId
-        ? item.templateId === deletedTemplateId
-        : item.id === deletedWorkout.id)
-      .map((item) => item.id),
+    deletesAllWeeks && deletedTemplateId
+      ? workouts.filter((item) => item.templateId === deletedTemplateId).map((item) => item.id)
+      : [deletedWorkout.id],
   );
   workouts = workouts.filter((item) => !deletedWorkoutIds.has(item.id));
   workouts.forEach((item) => {
@@ -1016,7 +1052,9 @@ function confirmDeleteWorkoutDay() {
   render();
   saveWorkout();
   document.getElementById("announcements").textContent =
-    `${deletedWorkout?.title ?? "Workout"} deleted from all 12 weeks.`;
+    deletesAllWeeks
+      ? `${deletedWorkout.title} deleted from all 12 weeks.`
+      : `${deletedWorkout.title} deleted from Week ${deletedWorkout.week}.`;
   (workoutList.querySelector(".workout-choice") || newWorkoutNameInput).focus();
 }
 
