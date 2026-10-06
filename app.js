@@ -35,12 +35,17 @@ const clearShadowButton = document.getElementById("clear-shadow-button");
 const bailDialog = document.getElementById("bail-dialog");
 const cancelBailButton = document.getElementById("cancel-bail-button");
 const confirmBailButton = document.getElementById("confirm-bail-button");
+const deleteExerciseDialog = document.getElementById("delete-exercise-dialog");
+const deleteExerciseDialogTitle = document.getElementById("delete-exercise-dialog-title");
+const cancelDeleteExerciseButton = document.getElementById("cancel-delete-exercise-button");
+const confirmDeleteExerciseButton = document.getElementById("confirm-delete-exercise-button");
 const workoutLayout = document.querySelector(".workout-layout");
 const sessionNotesSection = document.getElementById("session-notes");
 const sessionNoteInputs = Array.from(document.querySelectorAll("[data-session-note]"));
 const sessionStatusLabel = document.getElementById("session-status-label");
 let storageKey = "";
 let pendingBailExerciseId = null;
+let pendingDeleteExerciseId = null;
 
 function makeId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
@@ -1274,6 +1279,13 @@ exerciseList.addEventListener("click", (event) => {
     cancelBailButton.focus();
     return;
   }
+  if (button.dataset.action === "remove-exercise") {
+    pendingDeleteExerciseId = exercise.id;
+    deleteExerciseDialogTitle.textContent = `Delete ${exercise.name || "this exercise"}?`;
+    deleteExerciseDialog.showModal();
+    cancelDeleteExerciseButton.focus();
+    return;
+  }
 
   let focusId = "";
   let announcement = "";
@@ -1290,13 +1302,6 @@ exerciseList.addEventListener("click", (event) => {
     const nextSet = exercise.sets[Math.min(removedIndex, exercise.sets.length - 1)];
     focusId = nextSet ? `${nextSet.id}-weight` : `add-set-${exercise.id}`;
     announcement = `Set removed from ${exercise.name}.`;
-  } else if (button.dataset.action === "remove-exercise") {
-    const removedIndex = workout.exercises.indexOf(exercise);
-    workout.exercises = workout.exercises.filter((item) => item.id !== exercise.id);
-    syncWorkoutPlan(workout, workouts, false);
-    const nextExercise = workout.exercises[Math.min(removedIndex, workout.exercises.length - 1)];
-    focusId = nextExercise ? `exercise-name-${nextExercise.id}` : "";
-    announcement = `${exercise.name || "Exercise"} removed.`;
   } else {
     return;
   }
@@ -1312,6 +1317,33 @@ cancelBailButton.addEventListener("click", () => {
   pendingBailExerciseId = null;
   bailDialog.close();
   exerciseList.querySelector(".bail-exercise-button:not(:disabled)")?.focus();
+});
+
+cancelDeleteExerciseButton.addEventListener("click", () => {
+  const exerciseId = pendingDeleteExerciseId;
+  pendingDeleteExerciseId = null;
+  deleteExerciseDialog.close();
+  exerciseList.querySelector(`[data-action="remove-exercise"][data-exercise-id="${exerciseId}"]`)?.focus();
+});
+
+confirmDeleteExerciseButton.addEventListener("click", () => {
+  const exercise = workout?.exercises.find((item) => item.id === pendingDeleteExerciseId);
+  pendingDeleteExerciseId = null;
+  deleteExerciseDialog.close();
+  if (!workout || !exercise) return;
+  const removedIndex = workout.exercises.indexOf(exercise);
+  workout.exercises = workout.exercises.filter((item) => item.id !== exercise.id);
+  syncWorkoutPlan(workout, workouts, false);
+  const nextExercise = workout.exercises[Math.min(removedIndex, workout.exercises.length - 1)];
+  render();
+  saveWorkout();
+  document.getElementById("announcements").textContent = `${exercise.name || "Exercise"} removed.`;
+  const focusTarget = nextExercise && document.getElementById(`exercise-name-${nextExercise.id}`);
+  (focusTarget || exerciseNameInput).focus();
+});
+
+deleteExerciseDialog.addEventListener("close", () => {
+  pendingDeleteExerciseId = null;
 });
 
 confirmBailButton.addEventListener("click", () => {
