@@ -9,6 +9,7 @@ const switchProfileButton = document.getElementById("switch-profile-button");
 const exerciseList = document.getElementById("exercise-list");
 const workoutTitle = document.getElementById("workout-title");
 const workoutList = document.getElementById("workout-list");
+const workoutPlanner = document.querySelector(".workout-planner");
 const weekSelect = document.getElementById("week-select");
 const workoutContextMenu = document.getElementById("workout-context-menu");
 const deleteWorkoutButton = document.getElementById("delete-workout-button");
@@ -700,6 +701,7 @@ function renderSummary() {
 }
 
 function render() {
+  workoutPlanner.hidden = workout?.status === "in-progress";
   renderWeekOptions();
   renderWorkoutChoices();
   workoutTitle.value = workout?.title ?? "";
