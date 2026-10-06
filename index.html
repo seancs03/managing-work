@@ -134,40 +134,21 @@
           </form>
         </section>
 
-        <aside id="summary-column" class="summary-column" aria-label="Workout summary">
-          <section class="summary-card" aria-labelledby="summary-title">
-            <div class="summary-card-heading">
-              <div>
-                <p class="section-kicker">AT A GLANCE</p>
-                <h2 id="summary-title">Session notes</h2>
-              </div>
-              <span class="summary-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M7 4v3m10-3v3M5 9h14M6 6h12a1 1 0 0 1 1 1v12H5V7a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="m9 14 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
-            <div class="summary-stats">
-              <div class="summary-stat">
-                <span id="exercise-count" class="stat-value">0</span>
-                <span class="stat-label">Exercises</span>
-              </div>
-              <div class="summary-stat">
-                <span id="set-count" class="stat-value">0</span>
-                <span class="stat-label">Sets logged</span>
-              </div>
-            </div>
-            <div class="volume-stat">
-              <span class="volume-label">Total volume <span>(kg × reps)</span></span>
-              <span id="total-volume" class="volume-value">0 <span>kg</span></span>
-            </div>
-            <p class="summary-footnote">Volume includes numeric weight and reps only.</p>
-          </section>
-
-          <p class="privacy-note"><span aria-hidden="true">◈</span> Private by design. Your log is stored in this browser.</p>
-        </aside>
       </div>
+      <section id="session-notes" class="session-notes-card" aria-labelledby="session-notes-title" hidden>
+        <div class="session-notes-heading">
+          <div>
+            <p class="section-kicker">WORKOUT REFLECTION</p>
+            <h2 id="session-notes-title">Session notes</h2>
+          </div>
+          <p class="session-notes-caption">Capture three takeaways from this session.</p>
+        </div>
+        <ul class="session-notes-list">
+          <li><label class="sr-only" for="session-note-1">Session note 1</label><textarea id="session-note-1" data-session-note="0" maxlength="500" rows="2" placeholder="What went well?"></textarea></li>
+          <li><label class="sr-only" for="session-note-2">Session note 2</label><textarea id="session-note-2" data-session-note="1" maxlength="500" rows="2" placeholder="What felt challenging?"></textarea></li>
+          <li><label class="sr-only" for="session-note-3">Session note 3</label><textarea id="session-note-3" data-session-note="2" maxlength="500" rows="2" placeholder="What to focus on next time?"></textarea></li>
+        </ul>
+      </section>
       </main>
     </div>
   </body>
