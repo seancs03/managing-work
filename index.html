@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f7f7">
+    <meta name="description" content="A simple, private workout log for tracking every set.">
+    <title>SPIJKER TRACK — workout log</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body class="intensity-theme">
+    <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
+      <div class="welcome-content">
+        <p class="welcome-brand">SPIJKER TRACK</p>
+        <h1 id="welcome-title">WELCOME</h1>
+        <p class="welcome-prompt">Select user</p>
+        <div class="profile-choices" role="group" aria-label="Select user profile">
+          <button class="profile-choice" type="button" data-profile="sean">Sean</button>
+          <button class="profile-choice" type="button" data-profile="kick">Kick</button>
+        </div>
+      </div>
+    </main>
+
+    <div id="app-shell" hidden>
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="SPIJKER TRACK workout log home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span>SPIJKER TRACK<span class="brand-period">.</span></span>
+        </a>
+        <div class="topbar-actions">
+          <div class="storage-indicator">
+            <span class="storage-dot" aria-hidden="true"></span>
+            <span class="saved-label">Saved for</span>
+            <strong id="active-profile-name"></strong>
+          </div>
+          <button id="switch-profile-button" class="switch-profile-button" type="button">Switch user</button>
+        </div>
+      </header>
+
+      <main class="page-shell">
+      <section class="intro" aria-labelledby="page-title">
+        <h1 id="page-title">Workout log</h1>
+      </section>
+
+      <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
+
+      <section class="workout-planner" aria-labelledby="workouts-heading">
+        <div class="workout-planner-heading">
+          <div>
+            <p class="section-kicker">TRAINING PLAN</p>
+            <div class="week-heading">
+              <h2 id="workouts-heading">12-week cycle</h2>
+              <label class="sr-only" for="week-select">Select training week</label>
+              <select id="week-select" class="week-select" aria-label="Select training week"></select>
+            </div>
+          </div>
+          <form id="add-workout-form" class="add-workout-form">
+            <label class="sr-only" for="new-workout-name">Workout name</label>
+            <input id="new-workout-name" name="workout" type="text" maxlength="60" placeholder="e.g. Upper day" autocomplete="off" required>
+            <button class="add-workout-button" type="submit"><span aria-hidden="true">+</span> Add workout</button>
+          </form>
+        </div>
+        <div id="workout-list" class="workout-list" role="group" aria-label="Choose a workout"></div>
+        <p class="plan-note">Workout days and exercise plans mirror across all 12 weeks; set results stay separate each week.</p>
+      </section>
+      <div id="workout-context-menu" class="workout-context-menu" role="group" aria-label="Workout actions" hidden>
+        <button id="delete-workout-button" class="delete-workout-button" type="button">Delete day from all weeks</button>
+      </div>
+      <dialog id="shadow-dialog" class="shadow-dialog" aria-labelledby="shadow-dialog-title">
+        <form id="shadow-form" class="shadow-form">
+          <h2 id="shadow-dialog-title">Shadow a workout</h2>
+          <p class="shadow-description">Choose a week to compare this same workout day. Past numbers show as a guide until you log your own.</p>
+          <label for="shadow-week-select">Week</label>
+          <select id="shadow-week-select" required></select>
+          <label for="shadow-workout-select">Workout day</label>
+          <select id="shadow-workout-select" required></select>
+          <div class="shadow-dialog-actions">
+            <button id="clear-shadow-button" class="start-over-button" type="button">Remove shadow</button>
+            <span class="shadow-dialog-spacer"></span>
+            <button class="start-over-button" type="button" data-shadow-cancel>Cancel</button>
+            <button class="workout-action-button" type="submit">Apply shadow</button>
+          </div>
+        </form>
+      </dialog>
+
+      <div class="workout-layout">
+        <section class="workout-column" aria-label="Current workout">
+          <div class="session-heading">
+            <div>
+              <p id="session-status-label" class="section-kicker">WORKOUT PLAN</p>
+              <label class="sr-only" for="workout-title">Workout name</label>
+              <input id="workout-title" class="workout-title" type="text" maxlength="60" placeholder="Name this workout" autocomplete="off">
+            </div>
+            <div class="session-controls">
+              <p id="session-date" class="session-date"></p>
+              <button id="start-over-button" class="start-over-button" type="button" hidden>Start over</button>
+              <div class="workout-start-controls">
+                <button id="shadow-button" class="start-over-button" type="button" hidden>Shadow</button>
+                <button id="workout-action" class="workout-action-button" type="button" disabled>Start workout</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="exercise-list" class="exercise-list"></div>
+          <p id="announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+          <form id="add-exercise-form" class="add-exercise-form" hidden>
+            <label class="sr-only" for="exercise-name">Exercise name</label>
+            <div class="exercise-input-wrap">
+              <span class="input-plus" aria-hidden="true">+</span>
+              <input id="exercise-name" name="exercise" type="text" maxlength="60" placeholder="Add an exercise..." list="exercise-suggestions" autocomplete="off" required>
+              <datalist id="exercise-suggestions">
+                <option value="Bench press"></option>
+                <option value="Squat"></option>
+                <option value="Deadlift"></option>
+                <option value="Overhead press"></option>
+                <option value="Pull-up"></option>
+                <option value="Dumbbell row"></option>
+              </datalist>
+            </div>
+            <button class="add-exercise-button" type="submit"><span aria-hidden="true">+</span> Add exercise</button>
+          </form>
+        </section>
+
+        <aside id="summary-column" class="summary-column" aria-label="Workout summary">
+          <section class="summary-card" aria-labelledby="summary-title">
+            <div class="summary-card-heading">
+              <div>
+                <p class="section-kicker">AT A GLANCE</p>
+                <h2 id="summary-title">Session notes</h2>
+              </div>
+              <span class="summary-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M7 4v3m10-3v3M5 9h14M6 6h12a1 1 0 0 1 1 1v12H5V7a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="m9 14 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+            <div class="summary-stats">
+              <div class="summary-stat">
+                <span id="exercise-count" class="stat-value">0</span>
+                <span class="stat-label">Exercises</span>
+              </div>
+              <div class="summary-stat">
+                <span id="set-count" class="stat-value">0</span>
+                <span class="stat-label">Sets logged</span>
+              </div>
+            </div>
+            <div class="volume-stat">
+              <span class="volume-label">Total volume <span>(kg × reps)</span></span>
+              <span id="total-volume" class="volume-value">0 <span>kg</span></span>
+            </div>
+            <p class="summary-footnote">Volume includes numeric weight and reps only.</p>
+          </section>
+
+          <p class="privacy-note"><span aria-hidden="true">◈</span> Private by design. Your log is stored in this browser.</p>
+        </aside>
+      </div>
+      </main>
+    </div>
+  </body>
+</html>
