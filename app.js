@@ -911,6 +911,8 @@ workoutAction.addEventListener("click", () => {
 
 startOverButton.addEventListener("click", () => {
   if (!workout) return;
+  const confirmed = window.confirm(`Start over with ${workout.title}? This will clear all logged set details for this workout.`);
+  if (!confirmed) return;
   workout.exercises.forEach((exercise) => {
     exercise.sets.forEach((set) => {
       set.weight = "";
