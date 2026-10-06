@@ -671,6 +671,10 @@ function closeWorkoutContextMenu(returnFocus = false) {
 
 function openWorkoutContextMenu(button, x, y) {
   contextWorkoutId = button.dataset.workoutId;
+  const contextWorkout = workouts.find((item) => item.id === contextWorkoutId);
+  deleteWorkoutButton.textContent = contextWorkout?.week === 1
+    ? "Delete day from all weeks"
+    : `Delete day from Week ${contextWorkout?.week ?? selectedWeek}`;
   workoutContextMenu.hidden = false;
   const bounds = workoutContextMenu.getBoundingClientRect();
   workoutContextMenu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
@@ -683,7 +687,9 @@ function openDeleteWorkoutDialog(workoutId, returnFocus = null) {
   if (!targetWorkout) return;
   pendingDeleteWorkoutId = workoutId;
   pendingDeleteWorkoutReturnFocus = returnFocus;
-  deleteWorkoutDialogTitle.textContent = `Delete ${targetWorkout.title} from all weeks?`;
+  deleteWorkoutDialogTitle.textContent = targetWorkout.week === 1
+    ? `Delete ${targetWorkout.title} from all 12 weeks?`
+    : `Delete ${targetWorkout.title} from Week ${targetWorkout.week}?`;
   deleteWorkoutDialog.showModal();
   cancelDeleteWorkoutButton.focus();
 }
@@ -895,6 +901,15 @@ function render() {
   shadowButton.title = workout?.shadowWorkoutId
     ? `Shadowing ${workouts.find((item) => item.id === workout.shadowWorkoutId)?.title ?? "another workout"}`
     : "Choose a workout to shadow";
+  deleteWorkoutDayButton.title = workout?.week === 1
+    ? "Delete this workout day from all 12 weeks"
+    : `Delete this workout day from Week ${workout?.week ?? ""}`;
+  deleteWorkoutDayButton.setAttribute(
+    "aria-label",
+    workout?.week === 1
+      ? "Delete workout day from all 12 weeks"
+      : `Delete workout day from Week ${workout?.week ?? ""}`,
+  );
   sessionNotesSection.hidden = !workout;
   sessionNoteInputs.forEach((input, index) => {
     input.value = workout?.sessionNotes[index] ?? "";
@@ -995,13 +1010,12 @@ function confirmDeleteWorkoutDay() {
   pendingDeleteWorkoutReturnFocus = null;
   deleteWorkoutDialog.close();
   if (!deletedWorkout) return;
+  const deletesAllWeeks = deletedWorkout.week === 1;
   const deletedTemplateId = deletedWorkout.templateId;
   const deletedWorkoutIds = new Set(
-    workouts
-      .filter((item) => deletedTemplateId
-        ? item.templateId === deletedTemplateId
-        : item.id === deletedWorkout.id)
-      .map((item) => item.id),
+    deletesAllWeeks && deletedTemplateId
+      ? workouts.filter((item) => item.templateId === deletedTemplateId).map((item) => item.id)
+      : [deletedWorkout.id],
   );
   workouts = workouts.filter((item) => !deletedWorkoutIds.has(item.id));
   workouts.forEach((item) => {
@@ -1016,7 +1030,9 @@ function confirmDeleteWorkoutDay() {
   render();
   saveWorkout();
   document.getElementById("announcements").textContent =
-    `${deletedWorkout?.title ?? "Workout"} deleted from all 12 weeks.`;
+    deletesAllWeeks
+      ? `${deletedWorkout.title} deleted from all 12 weeks.`
+      : `${deletedWorkout.title} deleted from Week ${deletedWorkout.week}.`;
   (workoutList.querySelector(".workout-choice") || newWorkoutNameInput).focus();
 }
 
