@@ -24,6 +24,9 @@ const startOverButton = document.getElementById("start-over-button");
 const startOverDialog = document.getElementById("start-over-dialog");
 const cancelStartOverButton = document.getElementById("cancel-start-over-button");
 const confirmStartOverButton = document.getElementById("confirm-start-over-button");
+const finishWorkoutDialog = document.getElementById("finish-workout-dialog");
+const finishWithoutProofButton = document.getElementById("finish-without-proof-button");
+const finishWithProofButton = document.getElementById("finish-with-proof-button");
 const shadowButton = document.getElementById("shadow-button");
 const shadowDialog = document.getElementById("shadow-dialog");
 const shadowForm = document.getElementById("shadow-form");
@@ -64,6 +67,145 @@ function createWorkout(title, templateId = makeId()) {
 function showNotice(message) {
   storageNotice.textContent = message;
   storageNotice.hidden = false;
+}
+
+function pdfSafeText(value) {
+  return String(value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7e]/g, "?");
+}
+
+function buildWorkoutProofPdf(sourceWorkout) {
+  const pageWidth = 612;
+  const pageHeight = 792;
+  const margin = 44;
+  const pages = [];
+  let commands = [];
+  let y = pageHeight - 52;
+
+  const addText = (text, x, top, size = 10, bold = false) => {
+    const safeText = pdfSafeText(text)
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)");
+    commands.push(`BT /${bold ? "F2" : "F1"} ${size} Tf ${x} ${top} Td (${safeText}) Tj ET`);
+  };
+  const addRule = (top) => {
+    commands.push(`0.78 G 1 w ${margin} ${top} m ${pageWidth - margin} ${top} l S 0 G`);
+  };
+  const newPage = () => {
+    if (commands.length) pages.push(commands.join("\n"));
+    commands = [];
+    y = pageHeight - 52;
+    addText(`${sourceWorkout.title} - Workout Proof (continued)`, margin, y, 15, true);
+    y -= 22;
+  };
+  const ensureSpace = (height) => {
+    if (y - height < margin) newPage();
+  };
+
+  addText(sourceWorkout.title || "Workout", margin, y, 20, true);
+  y -= 22;
+  addText(`Week ${sourceWorkout.week} | ${formatDate(sourceWorkout.startedAt)}`, margin, y, 10);
+  y -= 18;
+  addRule(y);
+  y -= 22;
+
+  const columns = [
+    { title: "Set", x: 52 },
+    { title: "Weight", x: 122 },
+    { title: "Reps", x: 246 },
+    { title: "RPE", x: 336 },
+    { title: "LLP reps", x: 418 },
+  ];
+  sourceWorkout.exercises.forEach((exercise, exerciseIndex) => {
+    ensureSpace(72);
+    addText(`Exercise ${exerciseIndex + 1}: ${exercise.name || "Exercise"}`, margin, y, 13, true);
+    y -= 19;
+    columns.forEach((column) => addText(column.title, column.x, y, 9, true));
+    y -= 7;
+    addRule(y);
+    y -= 15;
+    exercise.sets.forEach((set, index) => {
+      ensureSpace(19);
+      const values = [
+        String(index + 1),
+        (set.weight || "-").slice(0, 18),
+        (set.reps || "-").slice(0, 12),
+        (set.rpe || "-").slice(0, 12),
+        (set.llp ? (set.llpReps || "-") : "-").slice(0, 18),
+      ];
+      values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x, y, 10));
+      y -= 18;
+    });
+    y -= 10;
+  });
+
+  const notes = (sourceWorkout.sessionNotes || []).filter((note) => note.trim());
+  if (notes.length) {
+    ensureSpace(30 + notes.length * 16);
+    addRule(y);
+    y -= 20;
+    addText("Session notes", margin, y, 12, true);
+    y -= 18;
+    notes.forEach((note) => {
+      const line = pdfSafeText(note);
+      const chunks = line.match(/.{1,85}(?:\s|$)|.{1,85}/g) || [line];
+      chunks.forEach((chunk) => {
+        ensureSpace(16);
+        addText(chunk.trim(), margin, y, 9);
+        y -= 14;
+      });
+    });
+  }
+  if (commands.length) pages.push(commands.join("\n"));
+
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
+  ];
+  const pageRefs = [];
+  pages.forEach((content, index) => {
+    const pageId = 5 + index * 2;
+    const contentId = pageId + 1;
+    pageRefs.push(`${pageId} 0 R`);
+    objects[pageId - 1] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`;
+    objects[contentId - 1] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+  });
+  objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(" ")}] /Count ${pages.length} >>`;
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: "application/pdf" });
+}
+
+function downloadWorkoutProof(sourceWorkout) {
+  const pdf = buildWorkoutProofPdf(sourceWorkout);
+  const url = URL.createObjectURL(pdf);
+  const link = document.createElement("a");
+  const safeTitle = pdfSafeText(sourceWorkout.title || "workout")
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "workout";
+  link.href = url;
+  link.download = `${safeTitle}-week-${sourceWorkout.week}-proof.pdf`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function normalizeWorkout(source) {
@@ -919,13 +1061,20 @@ sessionNotesSection.addEventListener("input", (event) => {
   saveWorkout();
 });
 
+function finishWorkout() {
+  if (!workout) return;
+  finishWorkoutDialog.close();
+  workout.status = "completed";
+  document.getElementById("announcements").textContent = `${workout.title} finished.`;
+  render();
+  saveWorkout();
+}
+
 workoutAction.addEventListener("click", () => {
   if (!workout || workoutAction.disabled) return;
   if (workout.status === "in-progress") {
-    workout.status = "completed";
-    document.getElementById("announcements").textContent = `${workout.title} finished.`;
-    render();
-    saveWorkout();
+    finishWorkoutDialog.showModal();
+    finishWithoutProofButton.focus();
     return;
   }
   workout.status = "in-progress";
@@ -935,6 +1084,24 @@ workoutAction.addEventListener("click", () => {
   const firstInput = findNextWorkoutInput();
   if (firstInput) firstInput.focus();
   else document.getElementById("announcements").textContent = "All planned sets are logged.";
+});
+
+finishWithoutProofButton.addEventListener("click", finishWorkout);
+
+finishWithProofButton.addEventListener("click", () => {
+  if (!workout) return;
+  try {
+    downloadWorkoutProof(workout);
+  } catch (error) {
+    showNotice(`Could not download workout proof: ${error.message}`);
+    finishWithProofButton.focus();
+    return;
+  }
+  finishWorkout();
+});
+
+finishWorkoutDialog.addEventListener("close", () => {
+  workoutAction.focus();
 });
 
 startOverButton.addEventListener("click", () => {
