@@ -53,7 +53,7 @@ function createWorkout(title, templateId = makeId()) {
     createdAt: new Date().toISOString(),
     startedAt: new Date().toISOString(),
     shadowWorkoutId: null,
-    sessionNotes: ["", "", ""],
+    sessionNotes: ["", ""],
     exercises: [],
   };
 }
@@ -78,10 +78,10 @@ function normalizeWorkout(source) {
       : new Date().toISOString(),
     shadowWorkoutId: typeof source.shadowWorkoutId === "string" ? source.shadowWorkoutId : null,
     sessionNotes: Array.isArray(source.sessionNotes)
-      ? Array.from({ length: 3 }, (_, index) => (
+      ? Array.from({ length: 2 }, (_, index) => (
         typeof source.sessionNotes[index] === "string" ? source.sessionNotes[index].slice(0, 500) : ""
       ))
-      : ["", "", ""],
+      : ["", ""],
     exercises: Array.isArray(source.exercises)
       ? source.exercises
         .filter((exercise) => exercise && typeof exercise === "object")
@@ -895,7 +895,7 @@ sessionNotesSection.addEventListener("input", (event) => {
   const input = event.target.closest("[data-session-note]");
   if (!input || !workout) return;
   const noteIndex = Number(input.dataset.sessionNote);
-  if (!Number.isInteger(noteIndex) || noteIndex < 0 || noteIndex >= 3) return;
+  if (!Number.isInteger(noteIndex) || noteIndex < 0 || noteIndex >= 2) return;
   workout.sessionNotes[noteIndex] = input.value.slice(0, 500);
   saveWorkout();
 });
