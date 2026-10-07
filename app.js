@@ -2282,12 +2282,15 @@ myoNotesForm.addEventListener("submit", (event) => {
   set.myoNotes = Array.from(myoNotesRows.querySelectorAll("input"), (input) => input.value.trim());
   set.myoNotesConfirmed = true;
   pendingMyoNotes = null;
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
   myoNotesDialog.close();
   render();
   saveWorkout();
   exerciseList.querySelector(
     `[data-action="myo-notes"][data-exercise-id="${exercise.id}"][data-set-id="${set.id}"]`,
-  )?.focus();
+  )?.focus({ preventScroll: true });
+  window.scrollTo(scrollX, scrollY);
 });
 
 editMyoNotesButton.addEventListener("click", () => {
@@ -2299,13 +2302,13 @@ cancelMyoNotesButton.addEventListener("click", () => {
   const trigger = pendingMyoNotes?.trigger;
   pendingMyoNotes = null;
   myoNotesDialog.close();
-  if (trigger?.isConnected) trigger.focus();
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
 });
 
 myoNotesDialog.addEventListener("close", () => {
   const trigger = pendingMyoNotes?.trigger;
   pendingMyoNotes = null;
-  if (trigger?.isConnected) trigger.focus();
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
 });
 
 welcomeScreen.addEventListener("click", (event) => {
