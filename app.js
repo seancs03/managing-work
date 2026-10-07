@@ -747,6 +747,7 @@ async function activateProfile(profile) {
   if (!["sean", "kick"].includes(profile) || profileLoadInProgress) return;
   if (cloudEnabled && (!supabaseClient || !cloudSignedIn)) return;
   profileLoadInProgress = true;
+  if (cloudEnabled) setCloudLoginMessage("Loading workout profile…");
   profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = true; });
   selectedProfile = profile;
   storageKey = `${PROFILE_STORAGE_PREFIX}${profile}`;
@@ -795,7 +796,7 @@ async function activateProfile(profile) {
     } catch (error) {
       selectedProfile = null;
       storageKey = "";
-      showNotice("Cloud data couldn't be loaded. Your device's saved data was left unchanged. Check your connection and try again.");
+      setCloudLoginMessage("Cloud data couldn't be loaded. Your saved device data was left unchanged. Check your connection and try again.");
       console.error("Cloud profile load failed:", error);
       profileLoadInProgress = false;
       profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = false; });
