@@ -101,6 +101,10 @@ body {
   font: 700 20px "Manrope", sans-serif;
 }
 
+.cloud-login-panel .welcome-prompt {
+  min-height: 2.8em;
+}
+
 .google-signin-button {
   display: flex;
   align-items: center;
