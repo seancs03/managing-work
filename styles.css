@@ -412,6 +412,9 @@ button {
 }
 
 .bail-meter h2 {
+  position: relative;
+  top: -42px;
+  white-space: nowrap;
   margin: 0;
   color: #ffffff;
   font: 700 12px/1.2 "Manrope", sans-serif;
@@ -1693,6 +1696,10 @@ body.intensity-theme .session-controls :focus-visible {
     top: 35px;
   }
 
+  .bail-meter h2 {
+    top: -31px;
+  }
+
   h1 {
     font-size: clamp(42px, 10vw, 55px);
   }
@@ -1763,6 +1770,10 @@ body.intensity-theme .session-controls :focus-visible {
 
   .bail-meter {
     top: 37px;
+  }
+
+  .bail-meter h2 {
+    top: -33px;
   }
 
   .storage-indicator {
