@@ -1330,19 +1330,22 @@ body.intensity-theme .session-controls :focus-visible {
 }
 
 .llp-reps-input {
-  width: 60px;
   min-width: 0;
-  margin: 0 0 0 7px;
-  padding: 0 6px;
+  margin: 0 0 0 3px;
+  padding: 0 2px;
 }
 
 .myo-reps-input {
   display: inline-block;
-  width: 34px;
   min-width: 0;
-  margin: 0 0 0 4px;
-  padding: 0 3px;
+  margin: 0 0 0 3px;
+  padding: 0 2px;
   vertical-align: middle;
+}
+
+.set-input.llp-reps-input,
+.set-input.myo-reps-input {
+  width: 30px;
 }
 
 .field-hint {
@@ -1910,12 +1913,6 @@ body.intensity-theme .session-controls :focus-visible {
     height: 34px;
     padding: 0 3px;
     font-size: 16px;
-  }
-
-  .myo-reps-input {
-    width: 32px;
-    margin-left: 3px;
-    padding: 0 2px;
   }
 
   .exercise-footer {
