@@ -284,7 +284,7 @@ function buildWorkoutProofPdf(sourceWorkout) {
         (set.llp ? (set.llpReps || "-") : "-").slice(0, 18),
         (set.myo ? (set.myoReps || "Yes") : "-").slice(0, 12),
       ];
-      values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x + (valueIndex === 0 ? 6 : 0), y, 10));
+      values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x, y, 10));
       y -= 18;
     });
     y -= 10;
