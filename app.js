@@ -1533,10 +1533,6 @@ startOverCompletedButton.addEventListener("click", () => {
   cancelStartOverButton.focus();
 });
 
-resumeCompletedDialog.addEventListener("close", () => {
-  workoutAction.focus();
-});
-
 finishWithoutProofButton.addEventListener("click", finishWorkout);
 
 finishWithProofButton.addEventListener("click", () => {
