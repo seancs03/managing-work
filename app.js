@@ -955,6 +955,38 @@ function findShadowSet(exercise, set) {
   return shadowExercise?.sets.find((item) => item.planId === set.planId) ?? null;
 }
 
+function restoreMissingShadowSets(targetWorkout, sourceWorkout) {
+  targetWorkout.exercises.forEach((targetExercise) => {
+    const sourceExercise = sourceWorkout.exercises.find((item) =>
+      item.planId === targetExercise.planId
+      || item.name.trim().toLocaleLowerCase() === targetExercise.name.trim().toLocaleLowerCase(),
+    );
+    if (!sourceExercise) return;
+
+    const existingSets = [...targetExercise.sets];
+    const usedSets = new Set();
+    targetExercise.sets = sourceExercise.sets.map((sourceSet) => {
+      const existingSet = existingSets.find((item) =>
+        !usedSets.has(item) && item.planId === sourceSet.planId,
+      );
+      if (existingSet) {
+        usedSets.add(existingSet);
+        return existingSet;
+      }
+      return {
+        id: makeId(),
+        planId: sourceSet.planId,
+        weight: "",
+        reps: "",
+        rpe: "",
+        llp: false,
+        llpReps: "",
+      };
+    });
+    targetExercise.sets.push(...existingSets.filter((item) => !usedSets.has(item)));
+  });
+}
+
 function getShadowSources(week = null) {
   return workouts.filter((item) => item.id !== workout?.id
     && item.templateId === workout?.templateId
@@ -1428,6 +1460,7 @@ shadowForm.addEventListener("submit", (event) => {
       && item.templateId === workout?.templateId,
   );
   if (!workout || !sourceWorkout) return;
+  restoreMissingShadowSets(workout, sourceWorkout);
   workout.shadowWorkoutId = sourceWorkout.id;
   shadowDialog.close();
   render();
