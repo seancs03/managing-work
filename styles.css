@@ -1162,17 +1162,14 @@ body.intensity-theme .session-controls :focus-visible {
 
 .llp-cell,
 .myo-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .llp-reps-input {
   width: 60px;
   min-width: 0;
-  flex: 0 1 60px;
-  margin: 0;
+  margin: 0 0 0 7px;
   padding: 0 6px;
 }
 
