@@ -8,7 +8,7 @@
     <title>SPIJKER TRACK — workout log</title>
     <link rel="stylesheet" href="styles.css?v=myo-set-checkbox">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=profile-load-feedback" defer></script>
+    <script src="app.js?v=profile-picker-load-feedback" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -31,6 +31,7 @@
             <button class="profile-choice" type="button" data-profile="sean">Sean</button>
             <button class="profile-choice" type="button" data-profile="kick">Kick</button>
           </div>
+          <p id="profile-choice-message" class="cloud-login-message" role="status" aria-live="polite"></p>
         </section>
       </div>
     </main>
