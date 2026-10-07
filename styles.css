@@ -539,6 +539,10 @@ button {
 
 .intro {
   padding: 46px 0 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .section-kicker {
@@ -1683,25 +1687,8 @@ body.intensity-theme .session-controls :focus-visible {
 
 @media (max-width: 760px) {
   .topbar {
-    height: auto;
-    min-height: 64px;
-    padding: 8px 24px;
-    flex-wrap: wrap;
-    row-gap: 8px;
-  }
-
-  .brand {
-    order: 1;
-  }
-
-  .topbar-actions {
-    order: 2;
-  }
-
-  .bail-meter {
-    width: 100%;
-    justify-items: center;
-    order: 3;
+    height: 64px;
+    padding: 0 24px;
   }
 
   .page-shell {
@@ -1769,6 +1756,16 @@ body.intensity-theme .session-controls :focus-visible {
 
   .topbar-actions {
     gap: 7px;
+  }
+
+  .intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bail-meter {
+    align-self: flex-end;
   }
 
   .storage-indicator {
