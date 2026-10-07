@@ -137,6 +137,11 @@ body {
   transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
 }
 
+.cloud-login-panel .google-signin-button {
+  width: min(100%, 320px);
+  margin: 8px auto 0;
+}
+
 .profile-choice:hover {
   transform: translateY(-2px);
   border-color: #ff263b;
