@@ -6,6 +6,7 @@ const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
 const cloudLoginPanel = document.getElementById("cloud-login-panel");
 const profileChoicePanel = document.getElementById("profile-choice-panel");
 const cloudLoginMessage = document.getElementById("cloud-login-message");
+const profileChoiceMessage = document.getElementById("profile-choice-message");
 const cloudLoginButton = document.getElementById("cloud-login-button");
 const cloudSignoutActiveButton = document.getElementById("cloud-signout-active-button");
 const localModeNote = document.getElementById("local-mode-note");
@@ -664,6 +665,7 @@ function showCloudProfilePicker(isSignedIn) {
   cloudLoginPanel.hidden = !cloudEnabled || isSignedIn;
   profileChoicePanel.hidden = cloudEnabled && !isSignedIn;
   cloudSignoutActiveButton.hidden = !cloudEnabled || !isSignedIn;
+  profileChoiceMessage.textContent = "";
 }
 
 async function initializeCloud() {
@@ -747,7 +749,7 @@ async function activateProfile(profile) {
   if (!["sean", "kick"].includes(profile) || profileLoadInProgress) return;
   if (cloudEnabled && (!supabaseClient || !cloudSignedIn)) return;
   profileLoadInProgress = true;
-  if (cloudEnabled) setCloudLoginMessage("Loading workout profile…");
+  if (cloudEnabled) profileChoiceMessage.textContent = "Loading workout profile…";
   profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = true; });
   selectedProfile = profile;
   storageKey = `${PROFILE_STORAGE_PREFIX}${profile}`;
@@ -796,7 +798,7 @@ async function activateProfile(profile) {
     } catch (error) {
       selectedProfile = null;
       storageKey = "";
-      setCloudLoginMessage("Cloud data couldn't be loaded. Your saved device data was left unchanged. Check your connection and try again.");
+      profileChoiceMessage.textContent = "Cloud data couldn't be loaded. Your saved device data was left unchanged. Check your connection and try again.";
       console.error("Cloud profile load failed:", error);
       profileLoadInProgress = false;
       profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = false; });
@@ -815,6 +817,7 @@ async function activateProfile(profile) {
   render();
   if (profileState.needsSave) saveWorkout();
   if (cloudEnabled) subscribeToCloudProfile(profile);
+  profileChoiceMessage.textContent = "";
   document.getElementById("announcements").textContent = `${activeProfileName.textContent}'s profile loaded.`;
   profileLoadInProgress = false;
   profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = false; });
