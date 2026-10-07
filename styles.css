@@ -714,6 +714,50 @@ h1 {
   white-space: nowrap;
 }
 
+.workout-action-timer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.workout-timer-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding-left: 3px;
+}
+
+.workout-timer-controls[hidden] {
+  display: none;
+}
+
+.workout-timer-display {
+  min-width: 52px;
+  color: var(--ink);
+  font: 700 13px "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.workout-timer-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.workout-timer-toggle:hover {
+  background: #eeeeee;
+  color: var(--ink);
+}
+
 .workout-action-button:disabled {
   background: #bdbdbd;
   cursor: not-allowed;
@@ -1644,6 +1688,11 @@ body.intensity-theme .session-controls :focus-visible {
   .session-controls {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .workout-start-controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .session-heading {

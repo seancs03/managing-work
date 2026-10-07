@@ -61,6 +61,9 @@ const workoutLayout = document.querySelector(".workout-layout");
 const sessionNotesSection = document.getElementById("session-notes");
 const sessionNoteInputs = Array.from(document.querySelectorAll("[data-session-note]"));
 const sessionStatusLabel = document.getElementById("session-status-label");
+const workoutTimerControls = document.getElementById("workout-timer-controls");
+const workoutTimerDisplay = document.getElementById("workout-timer-display");
+const workoutTimerToggle = document.getElementById("workout-timer-toggle");
 let storageKey = "";
 let supabaseClient = null;
 let cloudEnabled = false;
@@ -92,6 +95,8 @@ function createWorkout(title, templateId = makeId(), templateStartWeek = selecte
     title,
     week: selectedWeek,
     status: "planned",
+    timerElapsedMs: 0,
+    timerStartedAt: null,
     createdAt: new Date().toISOString(),
     startedAt: new Date().toISOString(),
     shadowWorkoutId: null,
@@ -110,6 +115,31 @@ function pdfSafeText(value) {
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\x20-\x7e]/g, "?");
+}
+
+function getWorkoutElapsedMs(sourceWorkout, now = Date.now()) {
+  const elapsed = Number.isFinite(sourceWorkout.timerElapsedMs)
+    ? Math.max(0, sourceWorkout.timerElapsedMs)
+    : 0;
+  if (!Number.isFinite(sourceWorkout.timerStartedAt)) return elapsed;
+  return elapsed + Math.max(0, now - sourceWorkout.timerStartedAt);
+}
+
+function formatWorkoutDuration(milliseconds) {
+  const totalSeconds = Math.floor(Math.max(0, milliseconds) / 1000);
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  const minutes = String(Math.floor(totalSeconds / 60) % 60).padStart(2, "0");
+  const hours = Math.floor(totalSeconds / 3600);
+  return hours > 0 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`;
+}
+
+function updateWorkoutTimerDisplay() {
+  if (!workout || workout.status !== "in-progress") return;
+  workoutTimerDisplay.textContent = formatWorkoutDuration(getWorkoutElapsedMs(workout));
+  const isRunning = Number.isFinite(workout.timerStartedAt);
+  workoutTimerToggle.textContent = isRunning ? "Ⅱ" : "▶";
+  workoutTimerToggle.setAttribute("aria-label", `${isRunning ? "Pause" : "Resume"} workout timer`);
+  workoutTimerToggle.title = `${isRunning ? "Pause" : "Resume"} timer`;
 }
 
 function buildWorkoutProofPdf(sourceWorkout) {
@@ -142,6 +172,11 @@ function buildWorkoutProofPdf(sourceWorkout) {
   addText(sourceWorkout.title || "Workout", margin, y, 20, true);
   y -= 22;
   addText(`Week ${sourceWorkout.week} | ${formatDate(sourceWorkout.startedAt)}`, margin, y, 10);
+  y -= 14;
+  const durationText = Number.isFinite(sourceWorkout.timerElapsedMs)
+    ? formatWorkoutDuration(getWorkoutElapsedMs(sourceWorkout))
+    : "Not recorded";
+  addText(`Workout duration: ${durationText}`, margin, y, 10);
   y -= 18;
   addRule(y);
   y -= 22;
@@ -256,6 +291,12 @@ function normalizeWorkout(source) {
     planCustomized: source.planCustomized === true,
     title: typeof source.title === "string" ? source.title.slice(0, 60) : "Workout",
     status: ["planned", "in-progress", "completed"].includes(source.status) ? source.status : "planned",
+    timerElapsedMs: Number.isFinite(source.timerElapsedMs) && source.timerElapsedMs >= 0
+      ? source.timerElapsedMs
+      : source.status === "in-progress" ? 0 : null,
+    timerStartedAt: Number.isFinite(source.timerStartedAt) && source.timerStartedAt >= 0
+      ? source.timerStartedAt
+      : source.status === "in-progress" ? Date.now() : null,
     week: Number.isInteger(source.week) && source.week >= 1 && source.week <= 12 ? source.week : 1,
     createdAt: typeof source.createdAt === "string" && !Number.isNaN(Date.parse(source.createdAt))
       ? source.createdAt
@@ -453,6 +494,8 @@ function loadWorkouts() {
       let needsSave = migratedLegacyStorage
         || workouts.length !== parsed.workouts.length
         || parsed.workouts.some((item) => !item.templateId
+          || !Object.prototype.hasOwnProperty.call(item, "timerElapsedMs")
+          || !Object.prototype.hasOwnProperty.call(item, "timerStartedAt")
           || !Array.isArray(item.exercises)
           || item.exercises.some((exercise) => !exercise?.planId
             || !Array.isArray(exercise.sets)
@@ -1266,6 +1309,8 @@ function render() {
   workoutAction.textContent = workout?.status === "in-progress"
     ? "Finish workout"
     : workout?.status === "completed" ? "Resume workout" : "Start workout";
+  workoutTimerControls.hidden = workout?.status !== "in-progress";
+  updateWorkoutTimerDisplay();
   startOverButton.hidden = !workout || workout.status === "planned";
   shadowButton.hidden = !workout;
   shadowButton.textContent = workout?.shadowWorkoutId ? "Remove shadow" : "Shadow";
@@ -1521,6 +1566,8 @@ sessionNotesSection.addEventListener("input", (event) => {
 function finishWorkout() {
   if (!workout) return;
   finishWorkoutDialog.close();
+  workout.timerElapsedMs = getWorkoutElapsedMs(workout);
+  workout.timerStartedAt = null;
   workout.status = "completed";
   document.getElementById("announcements").textContent = `${workout.title} finished.`;
   render();
@@ -1541,6 +1588,8 @@ workoutAction.addEventListener("click", () => {
   }
   workout.status = "in-progress";
   workout.startedAt = new Date().toISOString();
+  workout.timerElapsedMs = 0;
+  workout.timerStartedAt = Date.now();
   render();
   saveWorkout();
   const firstInput = findNextWorkoutInput();
@@ -1552,6 +1601,8 @@ resumeCompletedButton.addEventListener("click", () => {
   if (!workout) return;
   resumeCompletedDialog.close();
   workout.status = "in-progress";
+  workout.timerElapsedMs = Number.isFinite(workout.timerElapsedMs) ? workout.timerElapsedMs : 0;
+  workout.timerStartedAt = Date.now();
   render();
   saveWorkout();
   const firstInput = findNextWorkoutInput();
@@ -1611,10 +1662,24 @@ confirmStartOverButton.addEventListener("click", () => {
   });
   workout.status = "planned";
   workout.startedAt = new Date().toISOString();
+  workout.timerElapsedMs = 0;
+  workout.timerStartedAt = null;
   render();
   saveWorkout();
   document.getElementById("announcements").textContent = `${workout.title} reset.`;
   workoutAction.focus();
+});
+
+workoutTimerToggle.addEventListener("click", () => {
+  if (!workout || workout.status !== "in-progress") return;
+  if (Number.isFinite(workout.timerStartedAt)) {
+    workout.timerElapsedMs = getWorkoutElapsedMs(workout);
+    workout.timerStartedAt = null;
+  } else {
+    workout.timerStartedAt = Date.now();
+  }
+  updateWorkoutTimerDisplay();
+  saveWorkout();
 });
 
 addExerciseForm.addEventListener("submit", (event) => {
@@ -1910,4 +1975,5 @@ window.addEventListener("online", () => {
   if (cloudEnabled && selectedProfile) scheduleCloudSave();
 });
 
+window.setInterval(updateWorkoutTimerDisplay, 1000);
 initializeCloud();

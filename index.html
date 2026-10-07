@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=welcome-attribution-layout">
+    <link rel="stylesheet" href="styles.css?v=workout-duration-timer">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=cloud-data-default" defer></script>
+    <script src="app.js?v=workout-duration-timer" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -172,7 +172,13 @@
               <div class="workout-start-controls">
                 <button id="start-over-button" class="start-over-button" type="button" hidden>Start over</button>
                 <button id="shadow-button" class="start-over-button" type="button" hidden>Shadow</button>
-                <button id="workout-action" class="workout-action-button" type="button" disabled>Start workout</button>
+                <div class="workout-action-timer">
+                  <button id="workout-action" class="workout-action-button" type="button" disabled>Start workout</button>
+                  <div id="workout-timer-controls" class="workout-timer-controls" hidden>
+                    <span id="workout-timer-display" class="workout-timer-display" role="timer" aria-label="Workout duration">00:00</span>
+                    <button id="workout-timer-toggle" class="workout-timer-toggle" type="button" aria-label="Pause workout timer" title="Pause timer">Ⅱ</button>
+                  </div>
+                </div>
               </div>
             </div>
             <button id="delete-workout-day-button" class="icon-button delete-workout-day-button" type="button" aria-label="Delete workout day" title="Delete this workout day" hidden>×</button>
