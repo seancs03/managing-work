@@ -1577,7 +1577,9 @@ body.intensity-theme .session-controls :focus-visible {
   }
 
   .storage-indicator .saved-label {
-    display: none;
+    display: inline;
+    font-size: 8px;
+    white-space: nowrap;
   }
 
   .switch-profile-button {
