@@ -747,6 +747,8 @@ h1 {
   padding: 0;
   display: grid;
   place-items: center;
+  appearance: none;
+  -webkit-appearance: none;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -770,6 +772,12 @@ h1 {
 .workout-timer-toggle.is-paused::before {
   background: currentColor;
   clip-path: polygon(15% 0, 100% 50%, 15% 100%);
+}
+
+.workout-timer-toggle:hover,
+.workout-timer-toggle:active {
+  background: transparent;
+  color: var(--muted);
 }
 
 .workout-action-button:disabled {
