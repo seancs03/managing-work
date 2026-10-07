@@ -11,10 +11,6 @@ const cloudLoginButton = document.getElementById("cloud-login-button");
 const cloudSignoutActiveButton = document.getElementById("cloud-signout-active-button");
 const localModeNote = document.getElementById("local-mode-note");
 const storageModeLabel = document.getElementById("storage-mode-label");
-const cloudConflictDialog = document.getElementById("cloud-conflict-dialog");
-const cancelCloudConflictButton = document.getElementById("cancel-cloud-conflict-button");
-const useCloudDataButton = document.getElementById("use-cloud-data-button");
-const uploadLocalDataButton = document.getElementById("upload-local-data-button");
 const welcomeScreen = document.getElementById("welcome-screen");
 const appShell = document.getElementById("app-shell");
 const activeProfileName = document.getElementById("active-profile-name");
@@ -74,7 +70,6 @@ let pendingCloudState = null;
 let cloudSaveTimer = null;
 let cloudSaveInFlight = false;
 let cloudSaveQueued = false;
-let cloudConflictResolution = null;
 let profileLoadInProgress = false;
 let pendingBailExerciseId = null;
 let pendingDeleteExerciseId = null;
@@ -738,13 +733,6 @@ async function authorizeGoogleMember(user) {
   }
 }
 
-async function resolveCloudConflict() {
-  return new Promise((resolve) => {
-    cloudConflictResolution = resolve;
-    cloudConflictDialog.showModal();
-  });
-}
-
 async function activateProfile(profile) {
   if (!["sean", "kick"].includes(profile) || profileLoadInProgress) return;
   if (cloudEnabled && (!supabaseClient || !cloudSignedIn)) return;
@@ -772,26 +760,8 @@ async function activateProfile(profile) {
       };
       const hasLocalData = profileState.workouts.length > 0;
       if (data?.state) {
-        const localDiffers = stableSerialize(localState) !== stableSerialize(data.state);
-        if (hasLocalData && localDiffers) {
-          const choice = await resolveCloudConflict();
-          if (choice === "cancel") {
-            selectedProfile = null;
-            storageKey = "";
-            profileLoadInProgress = false;
-            profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = false; });
-            return;
-          }
-          if (choice === "local") {
-            await writeCloudState(profile, localState);
-          } else {
-            localStorage.setItem(storageKey, JSON.stringify(data.state));
-            profileState = loadWorkouts();
-          }
-        } else {
-          localStorage.setItem(storageKey, JSON.stringify(data.state));
-          profileState = loadWorkouts();
-        }
+        localStorage.setItem(storageKey, JSON.stringify(data.state));
+        profileState = loadWorkouts();
       } else {
         if (hasLocalData) await writeCloudState(profile, localState);
       }
@@ -1934,19 +1904,6 @@ async function signOutOfCloud() {
 }
 
 cloudSignoutActiveButton.addEventListener("click", signOutOfCloud);
-
-function settleCloudConflict(choice) {
-  if (!cloudConflictResolution) return;
-  const resolve = cloudConflictResolution;
-  cloudConflictResolution = null;
-  cloudConflictDialog.close();
-  resolve(choice);
-}
-
-cancelCloudConflictButton.addEventListener("click", () => settleCloudConflict("cancel"));
-useCloudDataButton.addEventListener("click", () => settleCloudConflict("cloud"));
-uploadLocalDataButton.addEventListener("click", () => settleCloudConflict("local"));
-cloudConflictDialog.addEventListener("cancel", () => settleCloudConflict("cancel"));
 
 document.addEventListener("focusout", () => window.setTimeout(applyPendingCloudState, 0));
 window.addEventListener("online", () => {

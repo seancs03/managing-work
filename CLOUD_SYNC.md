@@ -38,11 +38,11 @@ The app can sync Sean and Kick's workout profiles between phones using Supabase.
 
    The anon/public key is designed to be included in a client app; access is restricted by the SQL row-level security policies. **Never put a service-role or secret key in this repository.**
 
-7. Publish the updated site and `cloud-config.js`. Both people sign in with their own Google account on their phone, then select Sean or Kick. Edits sync to the cloud and the other open device receives updates in real time. If both cloud and that device already have data for a profile, the app asks whether to use the cloud copy or replace it with that device's copy.
+7. Publish the updated site and `cloud-config.js`. Both people sign in with their own Google account on their phone, then select Sean or Kick. Edits sync to the cloud and the other open device receives updates in real time. When a cloud copy exists, it is authoritative and replaces that device's local copy automatically. If no cloud copy exists yet, the device's local data is uploaded.
 
 ## Notes
 
-- Initial migration uploads a device's local profile when no cloud copy exists. If a cloud copy already exists and local data differs, the choice dialog prevents accidental overwrite; it does not merge two different workout histories.
+- Initial migration uploads a device's local profile when no cloud copy exists. If a cloud copy already exists, selecting the profile replaces differing local data with the cloud copy; local-only changes on that device are not merged and will be lost.
 - When the network is unavailable, changes continue to save locally. They are sent to Supabase after connectivity returns or the next workout edit. Until the status says **Cloud synced**, those changes should be treated as device-only.
 - If both phones edit the same profile at the same time, the most recently saved full profile replaces the earlier version. Avoid simultaneous editing of the same profile.
 - Any of the two authorized accounts can view and edit both Sean and Kick profiles. Removing a person means deleting their row from `workout_sync_members` in the Supabase SQL Editor.
