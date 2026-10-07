@@ -559,7 +559,7 @@ async function saveCloudState() {
   storageModeLabel.textContent = "Syncing…";
   try {
     await writeCloudState(profile, state);
-    if (selectedProfile === profile) storageModeLabel.textContent = "Cloud synced";
+    if (selectedProfile === profile) storageModeLabel.textContent = "";
   } catch (error) {
     const message = "Cloud sync failed. Your latest changes are saved on this device and will retry after the next edit.";
     if (selectedProfile === profile) {
@@ -588,7 +588,7 @@ function applyCloudState(state) {
     selectedWeek = profileState.selectedWeek;
     workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
     render();
-    storageModeLabel.textContent = "Cloud synced";
+    storageModeLabel.textContent = "";
     document.getElementById("announcements").textContent = "Workout changes from the other device were loaded.";
   } catch (error) {
     showNotice("A cloud update arrived but couldn't be applied on this device. Your current workout remains visible.");
@@ -630,7 +630,7 @@ function subscribeToCloudProfile(profile) {
     })
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
-        storageModeLabel.textContent = "Cloud synced";
+        storageModeLabel.textContent = "";
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
         storageModeLabel.textContent = "Cloud reconnecting";
       }
@@ -790,7 +790,7 @@ async function activateProfile(profile) {
   selectedWeek = profileState.selectedWeek;
   workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
   activeProfileName.textContent = profile === "sean" ? "Sean" : "Kick";
-  storageModeLabel.textContent = cloudEnabled ? "Cloud synced" : "Saved for";
+  storageModeLabel.textContent = cloudEnabled ? "" : "Saved for";
   cloudSignoutActiveButton.hidden = !cloudEnabled;
   welcomeScreen.hidden = true;
   appShell.hidden = false;
