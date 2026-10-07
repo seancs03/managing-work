@@ -315,6 +315,10 @@ body.intensity-theme .llp-checkbox {
   accent-color: #ed1429;
 }
 
+body.intensity-theme .myo-checkbox {
+  accent-color: #ed1429;
+}
+
 body.intensity-theme .set-input[aria-invalid="true"] {
   border-color: #ff5261;
   background: #301416;
@@ -990,9 +994,15 @@ h1 {
   padding-left: 0;
 }
 
+.sets-table th:nth-last-child(3),
+.sets-table td:nth-last-child(3) {
+  width: 112px;
+  text-align: center;
+}
+
 .sets-table th:nth-last-child(2),
 .sets-table td:nth-last-child(2) {
-  width: 112px;
+  width: 48px;
   text-align: center;
 }
 
@@ -1135,12 +1145,23 @@ body.intensity-theme .session-controls :focus-visible {
   vertical-align: middle;
 }
 
-.llp-checkbox:focus-visible {
+.myo-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.llp-checkbox:focus-visible,
+.myo-checkbox:focus-visible {
   outline: 2px solid #111111;
   outline-offset: 3px;
 }
 
-.llp-cell {
+.llp-cell,
+.myo-cell {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1656,6 +1677,11 @@ body.intensity-theme .session-controls :focus-visible {
 
   .sets-table th:nth-last-child(2),
   .sets-table td:nth-last-child(2) {
+    width: 42px;
+  }
+
+  .sets-table th:nth-last-child(3),
+  .sets-table td:nth-last-child(3) {
     width: 100px;
   }
 
