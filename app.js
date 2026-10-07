@@ -673,7 +673,7 @@ async function initializeCloud() {
       await authorizeGoogleMember(data.session.user);
     } else {
       showCloudProfilePicker(false);
-      setCloudLoginMessage("Sign in with one of the Google accounts authorized for this workout space.");
+      setCloudLoginMessage("");
     }
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
@@ -693,7 +693,7 @@ async function initializeCloud() {
 async function authorizeGoogleMember(user) {
   if (!user?.id) {
     showCloudProfilePicker(false);
-    setCloudLoginMessage("Sign in with one of the Google accounts authorized for this workout space.");
+    setCloudLoginMessage("");
     return;
   }
   setCloudLoginMessage("Checking access…");
