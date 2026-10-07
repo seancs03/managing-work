@@ -402,6 +402,86 @@ button {
   height: 10px;
 }
 
+.bail-meter {
+  display: grid;
+  gap: 3px;
+  color: var(--ink);
+}
+
+.bail-meter h2 {
+  margin: 0;
+  font: 700 10px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.bail-meter-content {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.bail-meter-counts {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.bail-meter-count {
+  display: grid;
+  grid-template-columns: 36px 20px;
+  gap: 3px;
+}
+
+.bail-meter-count dt,
+.bail-meter-count dd {
+  margin: 0;
+}
+
+.bail-meter-count dd {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.bail-meter-count--sean dt,
+.bail-meter-count--sean dd {
+  color: #d9364b;
+}
+
+.bail-meter-count--kick dt,
+.bail-meter-count--kick dd {
+  color: #168c82;
+}
+
+.bail-meter-chart {
+  height: 53px;
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  border-bottom: 1px solid #b9b9b9;
+}
+
+.bail-meter-bar {
+  width: 12px;
+  height: 0;
+  flex: 0 0 12px;
+  border-radius: 4px 4px 0 0;
+  transition: height 220ms ease;
+}
+
+.bail-meter-bar--sean {
+  background: linear-gradient(180deg, #f06b7a, #c52d42);
+}
+
+.bail-meter-bar--kick {
+  background: linear-gradient(180deg, #57c5b8, #168c82);
+}
+
+.bail-meter-bar.is-stale {
+  opacity: 0.55;
+}
+
 .storage-indicator {
   display: flex;
   align-items: center;
@@ -1603,8 +1683,25 @@ body.intensity-theme .session-controls :focus-visible {
 
 @media (max-width: 760px) {
   .topbar {
-    height: 64px;
-    padding: 0 24px;
+    height: auto;
+    min-height: 64px;
+    padding: 8px 24px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .brand {
+    order: 1;
+  }
+
+  .topbar-actions {
+    order: 2;
+  }
+
+  .bail-meter {
+    width: 100%;
+    justify-items: center;
+    order: 3;
   }
 
   .page-shell {

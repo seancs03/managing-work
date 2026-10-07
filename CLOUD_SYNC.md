@@ -45,4 +45,5 @@ The app can sync Sean and Kick's workout profiles between phones using Supabase.
 - Initial migration uploads a device's local profile when no cloud copy exists. If a cloud copy already exists, selecting the profile replaces differing local data with the cloud copy; local-only changes on that device are not merged and will be lost.
 - When the network is unavailable, changes continue to save locally. They are sent to Supabase after connectivity returns or the next workout edit. Until the status says **Cloud synced**, those changes should be treated as device-only.
 - If both phones edit the same profile at the same time, the most recently saved full profile replaces the earlier version. Avoid simultaneous editing of the same profile.
+- The top-bar Live BAIL meter totals bailed exercises across every saved workout for Sean and Kick and updates from cloud changes in real time. In local-only mode, the other profile's count is unavailable.
 - Any of the two authorized accounts can view and edit both Sean and Kick profiles. Removing a person means deleting their row from `workout_sync_members` in the Supabase SQL Editor.
