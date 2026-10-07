@@ -1051,7 +1051,7 @@ function makeInput(exercise, set, field, setNumber) {
   input.disabled = exercise.bailed === true;
   const shadowSet = findShadowSet(exercise, set);
   const shadowValue = shadowSet?.[field] == null ? "" : String(shadowSet[field]).trim();
-  if (set[field] === "" && shadowValue !== "") {
+  if (shadowValue !== "") {
     input.placeholder = shadowValue;
     input.title = `Shadow value: ${shadowValue}`;
   }
