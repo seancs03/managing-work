@@ -475,7 +475,7 @@ button {
 }
 
 .bail-meter-bar.is-stale {
-  opacity: 0.55;
+  background: #ffffff;
 }
 
 .storage-indicator {
