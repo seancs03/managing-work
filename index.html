@@ -8,7 +8,7 @@
     <title>SPIJKER TRACK — workout log</title>
     <link rel="stylesheet" href="styles.css?v=myo-set-checkbox">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=profile-picker-load-feedback" defer></script>
+    <script src="app.js?v=profile-conflict-dialog-visible" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -36,6 +36,19 @@
       </div>
     </main>
 
+    <dialog id="cloud-conflict-dialog" class="shadow-dialog" aria-labelledby="cloud-conflict-title">
+      <div class="shadow-form">
+        <h2 id="cloud-conflict-title">Choose which workout data to use</h2>
+        <p class="shadow-description">This device and the cloud both have saved workouts for this profile. Choose which copy to keep: replacing cloud data overwrites the cloud copy, while using cloud data replaces this device's copy. They will not be merged.</p>
+        <div class="shadow-dialog-actions">
+          <button id="cancel-cloud-conflict-button" class="start-over-button" type="button">Cancel</button>
+          <span class="shadow-dialog-spacer"></span>
+          <button id="use-cloud-data-button" class="start-over-button" type="button">Use cloud data</button>
+          <button id="upload-local-data-button" class="workout-action-button" type="button">Replace cloud with this device</button>
+        </div>
+      </div>
+    </dialog>
+
     <div id="app-shell" hidden>
       <header class="topbar">
         <a class="brand" href="./" aria-label="SPIJKER TRACK workout log home">
@@ -59,19 +72,6 @@
       </section>
 
       <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
-      <dialog id="cloud-conflict-dialog" class="shadow-dialog" aria-labelledby="cloud-conflict-title">
-        <div class="shadow-form">
-          <h2 id="cloud-conflict-title">Choose which workout data to use</h2>
-          <p class="shadow-description">This device and the cloud both have saved workouts for this profile. Choose which copy to keep: replacing cloud data overwrites the cloud copy, while using cloud data replaces this device's copy. They will not be merged.</p>
-          <div class="shadow-dialog-actions">
-            <button id="cancel-cloud-conflict-button" class="start-over-button" type="button">Cancel</button>
-            <span class="shadow-dialog-spacer"></span>
-            <button id="use-cloud-data-button" class="start-over-button" type="button">Use cloud data</button>
-            <button id="upload-local-data-button" class="workout-action-button" type="button">Replace cloud with this device</button>
-          </div>
-        </div>
-      </dialog>
-
       <section class="workout-planner" aria-labelledby="workouts-heading">
         <div class="workout-planner-heading">
           <div>
