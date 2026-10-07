@@ -125,7 +125,7 @@ function renderBailMeter() {
   }
   bailMeterSection.setAttribute(
     "aria-label",
-    `Live BAIL meter, total bailed exercises across saved workouts. Sean: ${bailMeterAvailable.sean ? bailMeterValues.sean : "unavailable"}. Kick: ${bailMeterAvailable.kick ? bailMeterValues.kick : "unavailable"}.`,
+    `BAIL meter, total bailed exercises across saved workouts. Sean: ${bailMeterAvailable.sean ? bailMeterValues.sean : "unavailable"}. Kick: ${bailMeterAvailable.kick ? bailMeterValues.kick : "unavailable"}.`,
   );
 }
 
