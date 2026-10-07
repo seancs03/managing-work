@@ -67,6 +67,8 @@ const myoNotesForm = document.getElementById("myo-notes-form");
 const myoNotesRows = document.getElementById("myo-notes-rows");
 const myoNotesTitle = document.getElementById("myo-notes-title");
 const cancelMyoNotesButton = document.getElementById("cancel-myo-notes-button");
+const editMyoNotesButton = document.getElementById("edit-myo-notes-button");
+const confirmMyoNotesButton = document.getElementById("confirm-myo-notes-button");
 const deleteExerciseDialog = document.getElementById("delete-exercise-dialog");
 const deleteExerciseDialogTitle = document.getElementById("delete-exercise-dialog-title");
 const cancelDeleteExerciseButton = document.getElementById("cancel-delete-exercise-button");
@@ -1118,7 +1120,14 @@ function updateMyoNotesButton(cell, exercise, set, setNumber) {
   if (!existingButton) cell.append(notesButton);
 }
 
-function openMyoNotesDialog(exercise, set, trigger) {
+function setMyoNotesViewing(viewing) {
+  if (pendingMyoNotes) pendingMyoNotes.viewing = viewing;
+  myoNotesRows.querySelectorAll("input").forEach((input) => { input.readOnly = viewing; });
+  editMyoNotesButton.hidden = !viewing;
+  confirmMyoNotesButton.hidden = viewing;
+}
+
+function openMyoNotesDialog(exercise, set, trigger, viewing = false) {
   if (myoNotesDialog.open) return;
   const shadowSet = findShadowSet(exercise, set);
   const ownNotes = Array.isArray(set.myoNotes) ? set.myoNotes : [];
@@ -1157,8 +1166,9 @@ function openMyoNotesDialog(exercise, set, trigger) {
     row.append(label, input);
     myoNotesRows.append(row);
   }
+  setMyoNotesViewing(viewing);
   myoNotesDialog.showModal();
-  myoNotesRows.querySelector("input")?.focus();
+  (viewing ? editMyoNotesButton : myoNotesRows.querySelector("input"))?.focus();
 }
 
 function getFieldError(field, value) {
@@ -2106,7 +2116,7 @@ exerciseList.addEventListener("click", (event) => {
   if (!exercise) return;
   if (button.dataset.action === "myo-notes") {
     const set = exercise.sets.find((item) => item.id === button.dataset.setId);
-    if (set) openMyoNotesDialog(exercise, set, button);
+    if (set) openMyoNotesDialog(exercise, set, button, true);
     return;
   }
   if (button.dataset.action === "bail-exercise") {
@@ -2251,7 +2261,7 @@ bailDialog.addEventListener("close", () => {
 
 myoNotesForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  if (!pendingMyoNotes) return;
+  if (!pendingMyoNotes || pendingMyoNotes.viewing) return;
   const { exerciseId, setId, count } = pendingMyoNotes;
   const exercise = workout?.exercises.find((item) => item.id === exerciseId);
   const set = exercise?.sets.find((item) => item.id === setId);
@@ -2271,6 +2281,11 @@ myoNotesForm.addEventListener("submit", (event) => {
   exerciseList.querySelector(
     `[data-action="myo-notes"][data-exercise-id="${exercise.id}"][data-set-id="${set.id}"]`,
   )?.focus();
+});
+
+editMyoNotesButton.addEventListener("click", () => {
+  setMyoNotesViewing(false);
+  myoNotesRows.querySelector("input")?.focus();
 });
 
 cancelMyoNotesButton.addEventListener("click", () => {
