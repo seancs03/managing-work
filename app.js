@@ -1255,6 +1255,7 @@ function renderSetRow(exercise, set, index) {
 
   const llpCell = document.createElement("td");
   llpCell.className = "llp-cell";
+  const shadowSet = findShadowSet(exercise, set);
   const llpCheckbox = document.createElement("input");
   llpCheckbox.className = "llp-checkbox";
   llpCheckbox.type = "checkbox";
@@ -1264,8 +1265,9 @@ function renderSetRow(exercise, set, index) {
   llpCheckbox.dataset.setId = set.id;
   llpCheckbox.dataset.llp = "true";
   llpCheckbox.setAttribute("aria-label", `Long-length partials for set ${setNumber} of ${exercise.name}`);
+  if (shadowSet?.llp) llpCheckbox.title = "Long-length partials are included in the shadow workout";
   llpCell.append(llpCheckbox);
-  if (set.llp) {
+  if (set.llp || shadowSet?.llp) {
     appendLlpRepsInput(llpCell, exercise, set, setNumber);
   }
   row.append(llpCell);
@@ -1281,8 +1283,9 @@ function renderSetRow(exercise, set, index) {
   myoCheckbox.dataset.setId = set.id;
   myoCheckbox.dataset.myo = "true";
   myoCheckbox.setAttribute("aria-label", `Myo reps for set ${setNumber} of ${exercise.name}`);
+  if (shadowSet?.myo) myoCheckbox.title = "Myo reps are included in the shadow workout";
   myoCell.append(myoCheckbox);
-  if (set.myo) appendMyoRepsInput(myoCell, exercise, set, setNumber);
+  if (set.myo || shadowSet?.myo) appendMyoRepsInput(myoCell, exercise, set, setNumber);
   row.append(myoCell);
   return row;
 }
@@ -1842,6 +1845,13 @@ exerciseList.addEventListener("input", (event) => {
     const set = exercise?.sets.find((item) => item.id === input.dataset.setId);
     if (!set) return;
     set[input.dataset.field] = input.value;
+    if (input.dataset.field === "llpReps" && input.value.trim() !== "") {
+      set.llp = true;
+      input.closest(".llp-cell").querySelector("[data-llp]").checked = true;
+    } else if (input.dataset.field === "myoReps" && input.value.trim() !== "") {
+      set.myo = true;
+      input.closest(".myo-cell").querySelector("[data-myo]").checked = true;
+    }
     updateInputValidity(input);
     updateExerciseProgress();
     saveWorkout();
@@ -1911,6 +1921,8 @@ exerciseList.addEventListener("change", (event) => {
     if (set.myo && !numberField) {
       appendMyoRepsInput(cell, exercise, set, setIndex + 1);
       cell.querySelector("input[data-field='myoReps']").focus();
+    } else if (set.myo && numberField) {
+      numberField.focus();
     } else if (!set.myo && numberField) {
       numberField.remove();
       checkbox.focus();
@@ -1925,6 +1937,8 @@ exerciseList.addEventListener("change", (event) => {
   if (set.llp && !numberField) {
     appendLlpRepsInput(cell, exercise, set, setIndex + 1);
     cell.querySelector("input[data-field='llpReps']").focus();
+  } else if (set.llp && numberField) {
+    numberField.focus();
   } else if (!set.llp && numberField) {
     numberField.remove();
     checkbox.focus();
