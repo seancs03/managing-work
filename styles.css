@@ -34,7 +34,9 @@ body {
 }
 
 .welcome-screen {
+  position: relative;
   min-height: 100vh;
+  min-height: 100svh;
   padding: 28px;
   display: grid;
   place-items: center;
@@ -135,7 +137,10 @@ body {
 }
 
 .cloud-signout-button {
-  margin-top: 48px;
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+  left: 50%;
+  margin: 0;
   padding: 8px 14px;
   border: 1px solid #555;
   border-radius: 7px;
@@ -143,6 +148,7 @@ body {
   color: #ddd;
   cursor: pointer;
   font: inherit;
+  transform: translateX(-50%);
 }
 
 .profile-choice {
