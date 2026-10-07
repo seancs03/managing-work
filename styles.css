@@ -80,6 +80,16 @@ body {
   margin: 28px auto 0;
 }
 
+.cloud-login-panel {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.cloud-login-panel[hidden] {
+  display: none;
+}
+
 .cloud-login-panel h2 {
   margin-bottom: 8px;
   font: 700 20px "Manrope", sans-serif;
