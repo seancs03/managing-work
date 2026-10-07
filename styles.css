@@ -1168,7 +1168,7 @@ h1 {
 
 .sets-table th:last-child,
 .sets-table td:last-child {
-  width: 66px;
+  width: 80px;
   text-align: center;
 }
 
@@ -1346,6 +1346,64 @@ body.intensity-theme .session-controls :focus-visible {
 .set-input.llp-reps-input,
 .set-input.myo-reps-input {
   width: 30px;
+}
+
+.myo-notes-button {
+  width: 13px;
+  height: 18px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 700 11px "Manrope", sans-serif;
+  line-height: 18px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.myo-notes-button:focus-visible {
+  outline: 2px solid #111111;
+  outline-offset: 1px;
+}
+
+body.intensity-theme .myo-notes-button:focus-visible {
+  outline-color: #ff3345;
+}
+
+.myo-notes-dialog {
+  max-height: min(80vh, 720px);
+}
+
+.myo-notes-rows {
+  display: grid;
+  gap: 7px;
+  max-height: min(56vh, 480px);
+  overflow-y: auto;
+}
+
+.myo-note-row {
+  display: grid;
+  grid-template-columns: minmax(75px, 1fr) minmax(90px, 140px);
+  align-items: center;
+  gap: 12px;
+}
+
+.myo-note-row label {
+  color: #dddddd;
+}
+
+.myo-note-row input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 9px;
+  border: 1px solid #493033;
+  border-radius: 7px;
+  background: #1d1b1b;
+  color: #ffffff;
+  font: inherit;
 }
 
 .field-hint {
@@ -1899,7 +1957,7 @@ body.intensity-theme .session-controls :focus-visible {
 
   .sets-table th:last-child,
   .sets-table td:last-child {
-    width: 58px;
+    width: 74px;
   }
 
   .sets-table td {
