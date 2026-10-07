@@ -74,6 +74,57 @@ body {
   gap: 12px;
 }
 
+.cloud-login-panel,
+#profile-choice-panel {
+  width: min(100%, 360px);
+  margin: 28px auto 0;
+}
+
+.cloud-login-panel h2 {
+  margin-bottom: 8px;
+  font: 700 20px "Manrope", sans-serif;
+}
+
+.google-signin-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+  border-color: #555;
+  background: #fff;
+  color: #222;
+}
+
+.google-signin-button:hover {
+  border-color: #aaa;
+  background: #f2f2f2;
+}
+
+.google-mark {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.cloud-login-message {
+  min-height: 1.5em;
+  color: #ff9aa4;
+  font-size: 13px;
+}
+
+.cloud-signout-button {
+  margin-top: 20px;
+  padding: 8px 14px;
+  border: 1px solid #555;
+  border-radius: 7px;
+  background: transparent;
+  color: #ddd;
+  cursor: pointer;
+  font: inherit;
+}
+
 .profile-choice {
   width: min(44vw, 170px);
   min-height: 54px;
