@@ -772,11 +772,6 @@ h1 {
   clip-path: polygon(15% 0, 100% 50%, 15% 100%);
 }
 
-.workout-timer-toggle:hover {
-  background: #eeeeee;
-  color: var(--ink);
-}
-
 .workout-action-button:disabled {
   background: #bdbdbd;
   cursor: not-allowed;
