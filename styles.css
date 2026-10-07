@@ -102,7 +102,14 @@ body {
 }
 
 .cloud-login-panel .welcome-prompt {
-  min-height: 2.8em;
+  margin-bottom: 4px;
+}
+
+.welcome-attribution {
+  margin: 0 0 22px;
+  color: #c3c3c3;
+  font-size: 14px;
+  letter-spacing: 0.08em;
 }
 
 .google-signin-button {
