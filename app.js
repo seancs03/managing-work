@@ -14,6 +14,15 @@ const storageModeLabel = document.getElementById("storage-mode-label");
 const welcomeScreen = document.getElementById("welcome-screen");
 const appShell = document.getElementById("app-shell");
 const activeProfileName = document.getElementById("active-profile-name");
+const bailMeterSection = document.getElementById("bail-meter");
+const bailMeterCounts = {
+  sean: document.getElementById("bail-count-sean"),
+  kick: document.getElementById("bail-count-kick"),
+};
+const bailMeterBars = {
+  sean: document.getElementById("bail-bar-sean"),
+  kick: document.getElementById("bail-bar-kick"),
+};
 const switchProfileButton = document.getElementById("switch-profile-button");
 const exerciseList = document.getElementById("exercise-list");
 const workoutTitle = document.getElementById("workout-title");
@@ -69,6 +78,9 @@ let supabaseClient = null;
 let cloudEnabled = false;
 let cloudSignedIn = false;
 let activeCloudSubscription = null;
+let bailMeterSubscriptions = [];
+const bailMeterValues = { sean: 0, kick: 0 };
+const bailMeterAvailable = { sean: false, kick: false };
 let pendingCloudState = null;
 let cloudSaveTimer = null;
 let cloudSaveInFlight = false;
@@ -84,6 +96,63 @@ function makeId() {
     return globalThis.crypto.randomUUID();
   }
   return `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function countBailedExercises(state) {
+  if (!Array.isArray(state?.workouts)) return 0;
+  return state.workouts.reduce((total, item) => (
+    total + (Array.isArray(item?.exercises)
+      ? item.exercises.filter((exercise) => exercise?.bailed === true).length
+      : 0)
+  ), 0);
+}
+
+function renderBailMeter() {
+  const maxCount = Math.max(bailMeterValues.sean, bailMeterValues.kick);
+  for (const profile of ["sean", "kick"]) {
+    const value = bailMeterValues[profile];
+    const available = bailMeterAvailable[profile];
+    const countText = available ? String(value) : "—";
+    if (bailMeterCounts[profile].textContent !== countText) {
+      bailMeterCounts[profile].textContent = countText;
+    }
+    bailMeterBars[profile].style.height = available && maxCount > 0 && value > 0
+      ? `${(value / maxCount) * 48}px`
+      : "0px";
+    bailMeterBars[profile].title = available
+      ? `${profile === "sean" ? "Sean" : "Kick"}: ${value} bailed exercises`
+      : `${profile === "sean" ? "Sean" : "Kick"}'s count is unavailable`;
+  }
+  bailMeterSection.setAttribute(
+    "aria-label",
+    `Live BAIL meter, total bailed exercises across saved workouts. Sean: ${bailMeterAvailable.sean ? bailMeterValues.sean : "unavailable"}. Kick: ${bailMeterAvailable.kick ? bailMeterValues.kick : "unavailable"}.`,
+  );
+}
+
+function resetBailMeter(profileAvailability = false) {
+  bailMeterValues.sean = 0;
+  bailMeterValues.kick = 0;
+  bailMeterAvailable.sean = profileAvailability;
+  bailMeterAvailable.kick = profileAvailability;
+  renderBailMeter();
+}
+
+function updateBailMeterFromCloud(profile, state, profileExists = true) {
+  if (!profileExists) {
+    bailMeterValues[profile] = 0;
+    bailMeterAvailable[profile] = true;
+    renderBailMeter();
+    return;
+  }
+  if (!Array.isArray(state?.workouts)) {
+    bailMeterValues[profile] = 0;
+    bailMeterAvailable[profile] = false;
+    renderBailMeter();
+    return;
+  }
+  bailMeterValues[profile] = countBailedExercises(state);
+  bailMeterAvailable[profile] = true;
+  renderBailMeter();
 }
 
 function createWorkout(title, templateId = makeId(), templateStartWeek = selectedWeek) {
@@ -666,6 +735,8 @@ function applyPendingCloudState() {
 
 function subscribeToCloudProfile(profile) {
   if (activeCloudSubscription) supabaseClient.removeChannel(activeCloudSubscription);
+  bailMeterSubscriptions.forEach((subscription) => supabaseClient.removeChannel(subscription));
+  bailMeterSubscriptions = [];
   activeCloudSubscription = supabaseClient
     .channel(`workout-profile-${profile}`)
     .on("postgres_changes", {
@@ -674,7 +745,12 @@ function subscribeToCloudProfile(profile) {
       table: "workout_profiles",
       filter: `profile_id=eq.${profile}`,
     }, (payload) => {
-      if (payload.new?.state) queueIncomingCloudState(payload.new.state);
+      if (payload.new?.state) {
+        updateBailMeterFromCloud(profile, payload.new.state);
+        queueIncomingCloudState(payload.new.state);
+      } else if (payload.eventType === "DELETE") {
+        updateBailMeterFromCloud(profile, null, false);
+      }
     })
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
@@ -687,6 +763,28 @@ function subscribeToCloudProfile(profile) {
         setCloudConnectionIndicator(false);
       }
     });
+
+  const otherProfile = profile === "sean" ? "kick" : "sean";
+  const bailMeterSubscription = supabaseClient
+    .channel(`bail-meter-${otherProfile}`)
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "workout_profiles",
+      filter: `profile_id=eq.${otherProfile}`,
+    }, (payload) => {
+      if (payload.new?.state) updateBailMeterFromCloud(otherProfile, payload.new.state);
+      else if (payload.eventType === "DELETE") updateBailMeterFromCloud(otherProfile, null, false);
+    })
+    .subscribe((status) => {
+      bailMeterBars[otherProfile].classList.toggle("is-stale", status !== "SUBSCRIBED");
+      bailMeterBars[otherProfile].title = status === "SUBSCRIBED"
+        ? bailMeterAvailable[otherProfile]
+          ? `${otherProfile === "sean" ? "Sean" : "Kick"}: ${bailMeterValues[otherProfile]} bailed exercises`
+          : `${otherProfile === "sean" ? "Sean" : "Kick"}'s cloud count is unavailable`
+        : `${otherProfile === "sean" ? "Sean" : "Kick"}'s live count is reconnecting`;
+    });
+  bailMeterSubscriptions.push(bailMeterSubscription);
 }
 
 function setCloudLoginMessage(message) {
@@ -789,11 +887,17 @@ async function activateProfile(profile) {
     try {
       const { data, error } = await supabaseClient
         .from("workout_profiles")
-        .select("state")
-        .eq("profile_id", profile)
-        .maybeSingle();
+        .select("profile_id,state");
       if (error) throw error;
-      if (data && (!data.state || typeof data.state !== "object" || !Array.isArray(data.state.workouts))) {
+      resetBailMeter(true);
+      const cloudProfileRows = data ?? [];
+      cloudProfileRows.forEach((row) => {
+        if (["sean", "kick"].includes(row.profile_id)) {
+          updateBailMeterFromCloud(row.profile_id, row.state);
+        }
+      });
+      const cloudProfile = cloudProfileRows.find((row) => row.profile_id === profile);
+      if (cloudProfile && (!cloudProfile.state || typeof cloudProfile.state !== "object" || !Array.isArray(cloudProfile.state.workouts))) {
         throw new Error("The cloud workout data has an unexpected format.");
       }
       const localState = {
@@ -802,10 +906,11 @@ async function activateProfile(profile) {
         selectedWeek: profileState.selectedWeek,
       };
       const hasLocalData = profileState.workouts.length > 0;
-      if (data?.state) {
-        localStorage.setItem(storageKey, JSON.stringify(data.state));
+      if (cloudProfile?.state) {
+        localStorage.setItem(storageKey, JSON.stringify(cloudProfile.state));
         profileState = loadWorkouts();
       } else {
+        updateBailMeterFromCloud(profile, localState);
         if (hasLocalData) await writeCloudState(profile, localState);
       }
     } catch (error) {
@@ -819,6 +924,11 @@ async function activateProfile(profile) {
     }
   }
   workouts = profileState.workouts;
+  if (!cloudEnabled) {
+    resetBailMeter();
+    bailMeterValues[profile] = countBailedExercises({ workouts });
+    bailMeterAvailable[profile] = true;
+  }
   selectedWorkoutId = profileState.selectedWorkoutId;
   selectedWeek = profileState.selectedWeek;
   workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
@@ -848,6 +958,8 @@ function returnToProfilePicker() {
     supabaseClient.removeChannel(activeCloudSubscription);
     activeCloudSubscription = null;
   }
+  bailMeterSubscriptions.forEach((subscription) => supabaseClient.removeChannel(subscription));
+  bailMeterSubscriptions = [];
   setCloudConnectionIndicator(false);
   pendingCloudState = null;
   workoutContextMenu.hidden = true;
@@ -858,6 +970,7 @@ function returnToProfilePicker() {
   selectedWorkoutId = null;
   selectedWeek = 1;
   workout = null;
+  resetBailMeter();
   appShell.hidden = true;
   welcomeScreen.hidden = false;
   showCloudProfilePicker(cloudSignedIn);
@@ -1294,6 +1407,7 @@ function updateExerciseProgress() {
 }
 
 function render() {
+  renderBailMeter();
   workoutPlanner.hidden = workout?.status === "in-progress";
   renderWeekOptions();
   renderWorkoutChoices();

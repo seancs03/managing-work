@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=timer-border-play-icon">
+    <link rel="stylesheet" href="styles.css?v=live-bail-meter">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=timer-css-icons" defer></script>
+    <script src="app.js?v=live-bail-meter" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -43,6 +43,25 @@
           <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
           <span>SPIJKER TRACK<span class="brand-period">.</span></span>
         </a>
+        <section id="bail-meter" class="bail-meter" aria-label="Live BAIL meter: total bailed exercises across saved workouts">
+          <h2>Live BAIL meter:</h2>
+          <div class="bail-meter-content">
+            <dl class="bail-meter-counts">
+              <div class="bail-meter-count bail-meter-count--sean">
+                <dt>Sean:</dt>
+                <dd id="bail-count-sean" aria-live="polite" aria-atomic="true">0</dd>
+              </div>
+              <div class="bail-meter-count bail-meter-count--kick">
+                <dt>Kick:</dt>
+                <dd id="bail-count-kick" aria-live="polite" aria-atomic="true">0</dd>
+              </div>
+            </dl>
+            <div class="bail-meter-chart" aria-hidden="true">
+              <div id="bail-bar-sean" class="bail-meter-bar bail-meter-bar--sean"></div>
+              <div id="bail-bar-kick" class="bail-meter-bar bail-meter-bar--kick"></div>
+            </div>
+          </div>
+        </section>
         <div class="topbar-actions">
           <div class="storage-indicator">
             <span class="storage-dot" aria-hidden="true"></span>
