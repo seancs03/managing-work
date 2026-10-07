@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f7f7f7">
+    <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=signout-raised-black">
+    <link rel="stylesheet" href="styles.css?v=black-welcome-no-picker-signout">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=cloud-sync-no-success-label" defer></script>
+    <script src="app.js?v=remove-picker-signout" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -32,7 +32,6 @@
             <button class="profile-choice" type="button" data-profile="kick">Kick</button>
           </div>
         </section>
-        <button id="cloud-signout-button" class="cloud-signout-button" type="button" hidden>Sign out</button>
       </div>
     </main>
 

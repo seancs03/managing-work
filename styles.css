@@ -20,6 +20,10 @@
   box-sizing: border-box;
 }
 
+html {
+  background-color: #000000;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
@@ -134,21 +138,6 @@ body {
 
 .cloud-login-message:empty {
   display: none;
-}
-
-.cloud-signout-button {
-  position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
-  left: 50%;
-  margin: 0;
-  padding: 8px 14px;
-  border: 1px solid #555;
-  border-radius: 7px;
-  background: transparent;
-  color: #ddd;
-  cursor: pointer;
-  font: inherit;
-  transform: translateX(-50%);
 }
 
 .profile-choice {
