@@ -130,6 +130,10 @@ body {
   font-size: 13px;
 }
 
+.cloud-login-message:empty {
+  display: none;
+}
+
 .cloud-signout-button {
   margin-top: 20px;
   padding: 8px 14px;
