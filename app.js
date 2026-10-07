@@ -1097,8 +1097,11 @@ function updateMyoNotesButton(cell, exercise, set, setNumber) {
   notesButton.dataset.exerciseId = exercise.id;
   notesButton.dataset.setId = set.id;
   notesButton.disabled = exercise.bailed === true;
-  const hasOwnNotes = set.myoNotesConfirmed === true;
-  const hasShadowNotes = shadowSet?.myoNotesConfirmed === true;
+  const hasOwnNotes = set.myoNotesConfirmed === true
+    && (set.myoNotes?.length ?? 0) === myoCount;
+  const hasShadowNotes = !set.myoReps
+    && shadowSet?.myoNotesConfirmed === true
+    && (shadowSet?.myoNotes?.length ?? 0) === Number(shadowSet?.myoReps);
   if (!hasOwnNotes && !hasShadowNotes) {
     existingButton?.remove();
     return;
@@ -1113,10 +1116,13 @@ function updateMyoNotesButton(cell, exercise, set, setNumber) {
 }
 
 function openMyoNotesDialog(exercise, set, trigger) {
+  if (myoNotesDialog.open) return;
   const shadowSet = findShadowSet(exercise, set);
   const ownNotes = Array.isArray(set.myoNotes) ? set.myoNotes : [];
   const shadowNotes = Array.isArray(shadowSet?.myoNotes) ? shadowSet.myoNotes : [];
-  const useShadow = set.myoNotesConfirmed !== true && shadowSet?.myoNotesConfirmed === true;
+  const useShadow = set.myoNotesConfirmed !== true
+    && shadowSet?.myoNotesConfirmed === true
+    && shadowNotes.length === Number(shadowSet.myoReps);
   const countValue = set.myoReps || shadowSet?.myoReps || "";
   const count = Number(countValue);
   if (!Number.isInteger(count) || count < 1) return;
