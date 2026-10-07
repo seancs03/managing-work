@@ -41,6 +41,9 @@ const startOverButton = document.getElementById("start-over-button");
 const startOverDialog = document.getElementById("start-over-dialog");
 const cancelStartOverButton = document.getElementById("cancel-start-over-button");
 const confirmStartOverButton = document.getElementById("confirm-start-over-button");
+const resumeCompletedDialog = document.getElementById("resume-completed-dialog");
+const startOverCompletedButton = document.getElementById("start-over-completed-button");
+const resumeCompletedButton = document.getElementById("resume-completed-button");
 const finishWorkoutDialog = document.getElementById("finish-workout-dialog");
 const finishWithoutProofButton = document.getElementById("finish-without-proof-button");
 const finishWithProofButton = document.getElementById("finish-with-proof-button");
@@ -1488,6 +1491,11 @@ workoutAction.addEventListener("click", () => {
     finishWithoutProofButton.focus();
     return;
   }
+  if (workout.status === "completed") {
+    resumeCompletedDialog.showModal();
+    resumeCompletedButton.focus();
+    return;
+  }
   workout.status = "in-progress";
   workout.startedAt = new Date().toISOString();
   render();
@@ -1495,6 +1503,27 @@ workoutAction.addEventListener("click", () => {
   const firstInput = findNextWorkoutInput();
   if (firstInput) firstInput.focus();
   else document.getElementById("announcements").textContent = "All planned sets are logged.";
+});
+
+resumeCompletedButton.addEventListener("click", () => {
+  if (!workout) return;
+  resumeCompletedDialog.close();
+  workout.status = "in-progress";
+  render();
+  saveWorkout();
+  const firstInput = findNextWorkoutInput();
+  if (firstInput) firstInput.focus();
+  else document.getElementById("announcements").textContent = "Workout resumed. All planned sets are logged; finish to download proof.";
+});
+
+startOverCompletedButton.addEventListener("click", () => {
+  resumeCompletedDialog.close();
+  startOverDialog.showModal();
+  cancelStartOverButton.focus();
+});
+
+resumeCompletedDialog.addEventListener("close", () => {
+  workoutAction.focus();
 });
 
 finishWithoutProofButton.addEventListener("click", finishWorkout);
