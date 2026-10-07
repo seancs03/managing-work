@@ -1148,27 +1148,28 @@ h1 {
 
 .sets-table th:first-child,
 .sets-table td:first-child {
-  width: 44px;
+  width: 36px;
   padding-left: 0;
+  padding-right: 0;
+  text-align: left;
 }
 
-.sets-table th:nth-last-child(3),
-.sets-table td:nth-last-child(3) {
-  width: 112px;
-  text-align: center;
+.sets-table th:nth-child(2),
+.sets-table td:nth-child(2) {
+  width: 42px;
+  padding-left: 6px;
 }
 
 .sets-table th:nth-last-child(2),
 .sets-table td:nth-last-child(2) {
-  width: 48px;
+  width: 112px;
   text-align: center;
 }
 
 .sets-table th:last-child,
 .sets-table td:last-child {
-  width: 37px;
-  padding-right: 0;
-  text-align: right;
+  width: 66px;
+  text-align: center;
 }
 
 .sets-table td {
@@ -1324,11 +1325,24 @@ body.intensity-theme .session-controls :focus-visible {
   vertical-align: middle;
 }
 
+.myo-cell {
+  white-space: nowrap;
+}
+
 .llp-reps-input {
   width: 60px;
   min-width: 0;
   margin: 0 0 0 7px;
   padding: 0 6px;
+}
+
+.myo-reps-input {
+  display: inline-block;
+  width: 34px;
+  min-width: 0;
+  margin: 0 0 0 4px;
+  padding: 0 3px;
+  vertical-align: middle;
 }
 
 .field-hint {
@@ -1853,22 +1867,24 @@ body.intensity-theme .session-controls :focus-visible {
 
   .sets-table th:first-child,
   .sets-table td:first-child {
-    width: 32px;
+    width: 30px;
+    padding-right: 0;
+  }
+
+  .sets-table th:nth-child(2),
+  .sets-table td:nth-child(2) {
+    width: 34px;
+    padding-left: 5px;
   }
 
   .sets-table th:nth-last-child(2),
   .sets-table td:nth-last-child(2) {
-    width: 42px;
-  }
-
-  .sets-table th:nth-last-child(3),
-  .sets-table td:nth-last-child(3) {
-    width: 100px;
+    width: 96px;
   }
 
   .sets-table th:last-child,
   .sets-table td:last-child {
-    width: 31px;
+    width: 62px;
   }
 
   .sets-table td {
@@ -1881,6 +1897,12 @@ body.intensity-theme .session-controls :focus-visible {
     height: 34px;
     padding: 0 4px;
     font-size: 16px;
+  }
+
+  .myo-reps-input {
+    width: 32px;
+    margin-left: 3px;
+    padding: 0 2px;
   }
 
   .exercise-footer {

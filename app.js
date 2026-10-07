@@ -256,7 +256,7 @@ function buildWorkoutProofPdf(sourceWorkout) {
     { title: "Reps", x: 246 },
     { title: "RPE", x: 336 },
     { title: "LLP reps", x: 418 },
-    { title: "MYO", x: 500 },
+    { title: "MYO reps", x: 500 },
   ];
   sourceWorkout.exercises.forEach((exercise, exerciseIndex) => {
     ensureSpace(72);
@@ -274,7 +274,7 @@ function buildWorkoutProofPdf(sourceWorkout) {
         (set.reps || "-").slice(0, 12),
         (set.rpe || "-").slice(0, 12),
         (set.llp ? (set.llpReps || "-") : "-").slice(0, 18),
-        set.myo ? "Yes" : "-",
+        (set.myo ? (set.myoReps || "Yes") : "-").slice(0, 12),
       ];
       values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x, y, 10));
       y -= 18;
@@ -398,6 +398,7 @@ function normalizeWorkout(source) {
                 llp: set.llp === true,
                 llpReps: set.llpReps == null ? "" : String(set.llpReps).trim(),
                 myo: set.myo === true,
+                myoReps: set.myoReps == null ? "" : String(set.myoReps).trim(),
               }))
             : null,
           sets: Array.isArray(exercise.sets)
@@ -412,6 +413,7 @@ function normalizeWorkout(source) {
                 llp: set.llp === true,
                 llpReps: set.llpReps == null ? "" : String(set.llpReps).trim(),
                 myo: set.myo === true,
+                myoReps: set.myoReps == null ? "" : String(set.myoReps).trim(),
               }))
             : [],
         }))
@@ -453,6 +455,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
           llp: false,
           llpReps: "",
           myo: false,
+          myoReps: "",
         })),
       }));
       allWorkouts.push(peer);
@@ -494,6 +497,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
               llp: false,
               llpReps: "",
               myo: false,
+              myoReps: "",
             };
         }),
       };
@@ -996,19 +1000,18 @@ function createElement(tag, className, text) {
 function makeInput(exercise, set, field, setNumber) {
   const isWeight = field === "weight";
   const isRpe = field === "rpe";
-  const isLlpReps = field === "llpReps";
+  const isPartialReps = field === "llpReps" || field === "myoReps";
   const input = document.createElement("input");
   input.className = "set-input";
   input.type = isRpe && !exercise.bailed ? "number" : "text";
-  input.inputMode = isRpe ? "decimal" : isLlpReps || field === "reps" ? "numeric" : "text";
+  input.inputMode = isRpe ? "decimal" : isPartialReps || field === "reps" ? "numeric" : "text";
   input.enterKeyHint = "next";
   if (!isWeight && field !== "reps") input.min = "1";
   if (isRpe) input.max = "10";
   if (!isWeight && field !== "reps") input.step = isRpe ? "0.5" : "1";
   if (isWeight) input.maxLength = 24;
-  if (isLlpReps) {
-    input.classList.add("llp-reps-input");
-  }
+  if (field === "llpReps") input.classList.add("llp-reps-input");
+  if (field === "myoReps") input.classList.add("myo-reps-input");
   input.value = set[field];
   input.disabled = exercise.bailed === true;
   const shadowSet = findShadowSet(exercise, set);
@@ -1026,6 +1029,7 @@ function makeInput(exercise, set, field, setNumber) {
     reps: "reps",
     rpe: "RPE from 1 to 10",
     llpReps: "number of long-length partial reps",
+    myoReps: "number of myo reps",
   }[field];
   input.setAttribute("aria-label", `Set ${setNumber} for ${exercise.name}, ${fieldLabel}`);
   input.setAttribute("aria-describedby", `${set.id}-${field}-hint`);
@@ -1036,6 +1040,14 @@ function appendLlpRepsInput(cell, exercise, set, setNumber) {
   const input = makeInput(exercise, set, "llpReps", setNumber);
   const hint = createElement("span", "sr-only", "");
   hint.id = `${set.id}-llpReps-hint`;
+  cell.append(input, hint);
+  updateInputValidity(input, hint);
+}
+
+function appendMyoRepsInput(cell, exercise, set, setNumber) {
+  const input = makeInput(exercise, set, "myoReps", setNumber);
+  const hint = createElement("span", "sr-only", "");
+  hint.id = `${set.id}-myoReps-hint`;
   cell.append(input, hint);
   updateInputValidity(input, hint);
 }
@@ -1055,7 +1067,7 @@ function getFieldError(field, value) {
   }
   const number = Number(value);
   if (!Number.isFinite(number)) return "Enter a valid number.";
-  if (field === "llpReps" && (!Number.isInteger(number) || number < 1)) {
+  if (["llpReps", "myoReps"].includes(field) && (!Number.isInteger(number) || number < 1)) {
     return "Use a whole number of 1 or more.";
   }
   if (field === "rpe" && (number < 1 || number > 10 || !Number.isInteger(number * 2))) {
@@ -1118,6 +1130,7 @@ function restoreMissingShadowSets(targetWorkout, sourceWorkout) {
         llp: false,
         llpReps: "",
         myo: false,
+        myoReps: "",
       };
     });
   });
@@ -1215,6 +1228,16 @@ function renderWeekOptions() {
 function renderSetRow(exercise, set, index) {
   const row = document.createElement("tr");
   const setNumber = index + 1;
+  const actionCell = document.createElement("td");
+  const removeButton = createElement("button", "icon-button remove-set", "×");
+  removeButton.type = "button";
+  removeButton.dataset.action = "remove-set";
+  removeButton.dataset.exerciseId = exercise.id;
+  removeButton.dataset.setId = set.id;
+  removeButton.setAttribute("aria-label", `Remove set ${setNumber} from ${exercise.name}`);
+  actionCell.append(removeButton);
+  row.append(actionCell);
+
   const numberCell = document.createElement("td");
   numberCell.append(createElement("span", "set-number", String(setNumber)));
   row.append(numberCell);
@@ -1258,17 +1281,8 @@ function renderSetRow(exercise, set, index) {
   myoCheckbox.dataset.myo = "true";
   myoCheckbox.setAttribute("aria-label", `Myo reps for set ${setNumber} of ${exercise.name}`);
   myoCell.append(myoCheckbox);
+  if (set.myo) appendMyoRepsInput(myoCell, exercise, set, setNumber);
   row.append(myoCell);
-
-  const actionCell = document.createElement("td");
-  const removeButton = createElement("button", "icon-button remove-set", "×");
-  removeButton.type = "button";
-  removeButton.dataset.action = "remove-set";
-  removeButton.dataset.exerciseId = exercise.id;
-  removeButton.dataset.setId = set.id;
-  removeButton.setAttribute("aria-label", `Remove set ${setNumber} from ${exercise.name}`);
-  actionCell.append(removeButton);
-  row.append(actionCell);
   return row;
 }
 
@@ -1327,7 +1341,7 @@ function renderExerciseCard(exercise, index) {
   const table = createElement("table", "sets-table");
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
-  for (const label of ["SET", "WEIGHT (KG)", "REPS", "RPE", "LLP", "MYO", ""]) {
+  for (const label of ["", "SET", "WEIGHT (KG)", "REPS", "RPE", "LLP", "MYO"]) {
     const cell = document.createElement("th");
     cell.scope = "col";
     if (label === "LLP") cell.title = "Long-length partials";
@@ -1772,6 +1786,7 @@ confirmStartOverButton.addEventListener("click", () => {
       set.llp = false;
       set.llpReps = "";
       set.myo = false;
+      set.myoReps = "";
     });
   });
   workout.status = "planned";
@@ -1808,7 +1823,7 @@ addExerciseForm.addEventListener("submit", (event) => {
     id: makeId(),
     planId: makeId(),
     name: name.slice(0, 60),
-    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false }],
+    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "" }],
   });
   syncWorkoutPlan(workout, workouts, false);
   exerciseNameInput.value = "";
@@ -1850,6 +1865,7 @@ exerciseList.addEventListener("input", (event) => {
       reps: "reps",
       rpe: "RPE from 1 to 10",
       llpReps: "number of long-length partial reps",
+      myoReps: "number of myo reps",
     }[setInput.dataset.field];
     setInput.setAttribute("aria-label", `Set ${setIndex + 1} for ${exercise.name || "unnamed exercise"}, ${fieldLabel}`);
   });
@@ -1864,7 +1880,7 @@ exerciseList.addEventListener("input", (event) => {
 exerciseList.addEventListener("change", (event) => {
   const input = event.target.closest("input[data-field]");
   if (!input || getFieldError(input.dataset.field, input.value)) return;
-  if (["weight", "reps", "rpe", "llpReps"].includes(input.dataset.field)) {
+  if (["weight", "reps", "rpe", "llpReps", "myoReps"].includes(input.dataset.field)) {
     focusNextWorkoutInput(input);
   }
 });
@@ -1872,7 +1888,7 @@ exerciseList.addEventListener("change", (event) => {
 exerciseList.addEventListener("keydown", (event) => {
   const input = event.target.closest("input[data-field]");
   if (!input || !["Enter", "Next"].includes(event.key) || getFieldError(input.dataset.field, input.value)) return;
-  if (["weight", "reps", "rpe", "llpReps"].includes(input.dataset.field)) {
+  if (["weight", "reps", "rpe", "llpReps", "myoReps"].includes(input.dataset.field)) {
     event.preventDefault();
     focusNextWorkoutInput(input);
   }
@@ -1887,7 +1903,17 @@ exerciseList.addEventListener("change", (event) => {
   if (checkbox.dataset.myo) {
     set.myo = checkbox.checked;
     saveWorkout();
-    checkbox.setAttribute("aria-label", `Myo reps for set ${exercise.sets.indexOf(set) + 1} of ${exercise.name || "unnamed exercise"}`);
+    const setIndex = exercise.sets.indexOf(set);
+    checkbox.setAttribute("aria-label", `Myo reps for set ${setIndex + 1} of ${exercise.name || "unnamed exercise"}`);
+    const cell = checkbox.closest(".myo-cell");
+    const numberField = cell.querySelector("input[data-field='myoReps']");
+    if (set.myo && !numberField) {
+      appendMyoRepsInput(cell, exercise, set, setIndex + 1);
+      cell.querySelector("input[data-field='myoReps']").focus();
+    } else if (!set.myo && numberField) {
+      numberField.remove();
+      checkbox.focus();
+    }
     return;
   }
   set.llp = checkbox.checked;
@@ -1921,6 +1947,7 @@ exerciseList.addEventListener("click", (event) => {
           set.llp = false;
           set.llpReps = "";
           set.myo = false;
+          set.myoReps = "";
           return;
         }
         set.weight = snapshot.weight;
@@ -1929,6 +1956,7 @@ exerciseList.addEventListener("click", (event) => {
         set.llp = snapshot.llp;
         set.llpReps = snapshot.llpReps;
         set.myo = snapshot.myo === true;
+        set.myoReps = snapshot.myoReps ?? "";
       });
       exercise.bailed = false;
       exercise.bailSnapshot = null;
@@ -1954,7 +1982,7 @@ exerciseList.addEventListener("click", (event) => {
   let focusId = "";
   let announcement = "";
   if (button.dataset.action === "add-set") {
-    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false };
+    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "" };
     exercise.sets.push(set);
     syncWorkoutPlan(workout, workouts, false);
     focusId = `add-set-${exercise.id}`;
@@ -2022,6 +2050,7 @@ confirmBailButton.addEventListener("click", () => {
     llp: set.llp,
     llpReps: set.llpReps,
     myo: set.myo,
+    myoReps: set.myoReps,
   }));
   exercise.bailed = true;
   exercise.sets.forEach((set) => {
