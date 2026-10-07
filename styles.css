@@ -403,14 +403,18 @@ button {
 }
 
 .bail-meter {
+  position: absolute;
+  top: 46px;
+  right: 0;
   display: grid;
   gap: 3px;
-  color: var(--ink);
+  color: #ffffff;
 }
 
 .bail-meter h2 {
   margin: 0;
-  font: 700 10px/1.2 "Manrope", sans-serif;
+  color: #ffffff;
+  font: 700 12px/1.2 "Manrope", sans-serif;
   letter-spacing: 0.02em;
 }
 
@@ -424,19 +428,21 @@ button {
   margin: 0;
   display: grid;
   gap: 2px;
-  font-size: 10px;
+  color: #ffffff;
+  font-size: 12px;
   line-height: 1.2;
 }
 
 .bail-meter-count {
   display: grid;
-  grid-template-columns: 36px 20px;
+  grid-template-columns: 39px 22px;
   gap: 3px;
 }
 
 .bail-meter-count dt,
 .bail-meter-count dd {
   margin: 0;
+  color: #ffffff;
 }
 
 .bail-meter-count dd {
@@ -444,38 +450,25 @@ button {
   font-weight: 700;
 }
 
-.bail-meter-count--sean dt,
-.bail-meter-count--sean dd {
-  color: #d9364b;
-}
-
-.bail-meter-count--kick dt,
-.bail-meter-count--kick dd {
-  color: #168c82;
-}
-
 .bail-meter-chart {
-  height: 24px;
+  height: 36px;
   display: flex;
   align-items: flex-end;
   gap: 7px;
-  border-bottom: 1px solid #b9b9b9;
+  border-bottom: 1px solid #ffffff;
 }
 
 .bail-meter-bar {
-  width: 12px;
+  width: 16px;
   height: 0;
-  flex: 0 0 12px;
-  border-radius: 4px 4px 0 0;
+  flex: 0 0 16px;
+  border-radius: 0;
   transition: height 220ms ease;
 }
 
-.bail-meter-bar--sean {
-  background: linear-gradient(180deg, #f06b7a, #c52d42);
-}
-
+.bail-meter-bar--sean,
 .bail-meter-bar--kick {
-  background: linear-gradient(180deg, #57c5b8, #168c82);
+  background: #ffffff;
 }
 
 .bail-meter-bar.is-stale {
@@ -538,11 +531,8 @@ button {
 }
 
 .intro {
+  position: relative;
   padding: 46px 0 25px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
 }
 
 .section-kicker {
@@ -1699,6 +1689,10 @@ body.intensity-theme .session-controls :focus-visible {
     padding: 35px 0 22px;
   }
 
+  .bail-meter {
+    top: 35px;
+  }
+
   h1 {
     font-size: clamp(42px, 10vw, 55px);
   }
@@ -1759,21 +1753,16 @@ body.intensity-theme .session-controls :focus-visible {
   }
 
   .intro {
-    align-items: center;
-    flex-direction: row;
-    gap: 8px;
-    min-height: 107px;
     padding-top: 37px;
   }
 
   .intro h1 {
-    flex: 0 1 auto;
     font-size: clamp(26px, 7.5vw, 36px);
     letter-spacing: -1.2px;
   }
 
   .bail-meter {
-    flex: 0 0 auto;
+    top: 37px;
   }
 
   .storage-indicator {
