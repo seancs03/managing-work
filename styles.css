@@ -455,7 +455,7 @@ button {
 }
 
 .bail-meter-chart {
-  height: 53px;
+  height: 24px;
   display: flex;
   align-items: flex-end;
   gap: 7px;
@@ -1759,13 +1759,21 @@ body.intensity-theme .session-controls :focus-visible {
   }
 
   .intro {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+    min-height: 107px;
+    padding-top: 37px;
+  }
+
+  .intro h1 {
+    flex: 0 1 auto;
+    font-size: clamp(26px, 7.5vw, 36px);
+    letter-spacing: -1.2px;
   }
 
   .bail-meter {
-    align-self: flex-end;
+    flex: 0 0 auto;
   }
 
   .storage-indicator {
@@ -1789,10 +1797,6 @@ body.intensity-theme .session-controls :focus-visible {
 
   .page-shell {
     width: calc(100% - 30px);
-  }
-
-  .intro {
-    padding-top: 37px;
   }
 
   .workout-planner {

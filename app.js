@@ -117,7 +117,7 @@ function renderBailMeter() {
       bailMeterCounts[profile].textContent = countText;
     }
     bailMeterBars[profile].style.height = available && maxCount > 0 && value > 0
-      ? `${(value / maxCount) * 48}px`
+      ? `${(value / maxCount) * 20}px`
       : "0px";
     bailMeterBars[profile].title = available
       ? `${profile === "sean" ? "Sean" : "Kick"}: ${value} bailed exercises`
