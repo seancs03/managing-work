@@ -204,7 +204,7 @@ body.intensity-theme .storage-dot {
 
 body.intensity-theme .storage-dot.is-cloud-connected {
   background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+  box-shadow: none;
 }
 
 body.intensity-theme .brand-mark span {
