@@ -100,11 +100,17 @@ body {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  width: 100%;
-  margin-top: 8px;
-  border-color: #555;
+  width: min(100%, 320px);
+  min-height: 54px;
+  margin: 8px auto 0;
+  padding: 10px 16px;
+  border: 1px solid #555;
+  border-radius: 8px;
   background: #fff;
   color: #222;
+  cursor: pointer;
+  font: 700 16px "Manrope", sans-serif;
+  text-align: center;
 }
 
 .google-signin-button:hover {
@@ -145,11 +151,6 @@ body {
   cursor: pointer;
   font: 700 15px "Manrope", sans-serif;
   transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
-}
-
-.cloud-login-panel .google-signin-button {
-  width: min(100%, 320px);
-  margin: 8px auto 0;
 }
 
 .profile-choice:hover {
