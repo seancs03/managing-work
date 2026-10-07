@@ -2074,6 +2074,13 @@ exerciseList.addEventListener("change", (event) => {
   if (!set) return;
   if (checkbox.dataset.myo) {
     set.myo = checkbox.checked;
+    if (!set.myo) {
+      set.myoReps = "";
+      set.myoNotes = [];
+      set.myoNotesConfirmed = false;
+      const field = checkbox.closest(".myo-cell").querySelector("input[data-field='myoReps']");
+      if (field) field.value = "";
+    }
     saveWorkout();
     const setIndex = exercise.sets.indexOf(set);
     checkbox.setAttribute("aria-label", `MYO sets for set ${setIndex + 1} of ${exercise.name || "unnamed exercise"}`);
