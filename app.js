@@ -1147,7 +1147,14 @@ function openMyoNotesDialog(exercise, set, trigger, viewing = false) {
     set.myoNotesConfirmed = false;
     saveWorkout();
   }
-  pendingMyoNotes = { exerciseId: exercise.id, setId: set.id, trigger, count };
+  pendingMyoNotes = {
+    exerciseId: exercise.id,
+    setId: set.id,
+    trigger,
+    count,
+    scrollX: window.scrollX,
+    scrollY: window.scrollY,
+  };
   myoNotesTitle.textContent = `MYO notes: ${exercise.name} — set ${exercise.sets.indexOf(set) + 1}`;
   myoNotesRows.replaceChildren();
   const notes = useShadow ? shadowNotes : ownNotes;
@@ -2270,7 +2277,7 @@ bailDialog.addEventListener("close", () => {
 myoNotesForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!pendingMyoNotes || pendingMyoNotes.viewing) return;
-  const { exerciseId, setId, count } = pendingMyoNotes;
+  const { exerciseId, setId, count, scrollX, scrollY } = pendingMyoNotes;
   const exercise = workout?.exercises.find((item) => item.id === exerciseId);
   const set = exercise?.sets.find((item) => item.id === setId);
   if (!exercise || !set) {
@@ -2283,15 +2290,16 @@ myoNotesForm.addEventListener("submit", (event) => {
   set.myoNotes = Array.from(myoNotesRows.querySelectorAll("input"), (input) => input.value.trim());
   set.myoNotesConfirmed = true;
   pendingMyoNotes = null;
-  const scrollX = window.scrollX;
-  const scrollY = window.scrollY;
   myoNotesDialog.close();
   render();
   saveWorkout();
   exerciseList.querySelector(
     `[data-action="myo-notes"][data-exercise-id="${exercise.id}"][data-set-id="${set.id}"]`,
   )?.focus({ preventScroll: true });
-  window.scrollTo(scrollX, scrollY);
+  const restoreScroll = () => window.scrollTo(scrollX, scrollY);
+  restoreScroll();
+  window.requestAnimationFrame(restoreScroll);
+  [100, 350].forEach((delay) => window.setTimeout(restoreScroll, delay));
 });
 
 editMyoNotesButton.addEventListener("click", () => {
