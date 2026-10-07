@@ -770,8 +770,12 @@ h1 {
 }
 
 .workout-timer-toggle.is-paused::before {
-  background: currentColor;
-  clip-path: polygon(15% 0, 100% 50%, 15% 100%);
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 11px solid currentColor;
+  background: transparent;
 }
 
 .workout-timer-toggle:hover,
