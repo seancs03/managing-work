@@ -287,7 +287,7 @@ function buildWorkoutProofPdf(sourceWorkout) {
       const myoNotes = (set.myo ? set.myoNotes ?? [] : [])
         .map((note, noteIndex) => `${noteIndex + 1}=${note}`)
         .join("  ");
-      if (myoNotes) {
+      if (myoNotes && set.myoNotesConfirmed === true) {
         const noteLines = myoNotes.match(/.{1,72}(?:\s|$)/g) ?? [myoNotes];
         ensureSpace(noteLines.length * 13);
         noteLines.forEach((line, lineIndex) => {
@@ -419,6 +419,7 @@ function normalizeWorkout(source) {
                 myoNotes: Array.isArray(set.myoNotes)
                   ? set.myoNotes.map((note) => String(note ?? "").trim())
                   : [],
+                myoNotesConfirmed: set.myoNotesConfirmed === true,
               }))
             : null,
           sets: Array.isArray(exercise.sets)
@@ -437,6 +438,7 @@ function normalizeWorkout(source) {
                 myoNotes: Array.isArray(set.myoNotes)
                   ? set.myoNotes.map((note) => String(note ?? "").trim())
                   : [],
+                myoNotesConfirmed: set.myoNotesConfirmed === true,
               }))
             : [],
         }))
@@ -480,6 +482,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
           myo: false,
           myoReps: "",
           myoNotes: [],
+          myoNotesConfirmed: false,
         })),
       }));
       allWorkouts.push(peer);
@@ -523,6 +526,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
               myo: false,
               myoReps: "",
               myoNotes: [],
+              myoNotesConfirmed: false,
             };
         }),
       };
@@ -1093,7 +1097,13 @@ function updateMyoNotesButton(cell, exercise, set, setNumber) {
   notesButton.dataset.exerciseId = exercise.id;
   notesButton.dataset.setId = set.id;
   notesButton.disabled = exercise.bailed === true;
-  const hasNotes = (set.myoNotes?.length ?? 0) > 0 || (shadowSet?.myoNotes?.length ?? 0) > 0;
+  const hasOwnNotes = set.myoNotesConfirmed === true;
+  const hasShadowNotes = shadowSet?.myoNotesConfirmed === true;
+  if (!hasOwnNotes && !hasShadowNotes) {
+    existingButton?.remove();
+    return;
+  }
+  const hasNotes = hasOwnNotes || hasShadowNotes;
   notesButton.setAttribute(
     "aria-label",
     `${hasNotes ? "View or edit" : "Add"} MYO notes for set ${setNumber} of ${exercise.name}`,
@@ -1106,7 +1116,7 @@ function openMyoNotesDialog(exercise, set, trigger) {
   const shadowSet = findShadowSet(exercise, set);
   const ownNotes = Array.isArray(set.myoNotes) ? set.myoNotes : [];
   const shadowNotes = Array.isArray(shadowSet?.myoNotes) ? shadowSet.myoNotes : [];
-  const useShadow = ownNotes.length === 0 && shadowNotes.length > 0;
+  const useShadow = set.myoNotesConfirmed !== true && shadowSet?.myoNotesConfirmed === true;
   const countValue = set.myoReps || shadowSet?.myoReps || "";
   const count = Number(countValue);
   if (!Number.isInteger(count) || count < 1) return;
@@ -1215,6 +1225,7 @@ function restoreMissingShadowSets(targetWorkout, sourceWorkout) {
         myo: false,
         myoReps: "",
         myoNotes: [],
+        myoNotesConfirmed: false,
       };
     });
   });
@@ -1877,6 +1888,7 @@ confirmStartOverButton.addEventListener("click", () => {
       set.myo = false;
       set.myoReps = "";
       set.myoNotes = [];
+      set.myoNotesConfirmed = false;
     });
   });
   workout.status = "planned";
@@ -1913,7 +1925,7 @@ addExerciseForm.addEventListener("submit", (event) => {
     id: makeId(),
     planId: makeId(),
     name: name.slice(0, 60),
-    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [] }],
+    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [], myoNotesConfirmed: false }],
   });
   syncWorkoutPlan(workout, workouts, false);
   exerciseNameInput.value = "";
@@ -1930,6 +1942,9 @@ exerciseList.addEventListener("input", (event) => {
     const exercise = workout.exercises.find((item) => item.id === input.dataset.exerciseId);
     const set = exercise?.sets.find((item) => item.id === input.dataset.setId);
     if (!set) return;
+    if (input.dataset.field === "myoReps" && set.myoReps !== input.value) {
+      set.myoNotesConfirmed = false;
+    }
     set[input.dataset.field] = input.value;
     if (input.dataset.field === "llpReps" && input.value.trim() !== "") {
       set.llp = true;
@@ -2091,6 +2106,7 @@ exerciseList.addEventListener("click", (event) => {
           set.myo = false;
           set.myoReps = "";
           set.myoNotes = [];
+          set.myoNotesConfirmed = false;
           return;
         }
         set.weight = snapshot.weight;
@@ -2101,6 +2117,7 @@ exerciseList.addEventListener("click", (event) => {
         set.myo = snapshot.myo === true;
         set.myoReps = snapshot.myoReps ?? "";
         set.myoNotes = [...(snapshot.myoNotes ?? [])];
+        set.myoNotesConfirmed = snapshot.myoNotesConfirmed === true;
       });
       exercise.bailed = false;
       exercise.bailSnapshot = null;
@@ -2126,7 +2143,7 @@ exerciseList.addEventListener("click", (event) => {
   let focusId = "";
   let announcement = "";
   if (button.dataset.action === "add-set") {
-    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [] };
+    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [], myoNotesConfirmed: false };
     exercise.sets.push(set);
     syncWorkoutPlan(workout, workouts, false);
     focusId = `add-set-${exercise.id}`;
@@ -2196,6 +2213,7 @@ confirmBailButton.addEventListener("click", () => {
     myo: set.myo,
     myoReps: set.myoReps,
     myoNotes: [...(set.myoNotes ?? [])],
+    myoNotesConfirmed: set.myoNotesConfirmed === true,
   }));
   exercise.bailed = true;
   exercise.sets.forEach((set) => {
@@ -2228,6 +2246,11 @@ myoNotesForm.addEventListener("submit", (event) => {
   }
   set.myo = true;
   set.myoNotes = Array.from(myoNotesRows.querySelectorAll("input"), (input) => input.value.trim());
+  if (!set.myoReps) {
+    const shadowSet = findShadowSet(exercise, set);
+    if (shadowSet?.myoReps) set.myoReps = shadowSet.myoReps;
+  }
+  set.myoNotesConfirmed = true;
   pendingMyoNotes = null;
   myoNotesDialog.close();
   render();
