@@ -74,6 +74,61 @@ body {
   gap: 12px;
 }
 
+.cloud-login-panel,
+#profile-choice-panel {
+  width: min(100%, 360px);
+  margin: 28px auto 0;
+}
+
+.cloud-login-panel h2 {
+  margin-bottom: 8px;
+  font: 700 20px "Manrope", sans-serif;
+}
+
+.cloud-login-form {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.cloud-login-form label {
+  color: #c3c3c3;
+  font-size: 13px;
+}
+
+.cloud-login-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #555;
+  border-radius: 7px;
+  background: #151515;
+  color: #fff;
+  font: inherit;
+}
+
+.cloud-login-form button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.cloud-login-message {
+  min-height: 1.5em;
+  color: #ff9aa4;
+  font-size: 13px;
+}
+
+.cloud-signout-button {
+  margin-top: 20px;
+  padding: 8px 14px;
+  border: 1px solid #555;
+  border-radius: 7px;
+  background: transparent;
+  color: #ddd;
+  cursor: pointer;
+  font: inherit;
+}
+
 .profile-choice {
   width: min(44vw, 170px);
   min-height: 54px;

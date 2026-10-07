@@ -2,6 +2,20 @@
 
 const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
+const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
+const cloudLoginPanel = document.getElementById("cloud-login-panel");
+const profileChoicePanel = document.getElementById("profile-choice-panel");
+const cloudLoginForm = document.getElementById("cloud-login-form");
+const cloudLoginMessage = document.getElementById("cloud-login-message");
+const cloudLoginButton = document.getElementById("cloud-login-button");
+const cloudSignoutButton = document.getElementById("cloud-signout-button");
+const cloudSignoutActiveButton = document.getElementById("cloud-signout-active-button");
+const localModeNote = document.getElementById("local-mode-note");
+const storageModeLabel = document.getElementById("storage-mode-label");
+const cloudConflictDialog = document.getElementById("cloud-conflict-dialog");
+const cancelCloudConflictButton = document.getElementById("cancel-cloud-conflict-button");
+const useCloudDataButton = document.getElementById("use-cloud-data-button");
+const uploadLocalDataButton = document.getElementById("upload-local-data-button");
 const welcomeScreen = document.getElementById("welcome-screen");
 const appShell = document.getElementById("app-shell");
 const activeProfileName = document.getElementById("active-profile-name");
@@ -49,6 +63,16 @@ const sessionNotesSection = document.getElementById("session-notes");
 const sessionNoteInputs = Array.from(document.querySelectorAll("[data-session-note]"));
 const sessionStatusLabel = document.getElementById("session-status-label");
 let storageKey = "";
+let supabaseClient = null;
+let cloudEnabled = false;
+let cloudSignedIn = false;
+let activeCloudSubscription = null;
+let pendingCloudState = null;
+let cloudSaveTimer = null;
+let cloudSaveInFlight = false;
+let cloudSaveQueued = false;
+let cloudConflictResolution = null;
+let profileLoadInProgress = false;
 let pendingBailExerciseId = null;
 let pendingDeleteExerciseId = null;
 let pendingDeleteWorkoutId = null;
@@ -480,6 +504,7 @@ function saveWorkout() {
   } catch {
     showNotice("This workout couldn't be saved in this browser. Your current changes are still visible until you leave this page.");
   }
+  if (cloudEnabled && supabaseClient) scheduleCloudSave();
 }
 
 function setNoticeHidden() {
@@ -487,26 +512,278 @@ function setNoticeHidden() {
   storageNotice.textContent = "";
 }
 
-function activateProfile(profile) {
-  if (!["sean", "kick"].includes(profile)) return;
+function hasCloudConfig() {
+  return typeof cloudConfig.supabaseUrl === "string"
+    && /^https:\/\/[^/]+$/.test(cloudConfig.supabaseUrl)
+    && typeof cloudConfig.supabaseAnonKey === "string"
+    && cloudConfig.supabaseAnonKey.length > 0;
+}
+
+function serializeWorkoutState() {
+  return { workouts, selectedWorkoutId, selectedWeek };
+}
+
+function stableSerialize(value) {
+  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(",")}]`;
+  if (value && typeof value === "object") {
+    const fields = Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`);
+    return `{${fields.join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+async function writeCloudState(profile, state) {
+  const { error } = await supabaseClient
+    .from("workout_profiles")
+    .upsert({ profile_id: profile, state }, { onConflict: "profile_id" });
+  if (error) throw error;
+}
+
+function scheduleCloudSave() {
+  if (cloudSaveTimer) window.clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = window.setTimeout(() => {
+    cloudSaveTimer = null;
+    saveCloudState();
+  }, 350);
+}
+
+async function saveCloudState() {
+  if (cloudSaveInFlight) {
+    cloudSaveQueued = true;
+    return;
+  }
+  if (!cloudEnabled || !supabaseClient || !selectedProfile) return;
+  cloudSaveInFlight = true;
+  const profile = selectedProfile;
+  const state = serializeWorkoutState();
+  const snapshot = stableSerialize(state);
+  storageModeLabel.textContent = "Syncing…";
+  try {
+    await writeCloudState(profile, state);
+    if (selectedProfile === profile) storageModeLabel.textContent = "Cloud synced";
+  } catch (error) {
+    const message = "Cloud sync failed. Your latest changes are saved on this device and will retry after the next edit.";
+    if (selectedProfile === profile) {
+      storageModeLabel.textContent = "Sync failed";
+      showNotice(message);
+    }
+    console.error("Cloud workout save failed:", error);
+  } finally {
+    cloudSaveInFlight = false;
+    if (cloudSaveQueued) {
+      cloudSaveQueued = false;
+      if (selectedProfile && (selectedProfile !== profile || stableSerialize(serializeWorkoutState()) !== snapshot)) {
+        scheduleCloudSave();
+      }
+    }
+  }
+}
+
+function applyCloudState(state) {
+  if (!selectedProfile || !storageKey) return;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    const profileState = loadWorkouts();
+    workouts = profileState.workouts;
+    selectedWorkoutId = profileState.selectedWorkoutId;
+    selectedWeek = profileState.selectedWeek;
+    workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
+    render();
+    storageModeLabel.textContent = "Cloud synced";
+    document.getElementById("announcements").textContent = "Workout changes from the other device were loaded.";
+  } catch (error) {
+    showNotice("A cloud update arrived but couldn't be applied on this device. Your current workout remains visible.");
+    console.error("Cloud workout update could not be applied:", error);
+  }
+}
+
+function queueIncomingCloudState(state) {
+  if (stableSerialize(serializeWorkoutState()) === stableSerialize(state)) return;
+  pendingCloudState = state;
+  const focusedElement = document.activeElement;
+  if (!(focusedElement instanceof HTMLInputElement || focusedElement instanceof HTMLTextAreaElement || focusedElement instanceof HTMLSelectElement)) {
+    applyPendingCloudState();
+  } else {
+    document.getElementById("announcements").textContent = "A workout update is waiting until you finish editing.";
+  }
+}
+
+function applyPendingCloudState() {
+  if (!pendingCloudState) return;
+  const focusedElement = document.activeElement;
+  if (focusedElement instanceof HTMLInputElement || focusedElement instanceof HTMLTextAreaElement || focusedElement instanceof HTMLSelectElement) return;
+  const nextState = pendingCloudState;
+  pendingCloudState = null;
+  applyCloudState(nextState);
+}
+
+function subscribeToCloudProfile(profile) {
+  if (activeCloudSubscription) supabaseClient.removeChannel(activeCloudSubscription);
+  activeCloudSubscription = supabaseClient
+    .channel(`workout-profile-${profile}`)
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "workout_profiles",
+      filter: `profile_id=eq.${profile}`,
+    }, (payload) => {
+      if (payload.new?.state) queueIncomingCloudState(payload.new.state);
+    })
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        storageModeLabel.textContent = "Cloud synced";
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        storageModeLabel.textContent = "Cloud reconnecting";
+      }
+    });
+}
+
+function setCloudLoginMessage(message) {
+  cloudLoginMessage.textContent = message;
+}
+
+function showCloudProfilePicker(isSignedIn) {
+  cloudSignedIn = isSignedIn;
+  cloudLoginPanel.hidden = !cloudEnabled || isSignedIn;
+  profileChoicePanel.hidden = cloudEnabled && !isSignedIn;
+  cloudSignoutButton.hidden = !cloudEnabled || !isSignedIn;
+  cloudSignoutActiveButton.hidden = !cloudEnabled || !isSignedIn;
+}
+
+async function initializeCloud() {
+  if (!hasCloudConfig()) {
+    cloudEnabled = false;
+    profileChoicePanel.hidden = false;
+    localModeNote.hidden = false;
+    localModeNote.textContent = "Local-only mode: workouts are saved on this device and do not sync.";
+    return;
+  }
+
+  cloudEnabled = true;
+  profileChoicePanel.hidden = true;
+  localModeNote.hidden = true;
+  cloudLoginPanel.hidden = false;
+  setCloudLoginMessage("Connecting to secure workout storage…");
+
+  try {
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    supabaseClient = createClient(cloudConfig.supabaseUrl, cloudConfig.supabaseAnonKey);
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    showCloudProfilePicker(Boolean(data.session));
+    setCloudLoginMessage(data.session ? "" : "Sign in with an account invited to this workout space.");
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        cloudSignedIn = false;
+        returnToProfilePicker();
+        showCloudProfilePicker(false);
+      } else if (event === "SIGNED_IN" && session) {
+        showCloudProfilePicker(true);
+        setCloudLoginMessage("");
+      }
+    });
+  } catch (error) {
+    setCloudLoginMessage("Cloud connection failed. Check the cloud setup and internet connection, then reload.");
+    console.error("Cloud initialization failed:", error);
+  }
+}
+
+async function resolveCloudConflict() {
+  return new Promise((resolve) => {
+    cloudConflictResolution = resolve;
+    cloudConflictDialog.showModal();
+  });
+}
+
+async function activateProfile(profile) {
+  if (!["sean", "kick"].includes(profile) || profileLoadInProgress) return;
+  if (cloudEnabled && (!supabaseClient || !cloudSignedIn)) return;
+  profileLoadInProgress = true;
+  profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = true; });
   selectedProfile = profile;
   storageKey = `${PROFILE_STORAGE_PREFIX}${profile}`;
-  const profileState = loadWorkouts();
+  let profileState = loadWorkouts();
+  if (cloudEnabled) {
+    try {
+      const { data, error } = await supabaseClient
+        .from("workout_profiles")
+        .select("state")
+        .eq("profile_id", profile)
+        .maybeSingle();
+      if (error) throw error;
+      if (data && (!data.state || typeof data.state !== "object" || !Array.isArray(data.state.workouts))) {
+        throw new Error("The cloud workout data has an unexpected format.");
+      }
+      const localState = {
+        workouts: profileState.workouts,
+        selectedWorkoutId: profileState.selectedWorkoutId,
+        selectedWeek: profileState.selectedWeek,
+      };
+      const hasLocalData = profileState.workouts.length > 0;
+      if (data?.state) {
+        const localDiffers = stableSerialize(localState) !== stableSerialize(data.state);
+        if (hasLocalData && localDiffers) {
+          const choice = await resolveCloudConflict();
+          if (choice === "cancel") {
+            selectedProfile = null;
+            storageKey = "";
+            profileLoadInProgress = false;
+            profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = false; });
+            return;
+          }
+          if (choice === "local") {
+            await writeCloudState(profile, localState);
+          } else {
+            localStorage.setItem(storageKey, JSON.stringify(data.state));
+            profileState = loadWorkouts();
+          }
+        } else {
+          localStorage.setItem(storageKey, JSON.stringify(data.state));
+          profileState = loadWorkouts();
+        }
+      } else {
+        if (hasLocalData) await writeCloudState(profile, localState);
+      }
+    } catch (error) {
+      selectedProfile = null;
+      storageKey = "";
+      showNotice("Cloud data couldn't be loaded. Your device's saved data was left unchanged. Check your connection and try again.");
+      console.error("Cloud profile load failed:", error);
+      profileLoadInProgress = false;
+      profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = false; });
+      return;
+    }
+  }
   workouts = profileState.workouts;
   selectedWorkoutId = profileState.selectedWorkoutId;
   selectedWeek = profileState.selectedWeek;
   workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
   activeProfileName.textContent = profile === "sean" ? "Sean" : "Kick";
+  storageModeLabel.textContent = cloudEnabled ? "Cloud synced" : "Saved for";
+  cloudSignoutActiveButton.hidden = !cloudEnabled;
   welcomeScreen.hidden = true;
   appShell.hidden = false;
   render();
   if (profileState.needsSave) saveWorkout();
+  if (cloudEnabled) subscribeToCloudProfile(profile);
   document.getElementById("announcements").textContent = `${activeProfileName.textContent}'s profile loaded.`;
+  profileLoadInProgress = false;
+  profileChoicePanel.querySelectorAll("[data-profile]").forEach((button) => { button.disabled = false; });
   switchProfileButton.focus();
 }
 
 function returnToProfilePicker() {
   if (shadowDialog.open) shadowDialog.close();
+  if (cloudSaveTimer) {
+    window.clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = null;
+    if (selectedProfile) saveCloudState();
+  }
+  if (activeCloudSubscription) {
+    supabaseClient.removeChannel(activeCloudSubscription);
+    activeCloudSubscription = null;
+  }
+  pendingCloudState = null;
   workoutContextMenu.hidden = true;
   contextWorkoutId = null;
   selectedProfile = null;
@@ -517,6 +794,7 @@ function returnToProfilePicker() {
   workout = null;
   appShell.hidden = true;
   welcomeScreen.hidden = false;
+  showCloudProfilePicker(cloudSignedIn);
   welcomeScreen.querySelector("[data-profile]").focus();
 }
 
@@ -1483,3 +1761,62 @@ welcomeScreen.addEventListener("click", (event) => {
 });
 
 switchProfileButton.addEventListener("click", returnToProfilePicker);
+
+cloudLoginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!supabaseClient) return;
+  cloudLoginButton.disabled = true;
+  setCloudLoginMessage("Signing in…");
+  try {
+    const formData = new FormData(cloudLoginForm);
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email: String(formData.get("email") || "").trim(),
+      password: String(formData.get("password") || ""),
+    });
+    if (error) throw error;
+    cloudLoginForm.reset();
+    showCloudProfilePicker(true);
+    setCloudLoginMessage("");
+  } catch (error) {
+    setCloudLoginMessage("Sign-in failed. Check your email, password, and account access.");
+    console.error("Cloud sign-in failed:", error);
+  } finally {
+    cloudLoginButton.disabled = false;
+  }
+});
+
+async function signOutOfCloud() {
+  if (!supabaseClient) return;
+  if (selectedProfile) returnToProfilePicker();
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    showNotice("Sign out failed. Check your connection and try again.");
+    console.error("Cloud sign-out failed:", error);
+    return;
+  }
+  showCloudProfilePicker(false);
+  setCloudLoginMessage("You have been signed out.");
+}
+
+cloudSignoutButton.addEventListener("click", signOutOfCloud);
+cloudSignoutActiveButton.addEventListener("click", signOutOfCloud);
+
+function settleCloudConflict(choice) {
+  if (!cloudConflictResolution) return;
+  const resolve = cloudConflictResolution;
+  cloudConflictResolution = null;
+  cloudConflictDialog.close();
+  resolve(choice);
+}
+
+cancelCloudConflictButton.addEventListener("click", () => settleCloudConflict("cancel"));
+useCloudDataButton.addEventListener("click", () => settleCloudConflict("cloud"));
+uploadLocalDataButton.addEventListener("click", () => settleCloudConflict("local"));
+cloudConflictDialog.addEventListener("cancel", () => settleCloudConflict("cancel"));
+
+document.addEventListener("focusout", () => window.setTimeout(applyPendingCloudState, 0));
+window.addEventListener("online", () => {
+  if (cloudEnabled && selectedProfile) scheduleCloudSave();
+});
+
+initializeCloud();

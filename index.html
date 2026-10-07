@@ -7,6 +7,7 @@
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="cloud-config.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body class="intensity-theme">
@@ -14,11 +15,27 @@
       <div class="welcome-content">
         <p class="welcome-brand">SPIJKER TRACK</p>
         <h1 id="welcome-title">WELCOME</h1>
-        <p class="welcome-prompt">Select user</p>
-        <div class="profile-choices" role="group" aria-label="Select user profile">
-          <button class="profile-choice" type="button" data-profile="sean">Sean</button>
-          <button class="profile-choice" type="button" data-profile="kick">Kick</button>
-        </div>
+        <section id="cloud-login-panel" class="cloud-login-panel" aria-labelledby="cloud-login-title" hidden>
+          <h2 id="cloud-login-title">Sign in to sync</h2>
+          <p class="welcome-prompt">Use your private account to sync Sean and Kick's workouts across devices.</p>
+          <form id="cloud-login-form" class="cloud-login-form">
+            <label for="cloud-email">Email</label>
+            <input id="cloud-email" name="email" type="email" autocomplete="username" required>
+            <label for="cloud-password">Password</label>
+            <input id="cloud-password" name="password" type="password" autocomplete="current-password" required>
+            <button id="cloud-login-button" class="profile-choice" type="submit">Sign in</button>
+          </form>
+          <p id="cloud-login-message" class="cloud-login-message" role="status" aria-live="polite"></p>
+        </section>
+        <p id="local-mode-note" class="welcome-prompt" hidden></p>
+        <section id="profile-choice-panel" aria-labelledby="profile-choice-title" hidden>
+          <p id="profile-choice-title" class="welcome-prompt">Select user</p>
+          <div class="profile-choices" role="group" aria-label="Select user profile">
+            <button class="profile-choice" type="button" data-profile="sean">Sean</button>
+            <button class="profile-choice" type="button" data-profile="kick">Kick</button>
+          </div>
+        </section>
+        <button id="cloud-signout-button" class="cloud-signout-button" type="button" hidden>Sign out</button>
       </div>
     </main>
 
@@ -31,9 +48,10 @@
         <div class="topbar-actions">
           <div class="storage-indicator">
             <span class="storage-dot" aria-hidden="true"></span>
-            <span class="saved-label">Saved for</span>
+            <span id="storage-mode-label" class="saved-label">Saved for</span>
             <strong id="active-profile-name"></strong>
           </div>
+          <button id="cloud-signout-active-button" class="switch-profile-button" type="button" hidden>Sign out</button>
           <button id="switch-profile-button" class="switch-profile-button" type="button">Switch user</button>
         </div>
       </header>
@@ -44,6 +62,18 @@
       </section>
 
       <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
+      <dialog id="cloud-conflict-dialog" class="shadow-dialog" aria-labelledby="cloud-conflict-title">
+        <div class="shadow-form">
+          <h2 id="cloud-conflict-title">Choose which workout data to use</h2>
+          <p class="shadow-description">This device and the cloud both have saved workouts for this profile. Choose which copy to keep: replacing cloud data overwrites the cloud copy, while using cloud data replaces this device's copy. They will not be merged.</p>
+          <div class="shadow-dialog-actions">
+            <button id="cancel-cloud-conflict-button" class="start-over-button" type="button">Cancel</button>
+            <span class="shadow-dialog-spacer"></span>
+            <button id="use-cloud-data-button" class="start-over-button" type="button">Use cloud data</button>
+            <button id="upload-local-data-button" class="workout-action-button" type="button">Replace cloud with this device</button>
+          </div>
+        </div>
+      </dialog>
 
       <section class="workout-planner" aria-labelledby="workouts-heading">
         <div class="workout-planner-heading">

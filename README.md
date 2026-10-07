@@ -23,3 +23,7 @@ This project is licensed under the terms of the MIT open source license. Please 
 ## Support
 
 Please refer to the SUPPORT.md file for details.
+
+## Workout app cloud sync
+
+The workout tracker can sync Sean and Kick's profiles across devices when a Supabase project is configured. See [CLOUD_SYNC.md](./CLOUD_SYNC.md) for the setup instructions and access-control requirements.
