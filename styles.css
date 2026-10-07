@@ -1672,8 +1672,8 @@ body.intensity-theme .session-controls :focus-visible {
   .set-input {
     min-width: 45px;
     height: 34px;
-    padding: 0 7px;
-    font-size: 12px;
+    padding: 0 4px;
+    font-size: 16px;
   }
 
   .exercise-footer {
