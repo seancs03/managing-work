@@ -754,28 +754,22 @@ h1 {
   cursor: pointer;
 }
 
-.timer-icon {
+.workout-timer-toggle::before {
+  content: "";
+  display: block;
   width: 13px;
   height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
+  background: linear-gradient(
+    to right,
+    currentColor 0 3px,
+    transparent 3px 10px,
+    currentColor 10px 13px
+  );
 }
 
-.timer-play-icon {
-  display: none;
-  fill: currentColor;
-  stroke: none;
-}
-
-.workout-timer-toggle.is-paused .timer-pause-icon {
-  display: none;
-}
-
-.workout-timer-toggle.is-paused .timer-play-icon {
-  display: block;
+.workout-timer-toggle.is-paused::before {
+  background: currentColor;
+  clip-path: polygon(15% 0, 100% 50%, 15% 100%);
 }
 
 .workout-timer-toggle:hover {
