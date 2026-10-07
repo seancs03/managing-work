@@ -1578,7 +1578,9 @@ body.intensity-theme .session-controls :focus-visible {
 
   .storage-indicator .saved-label {
     display: inline;
-    font-size: 8px;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
     white-space: nowrap;
   }
 
