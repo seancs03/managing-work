@@ -1114,6 +1114,7 @@ function setMyoNotesViewing(viewing) {
   myoNotesRows.querySelectorAll("input").forEach((input) => { input.readOnly = viewing; });
   editMyoNotesButton.hidden = !viewing;
   confirmMyoNotesButton.hidden = viewing;
+  cancelMyoNotesButton.textContent = viewing ? "Close" : "Cancel";
 }
 
 function openMyoNotesDialog(exercise, set, trigger, viewing = false) {
