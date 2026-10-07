@@ -85,31 +85,27 @@ body {
   font: 700 20px "Manrope", sans-serif;
 }
 
-.cloud-login-form {
-  display: grid;
-  gap: 10px;
-  text-align: left;
-}
-
-.cloud-login-form label {
-  color: #c3c3c3;
-  font-size: 13px;
-}
-
-.cloud-login-form input {
-  width: 100%;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid #555;
-  border-radius: 7px;
-  background: #151515;
-  color: #fff;
-  font: inherit;
-}
-
-.cloud-login-form button {
+.google-signin-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   width: 100%;
   margin-top: 8px;
+  border-color: #555;
+  background: #fff;
+  color: #222;
+}
+
+.google-signin-button:hover {
+  border-color: #aaa;
+  background: #f2f2f2;
+}
+
+.google-mark {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
 }
 
 .cloud-login-message {

@@ -5,7 +5,6 @@ const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
 const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
 const cloudLoginPanel = document.getElementById("cloud-login-panel");
 const profileChoicePanel = document.getElementById("profile-choice-panel");
-const cloudLoginForm = document.getElementById("cloud-login-form");
 const cloudLoginMessage = document.getElementById("cloud-login-message");
 const cloudLoginButton = document.getElementById("cloud-login-button");
 const cloudSignoutButton = document.getElementById("cloud-signout-button");
@@ -670,21 +669,53 @@ async function initializeCloud() {
     supabaseClient = createClient(cloudConfig.supabaseUrl, cloudConfig.supabaseAnonKey);
     const { data, error } = await supabaseClient.auth.getSession();
     if (error) throw error;
-    showCloudProfilePicker(Boolean(data.session));
-    setCloudLoginMessage(data.session ? "" : "Sign in with an account invited to this workout space.");
+    if (data.session) {
+      await authorizeGoogleMember(data.session.user);
+    } else {
+      showCloudProfilePicker(false);
+      setCloudLoginMessage("Sign in with one of the Google accounts authorized for this workout space.");
+    }
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         cloudSignedIn = false;
         returnToProfilePicker();
         showCloudProfilePicker(false);
       } else if (event === "SIGNED_IN" && session) {
-        showCloudProfilePicker(true);
-        setCloudLoginMessage("");
+        window.setTimeout(() => authorizeGoogleMember(session.user), 0);
       }
     });
   } catch (error) {
     setCloudLoginMessage("Cloud connection failed. Check the cloud setup and internet connection, then reload.");
     console.error("Cloud initialization failed:", error);
+  }
+}
+
+async function authorizeGoogleMember(user) {
+  if (!user?.id) {
+    showCloudProfilePicker(false);
+    setCloudLoginMessage("Sign in with one of the Google accounts authorized for this workout space.");
+    return;
+  }
+  setCloudLoginMessage("Checking access…");
+  try {
+    const { data, error } = await supabaseClient
+      .from("workout_sync_members")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      await supabaseClient.auth.signOut();
+      showCloudProfilePicker(false);
+      setCloudLoginMessage("This Google account isn't authorized for the shared workout space. Ask the owner to add your email.");
+      return;
+    }
+    showCloudProfilePicker(true);
+    setCloudLoginMessage("");
+  } catch (error) {
+    showCloudProfilePicker(false);
+    setCloudLoginMessage("We couldn't verify access to the workout space. Check your connection and try again.");
+    console.error("Cloud member verification failed:", error);
   }
 }
 
@@ -1762,26 +1793,24 @@ welcomeScreen.addEventListener("click", (event) => {
 
 switchProfileButton.addEventListener("click", returnToProfilePicker);
 
-cloudLoginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+cloudLoginButton.addEventListener("click", async () => {
   if (!supabaseClient) return;
   cloudLoginButton.disabled = true;
-  setCloudLoginMessage("Signing in…");
+  setCloudLoginMessage("Opening Google sign-in…");
   try {
-    const formData = new FormData(cloudLoginForm);
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email: String(formData.get("email") || "").trim(),
-      password: String(formData.get("password") || ""),
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+        queryParams: { prompt: "select_account" },
+      },
     });
     if (error) throw error;
-    cloudLoginForm.reset();
-    showCloudProfilePicker(true);
-    setCloudLoginMessage("");
   } catch (error) {
-    setCloudLoginMessage("Sign-in failed. Check your email, password, and account access.");
-    console.error("Cloud sign-in failed:", error);
-  } finally {
     cloudLoginButton.disabled = false;
+    setCloudLoginMessage("Google sign-in couldn't be started. Check the Supabase Google provider setup and try again.");
+    console.error("Google sign-in failed:", error);
   }
 });
 
