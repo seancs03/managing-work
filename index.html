@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=workout-duration-timer">
+    <link rel="stylesheet" href="styles.css?v=timer-control-icons">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=workout-duration-timer" defer></script>
+    <script src="app.js?v=timer-control-icons" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -176,7 +176,14 @@
                   <button id="workout-action" class="workout-action-button" type="button" disabled>Start workout</button>
                   <div id="workout-timer-controls" class="workout-timer-controls" hidden>
                     <span id="workout-timer-display" class="workout-timer-display" role="timer" aria-label="Workout duration">00:00</span>
-                    <button id="workout-timer-toggle" class="workout-timer-toggle" type="button" aria-label="Pause workout timer" title="Pause timer">Ⅱ</button>
+                    <button id="workout-timer-toggle" class="workout-timer-toggle" type="button" aria-label="Pause workout timer" title="Pause timer">
+                      <svg class="timer-icon timer-pause-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                        <path d="M5 3.5v9M11 3.5v9" />
+                      </svg>
+                      <svg class="timer-icon timer-play-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                        <path d="M5 3.5 12 8l-7 4.5z" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>

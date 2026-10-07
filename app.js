@@ -137,7 +137,7 @@ function updateWorkoutTimerDisplay() {
   if (!workout || workout.status !== "in-progress") return;
   workoutTimerDisplay.textContent = formatWorkoutDuration(getWorkoutElapsedMs(workout));
   const isRunning = Number.isFinite(workout.timerStartedAt);
-  workoutTimerToggle.textContent = isRunning ? "Ⅱ" : "▶";
+  workoutTimerToggle.classList.toggle("is-paused", !isRunning);
   workoutTimerToggle.setAttribute("aria-label", `${isRunning ? "Pause" : "Resume"} workout timer`);
   workoutTimerToggle.title = `${isRunning ? "Pause" : "Resume"} timer`;
 }
