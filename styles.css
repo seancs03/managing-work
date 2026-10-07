@@ -745,12 +745,37 @@ h1 {
   width: 28px;
   height: 28px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-size: 12px;
+}
+
+.timer-icon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.timer-play-icon {
+  display: none;
+  fill: currentColor;
+  stroke: none;
+}
+
+.workout-timer-toggle.is-paused .timer-pause-icon {
+  display: none;
+}
+
+.workout-timer-toggle.is-paused .timer-play-icon {
+  display: block;
 }
 
 .workout-timer-toggle:hover {
