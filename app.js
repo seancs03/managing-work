@@ -156,6 +156,7 @@ function buildWorkoutProofPdf(sourceWorkout) {
     { title: "Reps", x: 246 },
     { title: "RPE", x: 336 },
     { title: "LLP reps", x: 418 },
+    { title: "MYO", x: 500 },
   ];
   sourceWorkout.exercises.forEach((exercise, exerciseIndex) => {
     ensureSpace(72);
@@ -173,6 +174,7 @@ function buildWorkoutProofPdf(sourceWorkout) {
         (set.reps || "-").slice(0, 12),
         (set.rpe || "-").slice(0, 12),
         (set.llp ? (set.llpReps || "-") : "-").slice(0, 18),
+        set.myo ? "Yes" : "-",
       ];
       values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x, y, 10));
       y -= 18;
@@ -289,6 +291,7 @@ function normalizeWorkout(source) {
                 rpe: set.rpe == null ? "" : String(set.rpe).trim(),
                 llp: set.llp === true,
                 llpReps: set.llpReps == null ? "" : String(set.llpReps).trim(),
+                myo: set.myo === true,
               }))
             : null,
           sets: Array.isArray(exercise.sets)
@@ -302,6 +305,7 @@ function normalizeWorkout(source) {
                 rpe: set.rpe == null ? "" : String(set.rpe).trim(),
                 llp: set.llp === true,
                 llpReps: set.llpReps == null ? "" : String(set.llpReps).trim(),
+                myo: set.myo === true,
               }))
             : [],
         }))
@@ -342,6 +346,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
           rpe: "",
           llp: false,
           llpReps: "",
+          myo: false,
         })),
       }));
       allWorkouts.push(peer);
@@ -382,6 +387,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
               rpe: "",
               llp: false,
               llpReps: "",
+              myo: false,
             };
         }),
       };
@@ -981,6 +987,7 @@ function restoreMissingShadowSets(targetWorkout, sourceWorkout) {
         rpe: "",
         llp: false,
         llpReps: "",
+        myo: false,
       };
     });
   });
@@ -1109,6 +1116,20 @@ function renderSetRow(exercise, set, index) {
   }
   row.append(llpCell);
 
+  const myoCell = document.createElement("td");
+  myoCell.className = "myo-cell";
+  const myoCheckbox = document.createElement("input");
+  myoCheckbox.className = "myo-checkbox";
+  myoCheckbox.type = "checkbox";
+  myoCheckbox.checked = set.myo === true;
+  myoCheckbox.disabled = exercise.bailed === true;
+  myoCheckbox.dataset.exerciseId = exercise.id;
+  myoCheckbox.dataset.setId = set.id;
+  myoCheckbox.dataset.myo = "true";
+  myoCheckbox.setAttribute("aria-label", `Myo reps for set ${setNumber} of ${exercise.name}`);
+  myoCell.append(myoCheckbox);
+  row.append(myoCell);
+
   const actionCell = document.createElement("td");
   const removeButton = createElement("button", "icon-button remove-set", "×");
   removeButton.type = "button";
@@ -1176,10 +1197,11 @@ function renderExerciseCard(exercise, index) {
   const table = createElement("table", "sets-table");
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
-  for (const label of ["SET", "WEIGHT (KG)", "REPS", "RPE", "LLP", ""]) {
+  for (const label of ["SET", "WEIGHT (KG)", "REPS", "RPE", "LLP", "MYO", ""]) {
     const cell = document.createElement("th");
     cell.scope = "col";
     if (label === "LLP") cell.title = "Long-length partials";
+    if (label === "MYO") cell.title = "Myo reps";
     if (label) cell.textContent = label;
     else {
       const hiddenLabel = createElement("span", "sr-only", "Actions");
@@ -1193,7 +1215,7 @@ function renderExerciseCard(exercise, index) {
   if (exercise.sets.length === 0) {
     const row = document.createElement("tr");
     const cell = createElement("td", "empty-sets-cell", "No sets yet — add one when you're ready.");
-    cell.colSpan = 6;
+    cell.colSpan = 7;
     row.append(cell);
     tbody.append(row);
   } else {
@@ -1215,6 +1237,10 @@ function renderExerciseCard(exercise, index) {
   card.querySelectorAll("input[data-llp]").forEach((llpCheckbox) => {
     const setIndex = exercise.sets.findIndex((set) => set.id === llpCheckbox.dataset.setId);
     llpCheckbox.setAttribute("aria-label", `Long-length partials for set ${setIndex + 1} of ${exercise.name || "unnamed exercise"}`);
+  });
+  card.querySelectorAll("input[data-myo]").forEach((myoCheckbox) => {
+    const setIndex = exercise.sets.findIndex((set) => set.id === myoCheckbox.dataset.setId);
+    myoCheckbox.setAttribute("aria-label", `Myo reps for set ${setIndex + 1} of ${exercise.name || "unnamed exercise"}`);
   });
   return card;
 }
@@ -1606,6 +1632,7 @@ confirmStartOverButton.addEventListener("click", () => {
       set.rpe = "";
       set.llp = false;
       set.llpReps = "";
+      set.myo = false;
     });
   });
   workout.status = "planned";
@@ -1628,7 +1655,7 @@ addExerciseForm.addEventListener("submit", (event) => {
     id: makeId(),
     planId: makeId(),
     name: name.slice(0, 60),
-    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "" }],
+    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false }],
   });
   syncWorkoutPlan(workout, workouts, false);
   exerciseNameInput.value = "";
@@ -1699,11 +1726,17 @@ exerciseList.addEventListener("keydown", (event) => {
 });
 
 exerciseList.addEventListener("change", (event) => {
-  const checkbox = event.target.closest("input[data-llp]");
+  const checkbox = event.target.closest("input[data-llp], input[data-myo]");
   if (!checkbox) return;
   const exercise = workout.exercises.find((item) => item.id === checkbox.dataset.exerciseId);
   const set = exercise?.sets.find((item) => item.id === checkbox.dataset.setId);
   if (!set) return;
+  if (checkbox.dataset.myo) {
+    set.myo = checkbox.checked;
+    saveWorkout();
+    checkbox.setAttribute("aria-label", `Myo reps for set ${exercise.sets.indexOf(set) + 1} of ${exercise.name || "unnamed exercise"}`);
+    return;
+  }
   set.llp = checkbox.checked;
   saveWorkout();
   const cell = checkbox.closest(".llp-cell");
@@ -1734,6 +1767,7 @@ exerciseList.addEventListener("click", (event) => {
           set.rpe = "";
           set.llp = false;
           set.llpReps = "";
+          set.myo = false;
           return;
         }
         set.weight = snapshot.weight;
@@ -1741,6 +1775,7 @@ exerciseList.addEventListener("click", (event) => {
         set.rpe = snapshot.rpe;
         set.llp = snapshot.llp;
         set.llpReps = snapshot.llpReps;
+        set.myo = snapshot.myo === true;
       });
       exercise.bailed = false;
       exercise.bailSnapshot = null;
@@ -1766,7 +1801,7 @@ exerciseList.addEventListener("click", (event) => {
   let focusId = "";
   let announcement = "";
   if (button.dataset.action === "add-set") {
-    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "" };
+    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false };
     exercise.sets.push(set);
     syncWorkoutPlan(workout, workouts, false);
     focusId = `add-set-${exercise.id}`;
@@ -1833,6 +1868,7 @@ confirmBailButton.addEventListener("click", () => {
     rpe: set.rpe,
     llp: set.llp,
     llpReps: set.llpReps,
+    myo: set.myo,
   }));
   exercise.bailed = true;
   exercise.sets.forEach((set) => {
