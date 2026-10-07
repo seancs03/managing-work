@@ -7,7 +7,6 @@ const cloudLoginPanel = document.getElementById("cloud-login-panel");
 const profileChoicePanel = document.getElementById("profile-choice-panel");
 const cloudLoginMessage = document.getElementById("cloud-login-message");
 const cloudLoginButton = document.getElementById("cloud-login-button");
-const cloudSignoutButton = document.getElementById("cloud-signout-button");
 const cloudSignoutActiveButton = document.getElementById("cloud-signout-active-button");
 const localModeNote = document.getElementById("local-mode-note");
 const storageModeLabel = document.getElementById("storage-mode-label");
@@ -645,7 +644,6 @@ function showCloudProfilePicker(isSignedIn) {
   cloudSignedIn = isSignedIn;
   cloudLoginPanel.hidden = !cloudEnabled || isSignedIn;
   profileChoicePanel.hidden = cloudEnabled && !isSignedIn;
-  cloudSignoutButton.hidden = !cloudEnabled || !isSignedIn;
   cloudSignoutActiveButton.hidden = !cloudEnabled || !isSignedIn;
 }
 
@@ -1827,7 +1825,6 @@ async function signOutOfCloud() {
   setCloudLoginMessage("You have been signed out.");
 }
 
-cloudSignoutButton.addEventListener("click", signOutOfCloud);
 cloudSignoutActiveButton.addEventListener("click", signOutOfCloud);
 
 function settleCloudConflict(choice) {
