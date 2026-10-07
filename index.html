@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=live-bail-meter">
+    <link rel="stylesheet" href="styles.css?v=bail-meter-page-heading">
     <script src="cloud-config.js" defer></script>
     <script src="app.js?v=live-bail-meter" defer></script>
   </head>
@@ -43,6 +43,20 @@
           <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
           <span>SPIJKER TRACK<span class="brand-period">.</span></span>
         </a>
+        <div class="topbar-actions">
+          <div class="storage-indicator">
+            <span class="storage-dot" aria-hidden="true"></span>
+            <span id="storage-mode-label" class="saved-label">Saved for</span>
+            <strong id="active-profile-name"></strong>
+          </div>
+          <button id="cloud-signout-active-button" class="switch-profile-button" type="button" hidden>Sign out</button>
+          <button id="switch-profile-button" class="switch-profile-button" type="button">Switch user</button>
+        </div>
+      </header>
+
+      <main class="page-shell">
+      <section class="intro" aria-labelledby="page-title">
+        <h1 id="page-title">Workout log</h1>
         <section id="bail-meter" class="bail-meter" aria-label="Live BAIL meter: total bailed exercises across saved workouts">
           <h2>Live BAIL meter:</h2>
           <div class="bail-meter-content">
@@ -62,20 +76,6 @@
             </div>
           </div>
         </section>
-        <div class="topbar-actions">
-          <div class="storage-indicator">
-            <span class="storage-dot" aria-hidden="true"></span>
-            <span id="storage-mode-label" class="saved-label">Saved for</span>
-            <strong id="active-profile-name"></strong>
-          </div>
-          <button id="cloud-signout-active-button" class="switch-profile-button" type="button" hidden>Sign out</button>
-          <button id="switch-profile-button" class="switch-profile-button" type="button">Switch user</button>
-        </div>
-      </header>
-
-      <main class="page-shell">
-      <section class="intro" aria-labelledby="page-title">
-        <h1 id="page-title">Workout log</h1>
       </section>
 
       <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
