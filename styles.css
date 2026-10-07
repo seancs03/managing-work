@@ -1430,6 +1430,18 @@ body.intensity-theme .session-controls :focus-visible {
   font-size: 13px;
 }
 
+.rpe-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.rpe-input::-webkit-inner-spin-button,
+.rpe-input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 .exercise-input-wrap input::placeholder {
   color: #777777;
 }
@@ -1867,35 +1879,36 @@ body.intensity-theme .session-controls :focus-visible {
 
   .sets-table th:first-child,
   .sets-table td:first-child {
-    width: 30px;
+    width: 25px;
     padding-right: 0;
   }
 
   .sets-table th:nth-child(2),
   .sets-table td:nth-child(2) {
-    width: 34px;
-    padding-left: 5px;
+    width: 27px;
+    padding-left: 3px;
   }
 
   .sets-table th:nth-last-child(2),
   .sets-table td:nth-last-child(2) {
-    width: 96px;
+    width: 78px;
   }
 
   .sets-table th:last-child,
   .sets-table td:last-child {
-    width: 62px;
+    width: 58px;
   }
 
   .sets-table td {
-    padding-right: 4px;
-    padding-left: 4px;
+    padding-right: 2px;
+    padding-left: 2px;
   }
 
   .set-input {
-    min-width: 45px;
+    width: 100%;
+    min-width: 0;
     height: 34px;
-    padding: 0 4px;
+    padding: 0 3px;
     font-size: 16px;
   }
 

@@ -1012,6 +1012,7 @@ function makeInput(exercise, set, field, setNumber) {
   if (isWeight) input.maxLength = 24;
   if (field === "llpReps") input.classList.add("llp-reps-input");
   if (field === "myoReps") input.classList.add("myo-reps-input");
+  if (isRpe) input.classList.add("rpe-input");
   input.value = set[field];
   input.disabled = exercise.bailed === true;
   const shadowSet = findShadowSet(exercise, set);
