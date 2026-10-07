@@ -1177,6 +1177,11 @@ h1 {
   border-top: 1px solid #eeeeee;
 }
 
+.sets-table td:nth-child(2) .set-number {
+  display: inline-block;
+  margin-left: 7px;
+}
+
 .set-number {
   color: #666666;
   font: 600 11px "Manrope", sans-serif;
@@ -1959,6 +1964,10 @@ body.intensity-theme .myo-notes-button:focus-visible {
   .sets-table td:nth-child(2) {
     width: 27px;
     padding-left: 3px;
+  }
+
+  .sets-table td:nth-child(2) .set-number {
+    margin-left: 5px;
   }
 
   .sets-table th:nth-last-child(2),
