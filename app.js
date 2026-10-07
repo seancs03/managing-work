@@ -748,6 +748,7 @@ function applyCloudState(state) {
 
 function queueIncomingCloudState(state) {
   if (stableSerialize(serializeWorkoutState()) === stableSerialize(state)) return;
+  if (cloudSaveTimer || cloudSaveInFlight) return;
   pendingCloudState = state;
   const focusedElement = document.activeElement;
   if (!(focusedElement instanceof HTMLInputElement || focusedElement instanceof HTMLTextAreaElement || focusedElement instanceof HTMLSelectElement)) {
@@ -763,6 +764,8 @@ function applyPendingCloudState() {
   if (focusedElement instanceof HTMLInputElement || focusedElement instanceof HTMLTextAreaElement || focusedElement instanceof HTMLSelectElement) return;
   const nextState = pendingCloudState;
   pendingCloudState = null;
+  if (cloudSaveTimer || cloudSaveInFlight || myoNotesDialog.open) return;
+  if (stableSerialize(serializeWorkoutState()) === stableSerialize(nextState)) return;
   applyCloudState(nextState);
 }
 
