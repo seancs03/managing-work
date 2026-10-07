@@ -284,19 +284,8 @@ function buildWorkoutProofPdf(sourceWorkout) {
         (set.llp ? (set.llpReps || "-") : "-").slice(0, 18),
         (set.myo ? (set.myoReps || "Yes") : "-").slice(0, 12),
       ];
-      values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x, y, 10));
+      values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x + (valueIndex === 0 ? 6 : 0), y, 10));
       y -= 18;
-      const myoNotes = (set.myo ? set.myoNotes ?? [] : [])
-        .map((note, noteIndex) => `${noteIndex + 1}=${note}`)
-        .join("  ");
-      if (myoNotes && set.myoNotesConfirmed === true) {
-        const noteLines = myoNotes.match(/.{1,72}(?:\s|$)/g) ?? [myoNotes];
-        ensureSpace(noteLines.length * 13);
-        noteLines.forEach((line, lineIndex) => {
-          addText(`${lineIndex === 0 ? "MYO notes: " : "            "}${line.trim()}`, 58, y, 9);
-          y -= 13;
-        });
-      }
     });
     y -= 10;
   });
