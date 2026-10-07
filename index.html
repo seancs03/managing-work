@@ -8,7 +8,7 @@
     <title>SPIJKER TRACK — workout log</title>
     <link rel="stylesheet" href="styles.css?v=black-welcome-no-picker-signout">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=remove-picker-signout" defer></script>
+    <script src="app.js?v=completed-workout-resume" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -115,6 +115,17 @@
             <span class="shadow-dialog-spacer"></span>
             <button id="cancel-start-over-button" class="start-over-button" type="button">Cancel</button>
             <button id="confirm-start-over-button" class="workout-action-button" type="button">Start over</button>
+          </div>
+        </div>
+      </dialog>
+      <dialog id="resume-completed-dialog" class="shadow-dialog" aria-labelledby="resume-completed-dialog-title">
+        <div class="shadow-form">
+          <h2 id="resume-completed-dialog-title">Workout already completed</h2>
+          <p class="shadow-description">Resume to keep your logged sets and finish the workout again, or start over to clear your logged results.</p>
+          <div class="shadow-dialog-actions">
+            <button id="start-over-completed-button" class="start-over-button" type="button">Start over</button>
+            <span class="shadow-dialog-spacer"></span>
+            <button id="resume-completed-button" class="workout-action-button" type="button">Resume anyway</button>
           </div>
         </div>
       </dialog>
