@@ -1132,7 +1132,8 @@ function openMyoNotesDialog(exercise, set, trigger, viewing = false) {
   const shadowSet = findShadowSet(exercise, set);
   const ownNotes = Array.isArray(set.myoNotes) ? set.myoNotes : [];
   const shadowNotes = Array.isArray(shadowSet?.myoNotes) ? shadowSet.myoNotes : [];
-  const useShadow = set.myoNotesConfirmed !== true
+  const useShadow = viewing
+    && set.myoNotesConfirmed !== true
     && shadowSet?.myoNotesConfirmed === true
     && shadowNotes.length === Number(shadowSet.myoReps);
   const enteredCount = trigger?.dataset?.field === "myoReps" ? trigger.value.trim() : "";
