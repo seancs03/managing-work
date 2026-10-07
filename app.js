@@ -983,7 +983,6 @@ function restoreMissingShadowSets(targetWorkout, sourceWorkout) {
         llpReps: "",
       };
     });
-    targetExercise.sets.push(...existingSets.filter((item) => !usedSets.has(item)));
   });
 }
 
