@@ -1355,11 +1355,10 @@ body.intensity-theme .session-controls :focus-visible {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--ink);
+  color: #777777;
   font: 700 11px "Manrope", sans-serif;
   line-height: 18px;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
   vertical-align: middle;
   cursor: pointer;
 }
@@ -1375,6 +1374,11 @@ body.intensity-theme .myo-notes-button:focus-visible {
 
 .myo-notes-dialog {
   max-height: min(80vh, 720px);
+  overflow-y: auto;
+}
+
+.myo-notes-dialog .shadow-form {
+  padding-top: 27px;
 }
 
 .myo-notes-rows {
