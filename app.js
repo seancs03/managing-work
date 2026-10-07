@@ -35,6 +35,7 @@ const newWorkoutNameInput = document.getElementById("new-workout-name");
 const addExerciseForm = document.getElementById("add-exercise-form");
 const exerciseNameInput = document.getElementById("exercise-name");
 const storageNotice = document.getElementById("storage-notice");
+const storageDot = document.querySelector(".storage-dot");
 const sessionDate = document.getElementById("session-date");
 const workoutAction = document.getElementById("workout-action");
 const startOverButton = document.getElementById("start-over-button");
@@ -632,15 +633,24 @@ function subscribeToCloudProfile(profile) {
     })
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
+        setCloudConnectionIndicator(true);
         storageModeLabel.textContent = "";
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        setCloudConnectionIndicator(false);
         storageModeLabel.textContent = "Cloud reconnecting";
+      } else if (status === "CLOSED") {
+        setCloudConnectionIndicator(false);
       }
     });
 }
 
 function setCloudLoginMessage(message) {
   cloudLoginMessage.textContent = message;
+}
+
+function setCloudConnectionIndicator(connected) {
+  storageDot.classList.toggle("is-cloud-connected", connected);
+  storageDot.title = connected ? "Connected to cloud" : "Not connected to cloud";
 }
 
 function showCloudProfilePicker(isSignedIn) {
@@ -815,6 +825,7 @@ function returnToProfilePicker() {
     supabaseClient.removeChannel(activeCloudSubscription);
     activeCloudSubscription = null;
   }
+  setCloudConnectionIndicator(false);
   pendingCloudState = null;
   workoutContextMenu.hidden = true;
   contextWorkoutId = null;
