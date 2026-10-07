@@ -62,6 +62,11 @@ const clearShadowButton = document.getElementById("clear-shadow-button");
 const bailDialog = document.getElementById("bail-dialog");
 const cancelBailButton = document.getElementById("cancel-bail-button");
 const confirmBailButton = document.getElementById("confirm-bail-button");
+const myoNotesDialog = document.getElementById("myo-notes-dialog");
+const myoNotesForm = document.getElementById("myo-notes-form");
+const myoNotesRows = document.getElementById("myo-notes-rows");
+const myoNotesTitle = document.getElementById("myo-notes-title");
+const cancelMyoNotesButton = document.getElementById("cancel-myo-notes-button");
 const deleteExerciseDialog = document.getElementById("delete-exercise-dialog");
 const deleteExerciseDialogTitle = document.getElementById("delete-exercise-dialog-title");
 const cancelDeleteExerciseButton = document.getElementById("cancel-delete-exercise-button");
@@ -87,6 +92,7 @@ let cloudSaveInFlight = false;
 let cloudSaveQueued = false;
 let profileLoadInProgress = false;
 let pendingBailExerciseId = null;
+let pendingMyoNotes = null;
 let pendingDeleteExerciseId = null;
 let pendingDeleteWorkoutId = null;
 let pendingDeleteWorkoutReturnFocus = null;
@@ -256,7 +262,7 @@ function buildWorkoutProofPdf(sourceWorkout) {
     { title: "Reps", x: 246 },
     { title: "RPE", x: 336 },
     { title: "LLP reps", x: 418 },
-    { title: "MYO reps", x: 500 },
+    { title: "MYO sets", x: 500 },
   ];
   sourceWorkout.exercises.forEach((exercise, exerciseIndex) => {
     ensureSpace(72);
@@ -278,6 +284,17 @@ function buildWorkoutProofPdf(sourceWorkout) {
       ];
       values.forEach((value, valueIndex) => addText(value, columns[valueIndex].x, y, 10));
       y -= 18;
+      const myoNotes = (set.myo ? set.myoNotes ?? [] : [])
+        .map((note, noteIndex) => `${noteIndex + 1}=${note}`)
+        .join("  ");
+      if (myoNotes) {
+        const noteLines = myoNotes.match(/.{1,72}(?:\s|$)/g) ?? [myoNotes];
+        ensureSpace(noteLines.length * 13);
+        noteLines.forEach((line, lineIndex) => {
+          addText(`${lineIndex === 0 ? "MYO notes: " : "            "}${line.trim()}`, 58, y, 9);
+          y -= 13;
+        });
+      }
     });
     y -= 10;
   });
@@ -399,6 +416,9 @@ function normalizeWorkout(source) {
                 llpReps: set.llpReps == null ? "" : String(set.llpReps).trim(),
                 myo: set.myo === true,
                 myoReps: set.myoReps == null ? "" : String(set.myoReps).trim(),
+                myoNotes: Array.isArray(set.myoNotes)
+                  ? set.myoNotes.map((note) => String(note ?? "").trim())
+                  : [],
               }))
             : null,
           sets: Array.isArray(exercise.sets)
@@ -414,6 +434,9 @@ function normalizeWorkout(source) {
                 llpReps: set.llpReps == null ? "" : String(set.llpReps).trim(),
                 myo: set.myo === true,
                 myoReps: set.myoReps == null ? "" : String(set.myoReps).trim(),
+                myoNotes: Array.isArray(set.myoNotes)
+                  ? set.myoNotes.map((note) => String(note ?? "").trim())
+                  : [],
               }))
             : [],
         }))
@@ -456,6 +479,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
           llpReps: "",
           myo: false,
           myoReps: "",
+          myoNotes: [],
         })),
       }));
       allWorkouts.push(peer);
@@ -498,6 +522,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
               llpReps: "",
               myo: false,
               myoReps: "",
+              myoNotes: [],
             };
         }),
       };
@@ -1030,7 +1055,7 @@ function makeInput(exercise, set, field, setNumber) {
     reps: "reps",
     rpe: "RPE from 1 to 10",
     llpReps: "number of long-length partial reps",
-    myoReps: "number of myo reps",
+    myoReps: "number of MYO sets",
   }[field];
   input.setAttribute("aria-label", `Set ${setNumber} for ${exercise.name}, ${fieldLabel}`);
   input.setAttribute("aria-describedby", `${set.id}-${field}-hint`);
@@ -1051,6 +1076,63 @@ function appendMyoRepsInput(cell, exercise, set, setNumber) {
   hint.id = `${set.id}-myoReps-hint`;
   cell.append(input, hint);
   updateInputValidity(input, hint);
+  updateMyoNotesButton(cell, exercise, set, setNumber);
+}
+
+function updateMyoNotesButton(cell, exercise, set, setNumber) {
+  const shadowSet = findShadowSet(exercise, set);
+  const myoCount = Number(set.myoReps || shadowSet?.myoReps);
+  const existingButton = cell.querySelector(".myo-notes-button");
+  if (!Number.isInteger(myoCount) || myoCount < 1) {
+    existingButton?.remove();
+    return;
+  }
+  const notesButton = existingButton ?? createElement("button", "myo-notes-button", "i");
+  notesButton.type = "button";
+  notesButton.dataset.action = "myo-notes";
+  notesButton.dataset.exerciseId = exercise.id;
+  notesButton.dataset.setId = set.id;
+  notesButton.disabled = exercise.bailed === true;
+  const hasNotes = (set.myoNotes?.length ?? 0) > 0 || (shadowSet?.myoNotes?.length ?? 0) > 0;
+  notesButton.setAttribute(
+    "aria-label",
+    `${hasNotes ? "View or edit" : "Add"} MYO notes for set ${setNumber} of ${exercise.name}`,
+  );
+  notesButton.title = hasNotes ? "View or edit MYO notes" : "Add MYO notes";
+  if (!existingButton) cell.append(notesButton);
+}
+
+function openMyoNotesDialog(exercise, set, trigger) {
+  const shadowSet = findShadowSet(exercise, set);
+  const ownNotes = Array.isArray(set.myoNotes) ? set.myoNotes : [];
+  const shadowNotes = Array.isArray(shadowSet?.myoNotes) ? shadowSet.myoNotes : [];
+  const useShadow = ownNotes.length === 0 && shadowNotes.length > 0;
+  const countValue = set.myoReps || shadowSet?.myoReps || "";
+  const count = Number(countValue);
+  if (!Number.isInteger(count) || count < 1) return;
+
+  pendingMyoNotes = { exerciseId: exercise.id, setId: set.id, trigger };
+  myoNotesTitle.textContent = `MYO notes: ${exercise.name} — set ${exercise.sets.indexOf(set) + 1}`;
+  myoNotesRows.replaceChildren();
+  const notes = useShadow ? shadowNotes : ownNotes;
+  for (let index = 0; index < count; index += 1) {
+    const row = createElement("div", "myo-note-row");
+    const label = createElement("label", "", `Set ${index + 1}`);
+    const input = document.createElement("input");
+    input.id = `${set.id}-myo-note-${index + 1}`;
+    label.htmlFor = input.id;
+    input.type = "number";
+    input.inputMode = "numeric";
+    input.min = "1";
+    input.step = "1";
+    input.required = true;
+    input.value = notes[index] ?? "";
+    input.setAttribute("aria-label", `MYO set ${index + 1} reps`);
+    row.append(label, input);
+    myoNotesRows.append(row);
+  }
+  myoNotesDialog.showModal();
+  myoNotesRows.querySelector("input")?.focus();
 }
 
 function getFieldError(field, value) {
@@ -1132,6 +1214,7 @@ function restoreMissingShadowSets(targetWorkout, sourceWorkout) {
         llpReps: "",
         myo: false,
         myoReps: "",
+        myoNotes: [],
       };
     });
   });
@@ -1282,10 +1365,12 @@ function renderSetRow(exercise, set, index) {
   myoCheckbox.dataset.exerciseId = exercise.id;
   myoCheckbox.dataset.setId = set.id;
   myoCheckbox.dataset.myo = "true";
-  myoCheckbox.setAttribute("aria-label", `Myo reps for set ${setNumber} of ${exercise.name}`);
+  myoCheckbox.setAttribute("aria-label", `MYO sets for set ${setNumber} of ${exercise.name}`);
   if (shadowSet?.myo) myoCheckbox.title = "Myo reps are included in the shadow workout";
   myoCell.append(myoCheckbox);
-  if (set.myo || shadowSet?.myo) appendMyoRepsInput(myoCell, exercise, set, setNumber);
+  if (set.myo || shadowSet?.myo) {
+    appendMyoRepsInput(myoCell, exercise, set, setNumber);
+  }
   row.append(myoCell);
   return row;
 }
@@ -1791,6 +1876,7 @@ confirmStartOverButton.addEventListener("click", () => {
       set.llpReps = "";
       set.myo = false;
       set.myoReps = "";
+      set.myoNotes = [];
     });
   });
   workout.status = "planned";
@@ -1827,7 +1913,7 @@ addExerciseForm.addEventListener("submit", (event) => {
     id: makeId(),
     planId: makeId(),
     name: name.slice(0, 60),
-    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "" }],
+    sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [] }],
   });
   syncWorkoutPlan(workout, workouts, false);
   exerciseNameInput.value = "";
@@ -1848,9 +1934,17 @@ exerciseList.addEventListener("input", (event) => {
     if (input.dataset.field === "llpReps" && input.value.trim() !== "") {
       set.llp = true;
       input.closest(".llp-cell").querySelector("[data-llp]").checked = true;
-    } else if (input.dataset.field === "myoReps" && input.value.trim() !== "") {
-      set.myo = true;
-      input.closest(".myo-cell").querySelector("[data-myo]").checked = true;
+    } else if (input.dataset.field === "myoReps") {
+      if (input.value.trim() !== "") {
+        set.myo = true;
+        input.closest(".myo-cell").querySelector("[data-myo]").checked = true;
+      }
+      updateMyoNotesButton(
+        input.closest(".myo-cell"),
+        exercise,
+        set,
+        exercise.sets.indexOf(set) + 1,
+      );
     }
     updateInputValidity(input);
     updateExerciseProgress();
@@ -1876,13 +1970,19 @@ exerciseList.addEventListener("input", (event) => {
       reps: "reps",
       rpe: "RPE from 1 to 10",
       llpReps: "number of long-length partial reps",
-      myoReps: "number of myo reps",
+      myoReps: "number of MYO sets",
     }[setInput.dataset.field];
     setInput.setAttribute("aria-label", `Set ${setIndex + 1} for ${exercise.name || "unnamed exercise"}, ${fieldLabel}`);
   });
   card.querySelectorAll(".remove-set").forEach((removeSetButton) => {
     const setIndex = exercise.sets.findIndex((set) => set.id === removeSetButton.dataset.setId);
     removeSetButton.setAttribute("aria-label", `Remove set ${setIndex + 1} from ${exercise.name || "unnamed exercise"}`);
+  });
+  card.querySelectorAll(".myo-cell").forEach((cell, setIndex) => {
+    const set = exercise.sets[setIndex];
+    if (set && cell.querySelector("input[data-field='myoReps']")) {
+      updateMyoNotesButton(cell, exercise, set, setIndex + 1);
+    }
   });
   nameInput.setAttribute("aria-label", `Exercise ${workout.exercises.indexOf(exercise) + 1} name`);
   saveWorkout();
@@ -1891,6 +1991,17 @@ exerciseList.addEventListener("input", (event) => {
 exerciseList.addEventListener("change", (event) => {
   const input = event.target.closest("input[data-field]");
   if (!input || getFieldError(input.dataset.field, input.value)) return;
+  if (input.dataset.field === "myoReps") {
+    const count = Number(input.value);
+    if (Number.isInteger(count) && count > 0) {
+      const exercise = workout.exercises.find((item) => item.id === input.dataset.exerciseId);
+      const set = exercise?.sets.find((item) => item.id === input.dataset.setId);
+      if (exercise && set) {
+        openMyoNotesDialog(exercise, set, input);
+        return;
+      }
+    }
+  }
   if (["weight", "reps", "rpe", "llpReps", "myoReps"].includes(input.dataset.field)) {
     focusNextWorkoutInput(input);
   }
@@ -1901,6 +2012,15 @@ exerciseList.addEventListener("keydown", (event) => {
   if (!input || !["Enter", "Next"].includes(event.key) || getFieldError(input.dataset.field, input.value)) return;
   if (["weight", "reps", "rpe", "llpReps", "myoReps"].includes(input.dataset.field)) {
     event.preventDefault();
+    if (input.dataset.field === "myoReps") {
+      const count = Number(input.value);
+      const exercise = workout.exercises.find((item) => item.id === input.dataset.exerciseId);
+      const set = exercise?.sets.find((item) => item.id === input.dataset.setId);
+      if (Number.isInteger(count) && count > 0 && exercise && set) {
+        openMyoNotesDialog(exercise, set, input);
+        return;
+      }
+    }
     focusNextWorkoutInput(input);
   }
 });
@@ -1915,16 +2035,18 @@ exerciseList.addEventListener("change", (event) => {
     set.myo = checkbox.checked;
     saveWorkout();
     const setIndex = exercise.sets.indexOf(set);
-    checkbox.setAttribute("aria-label", `Myo reps for set ${setIndex + 1} of ${exercise.name || "unnamed exercise"}`);
+    checkbox.setAttribute("aria-label", `MYO sets for set ${setIndex + 1} of ${exercise.name || "unnamed exercise"}`);
     const cell = checkbox.closest(".myo-cell");
+    const shadowSet = findShadowSet(exercise, set);
     const numberField = cell.querySelector("input[data-field='myoReps']");
-    if (set.myo && !numberField) {
+    if ((set.myo || shadowSet?.myo) && !numberField) {
       appendMyoRepsInput(cell, exercise, set, setIndex + 1);
-      cell.querySelector("input[data-field='myoReps']").focus();
+      if (set.myo) cell.querySelector("input[data-field='myoReps']").focus();
     } else if (set.myo && numberField) {
       numberField.focus();
-    } else if (!set.myo && numberField) {
+    } else if (!set.myo && !shadowSet?.myo && numberField) {
       numberField.remove();
+      cell.querySelector(".myo-notes-button")?.remove();
       checkbox.focus();
     }
     return;
@@ -1951,6 +2073,11 @@ exerciseList.addEventListener("click", (event) => {
   if (!button) return;
   const exercise = workout.exercises.find((item) => item.id === button.dataset.exerciseId);
   if (!exercise) return;
+  if (button.dataset.action === "myo-notes") {
+    const set = exercise.sets.find((item) => item.id === button.dataset.setId);
+    if (set) openMyoNotesDialog(exercise, set, button);
+    return;
+  }
   if (button.dataset.action === "bail-exercise") {
     if (exercise.bailed) {
       exercise.sets.forEach((set) => {
@@ -1963,6 +2090,7 @@ exerciseList.addEventListener("click", (event) => {
           set.llpReps = "";
           set.myo = false;
           set.myoReps = "";
+          set.myoNotes = [];
           return;
         }
         set.weight = snapshot.weight;
@@ -1972,6 +2100,7 @@ exerciseList.addEventListener("click", (event) => {
         set.llpReps = snapshot.llpReps;
         set.myo = snapshot.myo === true;
         set.myoReps = snapshot.myoReps ?? "";
+        set.myoNotes = [...(snapshot.myoNotes ?? [])];
       });
       exercise.bailed = false;
       exercise.bailSnapshot = null;
@@ -1997,7 +2126,7 @@ exerciseList.addEventListener("click", (event) => {
   let focusId = "";
   let announcement = "";
   if (button.dataset.action === "add-set") {
-    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "" };
+    const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [] };
     exercise.sets.push(set);
     syncWorkoutPlan(workout, workouts, false);
     focusId = `add-set-${exercise.id}`;
@@ -2066,6 +2195,7 @@ confirmBailButton.addEventListener("click", () => {
     llpReps: set.llpReps,
     myo: set.myo,
     myoReps: set.myoReps,
+    myoNotes: [...(set.myoNotes ?? [])],
   }));
   exercise.bailed = true;
   exercise.sets.forEach((set) => {
@@ -2083,6 +2213,41 @@ confirmBailButton.addEventListener("click", () => {
 
 bailDialog.addEventListener("close", () => {
   pendingBailExerciseId = null;
+});
+
+myoNotesForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!pendingMyoNotes) return;
+  const { exerciseId, setId } = pendingMyoNotes;
+  const exercise = workout?.exercises.find((item) => item.id === exerciseId);
+  const set = exercise?.sets.find((item) => item.id === setId);
+  if (!exercise || !set) {
+    myoNotesDialog.close();
+    pendingMyoNotes = null;
+    return;
+  }
+  set.myo = true;
+  set.myoNotes = Array.from(myoNotesRows.querySelectorAll("input"), (input) => input.value.trim());
+  pendingMyoNotes = null;
+  myoNotesDialog.close();
+  render();
+  saveWorkout();
+  exerciseList.querySelector(
+    `[data-action="myo-notes"][data-exercise-id="${exercise.id}"][data-set-id="${set.id}"]`,
+  )?.focus();
+});
+
+cancelMyoNotesButton.addEventListener("click", () => {
+  const trigger = pendingMyoNotes?.trigger;
+  pendingMyoNotes = null;
+  myoNotesDialog.close();
+  if (trigger?.isConnected) trigger.focus();
+});
+
+myoNotesDialog.addEventListener("close", () => {
+  const trigger = pendingMyoNotes?.trigger;
+  pendingMyoNotes = null;
+  if (trigger?.isConnected) trigger.focus();
 });
 
 welcomeScreen.addEventListener("click", (event) => {

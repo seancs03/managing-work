@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=compact-partial-rep-inputs">
+    <link rel="stylesheet" href="styles.css?v=myo-note-workflow">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=shadow-partial-reps" defer></script>
+    <script src="app.js?v=myo-set-notes" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -118,7 +118,7 @@
       <dialog id="start-over-dialog" class="shadow-dialog" aria-labelledby="start-over-dialog-title">
         <div class="shadow-form">
           <h2 id="start-over-dialog-title">Start over?</h2>
-          <p class="shadow-description">This clears the logged weight, reps, RPE, and LLP details for this workout. Your exercise and set plan will stay in place.</p>
+          <p class="shadow-description">This clears the logged weight, reps, RPE, LLP, and MYO details for this workout. Your exercise and set plan will stay in place.</p>
           <div class="shadow-dialog-actions">
             <span class="shadow-dialog-spacer"></span>
             <button id="cancel-start-over-button" class="start-over-button" type="button">Cancel</button>
@@ -156,6 +156,17 @@
             <button id="confirm-bail-button" class="workout-action-button" type="button">BAIL</button>
           </div>
         </div>
+      </dialog>
+      <dialog id="myo-notes-dialog" class="shadow-dialog myo-notes-dialog" aria-labelledby="myo-notes-title">
+        <form id="myo-notes-form" class="shadow-form">
+          <h2 id="myo-notes-title">MYO notes:</h2>
+          <div id="myo-notes-rows" class="myo-notes-rows"></div>
+          <div class="shadow-dialog-actions">
+            <span class="shadow-dialog-spacer"></span>
+            <button id="cancel-myo-notes-button" class="start-over-button" type="button">Cancel</button>
+            <button class="workout-action-button" type="submit">Confirm</button>
+          </div>
+        </form>
       </dialog>
       <dialog id="delete-exercise-dialog" class="shadow-dialog" aria-labelledby="delete-exercise-dialog-title">
         <div class="shadow-form">
