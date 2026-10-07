@@ -1123,11 +1123,18 @@ function openMyoNotesDialog(exercise, set, trigger) {
   const useShadow = set.myoNotesConfirmed !== true
     && shadowSet?.myoNotesConfirmed === true
     && shadowNotes.length === Number(shadowSet.myoReps);
-  const countValue = set.myoReps || shadowSet?.myoReps || "";
+  const enteredCount = trigger?.dataset?.field === "myoReps" ? trigger.value.trim() : "";
+  const countValue = enteredCount || set.myoReps || shadowSet?.myoReps || "";
   const count = Number(countValue);
   if (!Number.isInteger(count) || count < 1) return;
 
-  pendingMyoNotes = { exerciseId: exercise.id, setId: set.id, trigger };
+  if (enteredCount) {
+    set.myoReps = enteredCount;
+    set.myo = true;
+    set.myoNotesConfirmed = false;
+    saveWorkout();
+  }
+  pendingMyoNotes = { exerciseId: exercise.id, setId: set.id, trigger, count };
   myoNotesTitle.textContent = `MYO notes: ${exercise.name} — set ${exercise.sets.indexOf(set) + 1}`;
   myoNotesRows.replaceChildren();
   const notes = useShadow ? shadowNotes : ownNotes;
@@ -2242,7 +2249,7 @@ bailDialog.addEventListener("close", () => {
 myoNotesForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!pendingMyoNotes) return;
-  const { exerciseId, setId } = pendingMyoNotes;
+  const { exerciseId, setId, count } = pendingMyoNotes;
   const exercise = workout?.exercises.find((item) => item.id === exerciseId);
   const set = exercise?.sets.find((item) => item.id === setId);
   if (!exercise || !set) {
@@ -2251,11 +2258,8 @@ myoNotesForm.addEventListener("submit", (event) => {
     return;
   }
   set.myo = true;
+  set.myoReps = String(count);
   set.myoNotes = Array.from(myoNotesRows.querySelectorAll("input"), (input) => input.value.trim());
-  if (!set.myoReps) {
-    const shadowSet = findShadowSet(exercise, set);
-    if (shadowSet?.myoReps) set.myoReps = shadowSet.myoReps;
-  }
   set.myoNotesConfirmed = true;
   pendingMyoNotes = null;
   myoNotesDialog.close();
