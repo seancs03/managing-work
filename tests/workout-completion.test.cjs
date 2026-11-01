@@ -4,6 +4,25 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
+test("exercise history includes only logged matching days, newest first, without changing state", () => {
+  const exercise = { planId: "bench", name: "Bench", sets: [] };
+  const make = (week, sets, overrides = {}) => ({
+    templateId: "upper", week, title: "Upper",
+    exercises: [{ ...exercise, sets }], ...overrides,
+  });
+  const current = make(4, []);
+  const workouts = [make(1, [{ weight: "BW", reps: "10" }]),
+    make(3, [{ weight: "" }, { weight: "7.5E", myoReps: "2" }]),
+    make(2, []), current, make(5, [{ weight: "100" }], { templateId: "lower" })];
+  const snapshot = JSON.stringify(workouts);
+  const context = loadFunctions({}, ["findMatchingExercise", "getExerciseHistory"]);
+  const entries = context.getExerciseHistory(current, exercise, workouts);
+  assert.deepEqual(Array.from(entries, (entry) => entry.week), [3, 1]);
+  assert.equal(entries[0].sets[0].number, 2);
+  assert.equal(entries[0].sets[0].set.weight, "7.5E");
+  assert.equal(JSON.stringify(workouts), snapshot);
+  assert.equal(context.getExerciseHistory(current, { planId: "other", name: "Other" }, workouts).length, 0);
+});
 test("display mode switches icons and accessibility state without changing the accent scheme", () => {
   const makeIcon = () => ({ toggleAttribute(name, enabled) { this[name] = enabled; } });
   const moon = makeIcon(), sun = makeIcon(), attributes = {};
