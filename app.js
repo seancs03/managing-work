@@ -2,6 +2,7 @@
 
 const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
+const COLOR_SCHEME_KEY = "spijker-track.color-scheme";
 const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
 const cloudLoginPanel = document.getElementById("cloud-login-panel");
 const profileChoicePanel = document.getElementById("profile-choice-panel");
@@ -186,6 +187,40 @@ function showNotice(message) {
   storageNotice.textContent = message;
   storageNotice.hidden = false;
 }
+
+function applyColorScheme(scheme) {
+  if (!["red", "magenta", "cyan"].includes(scheme)) throw new Error("Unknown color scheme.");
+  document.body.dataset.colorScheme = scheme;
+  document.querySelectorAll("[data-color-scheme]").forEach((button) => {
+    if (button.tagName === "BUTTON") {
+      button.setAttribute("aria-pressed", String(button.dataset.colorScheme === scheme));
+    }
+  });
+}
+
+const colorSchemeDialog = document.getElementById("color-scheme-dialog");
+const colorSchemeButton = document.getElementById("color-scheme-button");
+try {
+  const savedScheme = localStorage.getItem(COLOR_SCHEME_KEY);
+  applyColorScheme(["red", "magenta", "cyan"].includes(savedScheme) ? savedScheme : "red");
+} catch (error) {
+  showNotice("Your color preference could not be loaded. The default red theme is being used.");
+  console.error("Color scheme load failed:", error);
+}
+colorSchemeButton.addEventListener("click", () => colorSchemeDialog.showModal());
+document.getElementById("close-color-scheme").addEventListener("click", () => colorSchemeDialog.close());
+colorSchemeDialog.addEventListener("close", () => colorSchemeButton.focus({ preventScroll: true }));
+colorSchemeDialog.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-color-scheme]");
+  if (!button) return;
+  applyColorScheme(button.dataset.colorScheme);
+  try {
+    localStorage.setItem(COLOR_SCHEME_KEY, button.dataset.colorScheme);
+  } catch (error) {
+    showNotice("The color scheme changed, but it could not be saved for next time.");
+    console.error("Color scheme save failed:", error);
+  }
+});
 
 function pdfSafeText(value) {
   return String(value ?? "")

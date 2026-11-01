@@ -65,6 +65,13 @@ The restored state retries cloud sync until acknowledged. A new structural actio
 replaces the undo record; restoring a backup clears it. Undo history is not included
 in downloadable backups or shared between devices.
 
+## Color scheme
+
+Click the SPIJKER TRACK logo to choose Red (the original theme), Magenta
+(`#CC00CC`) or Cyan (`#00C8FF`). Accents, focus outlines and tinted surfaces
+use the selected palette. The preference is saved on this device, not in workout
+profiles or backups. The logo opens this dialog without navigating away.
+
 ## Create and secure the Supabase project
 
 1. Create a Supabase project and open its SQL Editor.

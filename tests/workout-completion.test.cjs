@@ -336,6 +336,25 @@ test("set-deletion Cancel leaves data untouched and confirmed deletion records u
     }) },
     beginStructuralUndo: () => { recorded++; }, syncWorkoutPlan() {}, render() {}, saveWorkout() {},
   });
+
+  test("color schemes update the device theme and selected choice without changing workouts", () => {
+    const buttons = ["red", "magenta", "cyan"].map((scheme) => ({
+      tagName: "BUTTON", dataset: { colorScheme: scheme },
+      setAttribute(key, value) { this[key] = value; },
+    }));
+    const body = { dataset: {} };
+    const context = loadFunctions({
+      document: { body, querySelectorAll: () => buttons },
+    }, ["applyColorScheme"]);
+    for (const scheme of ["red", "magenta", "cyan"]) {
+      context.applyColorScheme(scheme);
+      assert.equal(body.dataset.colorScheme, scheme);
+      buttons.forEach((button) => {
+        assert.equal(button["aria-pressed"], String(button.dataset.colorScheme === scheme));
+      });
+    }
+    assert.throws(() => context.applyColorScheme("unknown"), /Unknown/);
+  });
   const start = source.indexOf('const deleteSetDialog =');
   const end = source.indexOf('\ncancelBailButton.addEventListener', start);
   vm.runInContext(source.slice(start, end), context);

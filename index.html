@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=structural-undo">
+    <link rel="stylesheet" href="styles.css?v=color-schemes">
     <script src="cloud-config.js" defer></script>
     <script src="workout-targets.js?v=ordered-targets" defer></script>
-    <script src="app.js?v=structural-undo" defer></script>
+    <script src="app.js?v=color-schemes" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -40,10 +40,10 @@
 
     <div id="app-shell" hidden>
       <header class="topbar">
-        <div class="brand">
+        <button id="color-scheme-button" class="brand" type="button" aria-label="Choose color scheme" aria-haspopup="dialog">
           <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
           <span>SPIJKER TRACK<span class="brand-period">.</span></span>
-        </div>
+        </button>
         <div class="topbar-actions">
           <button id="undo-structure-button" class="undo-structure-button" type="button" disabled>Undo</button>
           <div class="refresh-control">
@@ -89,6 +89,19 @@
       </section>
 
       <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
+      <dialog id="color-scheme-dialog" class="shadow-dialog" aria-labelledby="color-scheme-title">
+        <div class="shadow-form">
+          <h2 id="color-scheme-title">Color scheme</h2>
+          <div class="color-scheme-options" role="group" aria-label="Choose color scheme">
+            <button type="button" data-color-scheme="red" aria-pressed="true">Red</button>
+            <button type="button" data-color-scheme="magenta" aria-pressed="false">Magenta · #CC00CC</button>
+            <button type="button" data-color-scheme="cyan" aria-pressed="false">Cyan · #00C8FF</button>
+          </div>
+          <div class="shadow-dialog-actions">
+            <button id="close-color-scheme" class="start-over-button" type="button">Close</button>
+          </div>
+        </div>
+      </dialog>
       <dialog id="restore-backup-dialog" class="shadow-dialog" aria-labelledby="restore-backup-title">
         <div class="shadow-form">
           <h2 id="restore-backup-title">Restore backup?</h2>
