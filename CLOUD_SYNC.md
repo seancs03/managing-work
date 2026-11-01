@@ -54,6 +54,11 @@ The backup itself and its logged workout values are not included in the reposito
 
 ## Structural undo
 
+The small history icon beside an exercise name opens a read-only list of its
+logged sets in the current profile's matching workout day, newest week first.
+Blank weeks are omitted. Weight, reps, RPE, LLP and MYO counts retain their
+original text; opening history does not change selection, logs or shadowing.
+
 The moon/sun control beside Undo switches dark/light display mode without
 changing the selected accent palette. The mode is stored on this device under
 `spijker-track.display-mode`, independently of profile/cloud workout state.
