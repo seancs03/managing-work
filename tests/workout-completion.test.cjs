@@ -50,7 +50,7 @@ test("set shadows use current set positions without changing either workout's st
   ] };
   const previous = { id: "week5", exercises: [sourceExercise] };
   const current = { id: "week6", shadowWorkoutId: previous.id, exercises: [exercise] };
-  const context = loadFunctions({ workout: current, workouts: [previous, current] }, ["findShadowSet"]);
+  const context = loadFunctions({ workout: current, workouts: [previous, current] }, ["findMatchingExercise", "findShadowSet"]);
   const snapshot = JSON.stringify([previous, current]);
   assert.equal(context.findShadowSet(exercise, exercise.sets[0]), sourceExercise.sets[0]);
   assert.equal(context.findShadowSet(exercise, exercise.sets[1]), sourceExercise.sets[1]);
@@ -99,6 +99,56 @@ test("session notes shadow the selected source without copying or overwriting lo
   context.workout = null;
   context.renderSessionNotes();
   assert.equal(inputs[0].value, "");
+});
+
+test("progress comparisons prioritize weight, then reps, then lower RPE and require valid data", () => {
+  const context = loadFunctions({}, ["getFieldError", "compareSetPerformance"]);
+  const baseline = { weight: "80", reps: "10", rpe: "9" };
+  for (const [changes, symbol] of [
+    [{ weight: "85", reps: "8", rpe: "10" }, ">"],
+    [{ weight: "75", reps: "12", rpe: "8" }, "<"],
+    [{ reps: "11", rpe: "10" }, ">"],
+    [{ reps: "9", rpe: "8" }, "<"],
+    [{ rpe: "8.5" }, ">"], [{ rpe: "9.5" }, "<"], [{}, "-"],
+  ]) assert.equal(context.compareSetPerformance({ ...baseline, ...changes }, baseline), symbol);
+  for (const changes of [
+    { weight: "" }, { weight: "X" }, { weight: "bodyweight" }, { weight: "-1" },
+    { reps: "0" }, { reps: "1.5" }, { rpe: "" }, { rpe: "11" }, { rpe: "9.2" },
+  ]) {
+    assert.equal(context.compareSetPerformance({ ...baseline, ...changes }, baseline), null);
+    assert.equal(context.compareSetPerformance(baseline, { ...baseline, ...changes }), null);
+  }
+  assert.equal(context.compareSetPerformance(baseline, null), null);
+});
+
+test("shadow progress compares the source's own shadow or previous week, not the current logs", () => {
+  const makeWorkout = (id, week, reps) => ({
+    id, week, templateId: "upper",
+    exercises: [{ planId: "bench", name: "Bench", sets: [{ weight: "80", reps, rpe: "9" }] }],
+  });
+  const week1 = makeWorkout("w1", 1, "12");
+  const week2 = makeWorkout("w2", 2, "10");
+  const week3 = makeWorkout("w3", 3, "11");
+  const week4 = makeWorkout("w4", 4, "1");
+  week4.shadowWorkoutId = "w3";
+  const context = loadFunctions({ workout: week4, workouts: [week1, week2, week3, week4] },
+    ["getFieldError", "findMatchingExercise", "compareSetPerformance", "getShadowProgress"]);
+  const exercise = week4.exercises[0], set = exercise.sets[0];
+  assert.equal(context.getShadowProgress(exercise, set).symbol, ">");
+  assert.equal(context.getShadowProgress(exercise, set).previousWeek, 2);
+  week3.shadowWorkoutId = "w1";
+  assert.equal(context.getShadowProgress(exercise, set).symbol, "<");
+  assert.equal(context.getShadowProgress(exercise, set).previousWeek, 1);
+  week1.exercises[0].sets[0].rpe = "";
+  assert.equal(context.getShadowProgress(exercise, set), null);
+  week3.shadowWorkoutId = null;
+  week2.exercises[0].bailed = true;
+  assert.equal(context.getShadowProgress(exercise, set), null);
+  week2.exercises[0].bailed = false;
+  exercise.sets.push({ weight: "", reps: "", rpe: "" });
+  assert.equal(context.getShadowProgress(exercise, exercise.sets[1]), null);
+  week4.shadowWorkoutId = null;
+  assert.equal(context.getShadowProgress(exercise, set), null);
 });
 
 test("completed workout durations remain frozen even with a stale running timestamp", () => {
