@@ -45,11 +45,11 @@ older queued update from replacing that edit after focus leaves a field.
 
 The red target icon beside BAIL opens read-only guidance for the selected week.
 Targets come from `workout-targets.js`, imported from the supplied 12-week CSV
-(the block column is ignored). Sean's supplied backup establishes 34 verified
-exercise-plan-ID mappings by workout day and numbered slot, including Leg day
-to legs. Names may change without changing those mappings. Deleting exercises
-does not shift targets onto another exercise. New exercises and unverified
-profiles show no assigned target rather than guessing by name or position.
+(the block column is ignored). Targets use the current week, workout day title
+(Upper, Lower, Push, Pull or Leg/Legs day), and current exercise position, for
+either profile. Exercise names and plan IDs are ignored. Deleting or adding an
+exercise updates the positional mapping: a new seventh exercise receives slot
+seven's targets. Unsupported days or positions show no available target.
 The backup itself and its logged workout values are not included in the repository.
 
 ## Create and secure the Supabase project

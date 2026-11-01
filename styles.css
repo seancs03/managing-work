@@ -1076,14 +1076,21 @@ h1 {
 
 .target-details {
   display: grid;
-  gap: 12px;
+  gap: 0;
   margin: 0;
 }
 
 .target-detail-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(70px, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: baseline;
   gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #493033;
+}
+
+.target-detail-row:last-child {
+  border-bottom: 0;
 }
 
 .target-detail-row dt {
@@ -1093,6 +1100,8 @@ h1 {
 .target-detail-row dd {
   margin: 0;
   color: #ffffff;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .bail-exercise-button {
