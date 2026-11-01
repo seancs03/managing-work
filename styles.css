@@ -147,8 +147,12 @@ body:is([data-color-scheme="cyan"], [data-color-scheme="yellow"], [data-color-sc
 }
 
 .color-scheme-options button:focus-visible {
-  outline: 1px dashed #bbbbbb;
-  outline-offset: 3px;
+  outline: 1px solid #bbbbbb;
+  outline-offset: -1px;
+}
+
+.color-scheme-options button[aria-pressed="true"]:focus-visible {
+  outline: none;
 }
 
 .brand:focus-visible {
