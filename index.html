@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=themed-bail-graph">
+    <link rel="stylesheet" href="styles.css?v=name-history-pencil">
     <script src="cloud-config.js" defer></script>
     <script src="workout-targets.js?v=ordered-targets" defer></script>
-    <script src="app.js?v=refined-mode-toggle" defer></script>
+    <script src="app.js?v=name-history-pencil" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -224,6 +224,15 @@
             <span class="shadow-dialog-spacer"></span>
             <button id="cancel-bail-button" class="start-over-button" type="button">Cancel</button>
             <button id="confirm-bail-button" class="workout-action-button" type="button">BAIL</button>
+          </div>
+        </div>
+      </dialog>
+      <dialog id="exercise-history-dialog" class="shadow-dialog" aria-labelledby="exercise-history-title">
+        <div class="shadow-form">
+          <h2 id="exercise-history-title">Exercise history</h2>
+          <div id="exercise-history-content" class="exercise-history-content"></div>
+          <div class="shadow-dialog-actions">
+            <button id="close-exercise-history" class="start-over-button" type="button">Close</button>
           </div>
         </div>
       </dialog>
