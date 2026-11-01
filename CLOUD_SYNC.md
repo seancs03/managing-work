@@ -2,6 +2,12 @@
 
 The app can sync Sean and Kick's workout profiles between phones using Supabase. Without configuration, it continues to work in local-only mode and saves workouts in that browser's local storage.
 
+Finishing stops the timer before generating proof and immediately starts a cloud save.
+The device retains a pending completion record until that exact workout state is
+acknowledged by the cloud. On reopening the profile, pending workouts take precedence
+over stale cloud copies; other cloud workouts are preserved. Saves retry when the
+profile loads, the connection returns, or the app returns to the foreground.
+
 ## Create and secure the Supabase project
 
 1. Create a Supabase project and open its SQL Editor.
