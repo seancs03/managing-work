@@ -978,9 +978,14 @@ function getExerciseHistory(sourceWorkout, exercise, allWorkouts) {
   return allWorkouts.filter((item) => item.templateId === sourceWorkout.templateId)
     .map((item) => {
       const matching = findMatchingExercise(item, exercise);
-      const sets = matching?.sets.map((set, index) => ({ set, number: index + 1 }))
-        .filter(({ set }) => ["weight", "reps", "rpe", "llpReps", "myoReps"]
-          .some((field) => String(set[field] ?? "").trim() !== "")) ?? [];
+      const fields = ["weight", "reps", "rpe", "llpReps", "myoReps"];
+      const sets = matching?.sets.map((set, index) => {
+        const logged = fields.some((field) => String(set[field] ?? "").trim() !== "");
+        const displaySet = item.week === 1 && !logged
+          ? { ...set, ...Object.fromEntries(fields.map((field) => [field, "x"])) }
+          : set;
+        return { set: displaySet, number: index + 1, logged };
+      }).filter(({ logged }) => item.week === 1 || logged) ?? [];
       return { week: item.week, title: item.title, name: matching?.name, bailed: matching?.bailed, sets };
     })
     .filter((entry) => entry.sets.length > 0)
