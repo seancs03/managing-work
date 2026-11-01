@@ -1383,6 +1383,7 @@ h1 {
 
 .backup-menu {
   margin-top: 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   color: #888888;
   font-size: 11px;
 }
