@@ -4,6 +4,7 @@ const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
 const COLOR_SCHEME_KEY = "spijker-track.color-scheme";
 const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime"];
+let mirroringEnabled = true;
 const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
 const cloudLoginPanel = document.getElementById("cloud-login-panel");
 const profileChoicePanel = document.getElementById("profile-choice-panel");
@@ -405,7 +406,9 @@ function normalizeWorkout(source) {
       ? source.templateStartWeek
       : null,
     planCustomized: source.planCustomized === true,
+    planIsolated: source.planIsolated === true,
     templateEndWeek: Number.isInteger(source.templateEndWeek) ? source.templateEndWeek : 12,
+    excludedWeeks: Array.isArray(source.excludedWeeks) ? source.excludedWeeks.filter((week) => Number.isInteger(week) && week >= 1 && week <= 12) : [],
     title: typeof source.title === "string" ? source.title.slice(0, 60) : "Workout",
     status: ["planned", "in-progress", "completed"].includes(source.status) ? source.status : "planned",
     timerElapsedMs: Number.isFinite(source.timerElapsedMs) && source.timerElapsedMs >= 0
@@ -477,7 +480,7 @@ function normalizeWorkout(source) {
   };
 }
 
-function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) {
+function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true, isPlanEdit = false) {
   const templateStartWeek = sourceWorkout.templateStartWeek ?? sourceWorkout.week;
   sourceWorkout.templateStartWeek = templateStartWeek;
   if (sourceWorkout.week !== templateStartWeek) {
@@ -494,6 +497,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
   let peers = allWorkouts.filter((item) => item.templateId === sourceWorkout.templateId);
   if (createMissingWeeks) {
     for (let week = sourceWorkout.week; week <= (sourceWorkout.templateEndWeek ?? 12); week += 1) {
+      if (sourceWorkout.excludedWeeks?.includes(week)) continue;
       if (peers.some((item) => item.week === week)) continue;
       const peer = createWorkout(sourceWorkout.title, sourceWorkout.templateId, templateStartWeek);
       peer.week = week;
@@ -522,6 +526,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
 
   peers.forEach((peer) => {
     if (peer === sourceWorkout || peer.week <= sourceWorkout.week) return;
+    if (!isPlanEdit && peer.planIsolated) return;
     if (sourceWorkout.week === templateStartWeek && peer.planCustomized) return;
     const usedExercises = new Set();
     peer.exercises = sourceWorkout.exercises.map((planExercise, exerciseIndex) => {
@@ -567,6 +572,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
 }
 
 function propagateExerciseName(sourceWorkout, exercise, allWorkouts) {
+  if (!mirroringEnabled) return;
   allWorkouts.forEach((peer) => {
     if (peer.templateId !== sourceWorkout.templateId || peer.week <= sourceWorkout.week) return;
     const matchingExercise = peer.exercises.find((item) => item.planId === exercise.planId);
@@ -575,6 +581,27 @@ function propagateExerciseName(sourceWorkout, exercise, allWorkouts) {
     if (sourceWorkout.week !== sourceWorkout.templateStartWeek) peer.planCustomized = true;
   });
 }
+
+function applyWorkoutPlanEdit(sourceWorkout, allWorkouts, createMissingWeeks = false) {
+  if (mirroringEnabled) {
+    syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks, true);
+    return;
+  }
+  sourceWorkout.planIsolated = true;
+  allWorkouts.forEach((peer) => {
+    if (peer.templateId === sourceWorkout.templateId && peer.week > sourceWorkout.week) peer.planIsolated = true;
+  });
+  if (createMissingWeeks) sourceWorkout.templateEndWeek = sourceWorkout.week;
+}
+
+const mirroringToggle = document.getElementById("mirroring-toggle");
+mirroringToggle.addEventListener("change", () => {
+  mirroringEnabled = mirroringToggle.checked;
+  render();
+  document.getElementById("announcements").textContent = mirroringEnabled
+    ? "Mirroring on. Future structural edits carry forward."
+    : "Mirroring off. Structural edits affect only the selected week.";
+});
 
 function prepareWorkoutTemplates(allWorkouts) {
   const originalWorkouts = JSON.stringify(allWorkouts);
@@ -764,7 +791,9 @@ function workoutStructure(item) {
   return {
     title: item.title, templateEndWeek: item.templateEndWeek ?? 12,
     planCustomized: item.planCustomized === true,
+    planIsolated: item.planIsolated === true,
     shadowWorkoutId: item.shadowWorkoutId ?? null,
+    excludedWeeks: item.excludedWeeks ?? [],
     exercises: item.exercises.map((exercise) => ({
       id: exercise.id, planId: exercise.planId, name: exercise.name,
       sets: exercise.sets.map((set) => ({ id: set.id, planId: set.planId })),
@@ -788,8 +817,10 @@ function restoreStructuralUndo(record, current) {
     restored.push({
       ...before, ...live,
       title: before.title, planCustomized: before.planCustomized,
+      planIsolated: before.planIsolated === true,
       templateEndWeek: before.templateEndWeek ?? 12,
       shadowWorkoutId: before.shadowWorkoutId ?? null,
+      excludedWeeks: before.excludedWeeks ?? [],
       exercises: before.exercises.map((exercise) => {
         const liveExercise = live?.exercises.find((item) => item.id === exercise.id);
         return {
@@ -1805,7 +1836,7 @@ function closeWorkoutContextMenu(returnFocus = false) {
 function openWorkoutContextMenu(button, x, y) {
   contextWorkoutId = button.dataset.workoutId;
   const contextWorkout = workouts.find((item) => item.id === contextWorkoutId);
-  deleteWorkoutButton.textContent = contextWorkout?.week === 1
+  deleteWorkoutButton.textContent = !mirroringEnabled ? "Delete day from this week" : contextWorkout?.week === 1
     ? "Delete day from all weeks"
     : `Delete day from Week ${contextWorkout?.week ?? selectedWeek} onward`;
   workoutContextMenu.hidden = false;
@@ -1820,7 +1851,8 @@ function openDeleteWorkoutDialog(workoutId, returnFocus = null) {
   if (!targetWorkout) return;
   pendingDeleteWorkoutId = workoutId;
   pendingDeleteWorkoutReturnFocus = returnFocus;
-  deleteWorkoutDialogTitle.textContent = targetWorkout.week === 1
+  deleteWorkoutDialogTitle.textContent = !mirroringEnabled
+    ? `Delete ${targetWorkout.title} from Week ${targetWorkout.week} only?` : targetWorkout.week === 1
     ? `Delete ${targetWorkout.title} from all 12 weeks?`
     : `Delete ${targetWorkout.title} from Week ${targetWorkout.week} and all later weeks?`;
   deleteWorkoutDialog.showModal();
@@ -2077,12 +2109,12 @@ function render() {
   shadowButton.title = workout?.shadowWorkoutId
     ? `Shadowing ${workouts.find((item) => item.id === workout.shadowWorkoutId)?.title ?? "another workout"}`
     : "Choose a workout to shadow";
-  deleteWorkoutDayButton.title = workout?.week === 1
+  deleteWorkoutDayButton.title = !mirroringEnabled ? "Delete this workout day from this week only" : workout?.week === 1
     ? "Delete this workout day from all 12 weeks"
     : `Delete this workout day from Week ${workout?.week ?? ""} onward`;
   deleteWorkoutDayButton.setAttribute(
     "aria-label",
-    workout?.week === 1
+    !mirroringEnabled ? "Delete workout day from this week only" : workout?.week === 1
       ? "Delete workout day from all 12 weeks"
       : `Delete workout day from Week ${workout?.week ?? ""} onward`,
   );
@@ -2148,12 +2180,13 @@ addWorkoutForm.addEventListener("submit", (event) => {
   beginStructuralUndo(`Add workout day: ${title}`);
   workout = createWorkout(title.slice(0, 60));
   workouts.push(workout);
-  syncWorkoutPlan(workout, workouts);
+  applyWorkoutPlanEdit(workout, workouts, true);
   selectedWorkoutId = workout.id;
   newWorkoutNameInput.value = "";
   render();
   saveWorkout();
-  document.getElementById("announcements").textContent = selectedWeek === 1
+  document.getElementById("announcements").textContent = !mirroringEnabled
+    ? `${title} added to Week ${selectedWeek} only.` : selectedWeek === 1
     ? `${title} added to all 12 weeks.`
     : selectedWeek < 12
       ? `${title} added to Week ${selectedWeek} and mirrored to Weeks ${selectedWeek + 1}-12.`
@@ -2191,11 +2224,11 @@ function confirmDeleteWorkoutDay() {
   pendingDeleteWorkoutReturnFocus = null;
   deleteWorkoutDialog.close();
   if (!deletedWorkout) return;
-  beginStructuralUndo(`Delete workout day: ${deletedWorkout.title}, Week ${deletedWorkout.week} onward`);
-  const deletesAllWeeks = deletedWorkout.week === 1;
+  beginStructuralUndo(`Delete workout day: ${deletedWorkout.title}, Week ${deletedWorkout.week}${mirroringEnabled ? " onward" : " only"}`);
+  const deletesAllWeeks = mirroringEnabled && deletedWorkout.week === 1;
   const deletedTemplateId = deletedWorkout.templateId;
   const deletedWorkoutIds = new Set(
-    deletesAllWeeks && deletedTemplateId
+    !mirroringEnabled ? [deletedWorkout.id] : deletesAllWeeks && deletedTemplateId
       ? workouts.filter((item) => item.templateId === deletedTemplateId).map((item) => item.id)
       : workouts.filter((item) =>
         item.templateId === deletedTemplateId && item.week >= deletedWorkout.week,
@@ -2203,7 +2236,9 @@ function confirmDeleteWorkoutDay() {
   );
   workouts = workouts.filter((item) => !deletedWorkoutIds.has(item.id));
   workouts.forEach((item) => {
-    if (item.templateId === deletedTemplateId) item.templateEndWeek = deletedWorkout.week - 1;
+    if (item.templateId !== deletedTemplateId) return;
+    if (mirroringEnabled) item.templateEndWeek = deletedWorkout.week - 1;
+    else item.excludedWeeks = [...new Set([...(item.excludedWeeks ?? []), deletedWorkout.week])];
   });
   workouts.forEach((item) => {
     if (deletedWorkoutIds.has(item.shadowWorkoutId)) item.shadowWorkoutId = null;
@@ -2217,7 +2252,7 @@ function confirmDeleteWorkoutDay() {
   render();
   saveWorkout();
   document.getElementById("announcements").textContent =
-    deletesAllWeeks
+    !mirroringEnabled ? `${deletedWorkout.title} deleted from Week ${deletedWorkout.week} only.` : deletesAllWeeks
       ? `${deletedWorkout.title} deleted from all 12 weeks.`
       : `${deletedWorkout.title} deleted from Week ${deletedWorkout.week} onward.`;
   (workoutList.querySelector(".workout-choice") || newWorkoutNameInput).focus();
@@ -2317,7 +2352,7 @@ workoutTitle.addEventListener("input", () => {
   if (!workout) return;
   beginStructuralUndo("Rename workout day", workoutTitle);
   workout.title = workoutTitle.value;
-  syncWorkoutPlan(workout, workouts, false);
+  applyWorkoutPlanEdit(workout, workouts);
   renderWorkoutChoices();
   saveWorkout();
 });
@@ -2488,7 +2523,7 @@ addExerciseForm.addEventListener("submit", (event) => {
     name: name.slice(0, 60),
     sets: [{ id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [], myoNotesConfirmed: false }],
   });
-  syncWorkoutPlan(workout, workouts, false);
+  applyWorkoutPlanEdit(workout, workouts);
   exerciseNameInput.value = "";
   setNoticeHidden();
   render();
@@ -2534,7 +2569,7 @@ exerciseList.addEventListener("input", (event) => {
   if (!exercise) return;
   beginStructuralUndo("Rename exercise", nameInput);
   exercise.name = nameInput.value.slice(0, 60);
-  syncWorkoutPlan(workout, workouts, false);
+  applyWorkoutPlanEdit(workout, workouts);
   propagateExerciseName(workout, exercise, workouts);
   const removeButton = nameInput.closest(".exercise-card").querySelector('[data-action="remove-exercise"]');
   removeButton.setAttribute("aria-label", `Remove ${exercise.name || "exercise"}`);
@@ -2720,11 +2755,14 @@ exerciseList.addEventListener("click", (event) => {
     beginStructuralUndo(`Add set to ${exercise.name}`);
     const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [], myoNotesConfirmed: false };
     exercise.sets.push(set);
-    syncWorkoutPlan(workout, workouts, false);
+    applyWorkoutPlanEdit(workout, workouts);
     focusId = `add-set-${exercise.id}`;
     announcement = `Set ${exercise.sets.length} added to ${exercise.name}.`;
   } else if (button.dataset.action === "remove-set") {
     pendingDeleteSet = { workoutId: workout.id, exerciseId: exercise.id, setId: button.dataset.setId, trigger: button };
+    document.getElementById("delete-set-scope").textContent = mirroringEnabled
+      ? "This removes the set and its recorded values from this week and all remaining weeks."
+      : "This removes the set and its recorded values from this week only.";
     document.getElementById("delete-set-title").textContent =
       `Delete set ${exercise.sets.findIndex((set) => set.id === button.dataset.setId) + 1} from ${exercise.name}?`;
     deleteSetDialog.showModal();
@@ -2755,7 +2793,7 @@ document.getElementById("confirm-delete-set").addEventListener("click", () => {
   if (!exercise?.sets.some((item) => item.id === pendingDeleteSet.setId)) return;
   beginStructuralUndo(`Delete set from ${exercise.name}`);
   exercise.sets = exercise.sets.filter((item) => item.id !== pendingDeleteSet.setId);
-  syncWorkoutPlan(workout, workouts, false);
+  applyWorkoutPlanEdit(workout, workouts);
   pendingDeleteSet = null;
   deleteSetDialog.close();
   render();
@@ -2784,7 +2822,7 @@ confirmDeleteExerciseButton.addEventListener("click", () => {
   beginStructuralUndo(`Delete exercise: ${exercise.name}`);
   const removedIndex = workout.exercises.indexOf(exercise);
   workout.exercises = workout.exercises.filter((item) => item.id !== exercise.id);
-  syncWorkoutPlan(workout, workouts, false);
+  applyWorkoutPlanEdit(workout, workouts);
   const nextExercise = workout.exercises[Math.min(removedIndex, workout.exercises.length - 1)];
   render();
   saveWorkout();

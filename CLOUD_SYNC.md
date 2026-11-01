@@ -54,6 +54,12 @@ The backup itself and its logged workout values are not included in the reposito
 
 ## Structural undo
 
+The switch beside the structural-changes note disables forward mirroring for
+manual edits, including day/exercise/set additions, deletions and renames.
+While off, only the selected week changes. These local-only edits and deletions
+remain local to that week on reload; turning the switch back on does not replay
+them. Mirroring starts on again whenever the app is reloaded.
+
 Set deletion requires confirmation, like deleting exercises and workout days.
 The subtle **Undo** control left of the BAIL meter restores the last structural action
 (adding, removing or renaming days/exercises/sets), after confirmation. A single
