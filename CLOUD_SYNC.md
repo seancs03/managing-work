@@ -55,6 +55,9 @@ The backup itself and its logged workout values are not included in the reposito
 ## Structural undo
 
 Workout shadowing also displays the source day's session notes as placeholders.
+Shadowing never adds or removes sets. Existing sets reference the corresponding
+set number in the source exercise; manually added or re-added sets show that
+number's shadow when available.
 They are references only: typing records notes for the current week without
 changing the source, and clearing a local note reveals its shadow again.
 
