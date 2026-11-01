@@ -1755,11 +1755,12 @@ function findShadowSet(exercise, set) {
 function parsePerformanceValue(field, value) {
   let text = String(value ?? "").trim();
   if (field === "weight") {
-    if (/^b\s*w$/i.test(text)) return 0;
+    if (/^b\s*w$/i.test(text)) return { rank: 0, amount: 0 };
+    if (/^bar$/i.test(text)) return { rank: 1, amount: 0 };
     text = text.replace(/\s*e$/i, "");
   }
   if (!/^\d+(?:\.\d+)?$/.test(text) || getFieldError(field, text)) return null;
-  return Number(text);
+  return field === "weight" ? { rank: 2, amount: Number(text) } : Number(text);
 }
 
 function compareSetPerformance(current, previous) {
@@ -1775,14 +1776,16 @@ function compareSetPerformance(current, previous) {
   });
   if (values.some((value) => !value)) return null;
   for (const field of ["weight", "reps", "rpe"]) {
-    const difference = values[0][field] - values[1][field];
+    const difference = field === "weight"
+      ? values[0].weight.rank - values[1].weight.rank || values[0].weight.amount - values[1].weight.amount
+      : values[0][field] - values[1][field];
     if (difference !== 0) return (field === "rpe" ? -difference : difference) > 0 ? ">" : "<";
   }
   return "=";
 }
 
 function getSetProgress(exercise, set) {
-  if (!workout?.shadowWorkoutId) return null;
+  if (!workout?.shadowWorkoutId || workout.status === "completed") return null;
   const sourceWorkout = workouts.find((item) => item.id === workout.shadowWorkoutId);
   if (!sourceWorkout) return null;
   const previousWorkout = sourceWorkout.shadowWorkoutId

@@ -121,13 +121,16 @@ test("progress comparisons prioritize weight, then reps, then lower RPE and requ
   assert.equal(context.compareSetPerformance(baseline, null), null);
 });
 
-test("BW and each-weight notation compare without changing recorded text", () => {
+test("numeric weight ranks above BAR above BW, retaining each notation and recorded text", () => {
   const context = loadFunctions({}, ["getFieldError", "parsePerformanceValue", "compareSetPerformance"]);
   const makeSet = (weight) => ({ weight, reps: "10", rpe: "9" });
   for (const [current, previous, symbol] of [
-    ["5", "BW", ">"], ["bw", "5", "<"], [" B W ", "0", "="],
+    ["5", "BW", ">"], ["bw", "5", "<"], [" B W ", "0", "<"],
     ["7.5E", "5e", ">"], ["7.5 e", "10 E", "<"], ["7.5e", "7.5", "="],
-    ["BW", "bw", "="], ["0E", "BW", "="],
+    ["BW", "bw", "="], ["0E", "BW", ">"],
+    ["BAR", "BW", ">"], ["bw", "bar", "<"], ["5", "BAR", ">"],
+    ["bar", "5", "<"], [" BAR ", "bar", "="], ["0", "BAR", ">"],
+    ["7.5E", "bar", ">"],
   ]) {
     const currentSet = makeSet(current), previousSet = makeSet(previous);
     assert.equal(context.compareSetPerformance(currentSet, previousSet), symbol);
@@ -139,6 +142,8 @@ test("BW and each-weight notation compare without changing recorded text", () =>
   }
   assert.equal(context.parsePerformanceValue("reps", "10E"), null);
   assert.equal(context.parsePerformanceValue("rpe", "BW"), null);
+  assert.equal(context.compareSetPerformance({ ...makeSet("BAR"), reps: "11" }, makeSet("bar")), ">");
+  assert.equal(context.compareSetPerformance({ ...makeSet("BW"), rpe: "8" }, makeSet("bw")), ">");
 });
 
 test("shadow progress compares the source's own shadow or previous week, not the current logs", () => {
@@ -175,11 +180,11 @@ test("shadow progress compares the source's own shadow or previous week, not the
   assert.equal(context.getSetProgress(exercise, set).symbol, ">");
   assert.equal(context.getSetProgress(exercise, set).sourceWeek, 3);
   week4.status = "completed";
-  assert.equal(context.getSetProgress(exercise, set).sourceWeek, 3);
+  assert.equal(context.getSetProgress(exercise, set), null);
   set.reps = "11";
-  assert.equal(context.getSetProgress(exercise, set).symbol, ">");
+  assert.equal(context.getSetProgress(exercise, set), null);
   set.reps = "";
-  assert.equal(context.getSetProgress(exercise, set).symbol, ">");
+  assert.equal(context.getSetProgress(exercise, set), null);
   week4.shadowWorkoutId = null;
   assert.equal(context.getSetProgress(exercise, set), null);
   week4.shadowWorkoutId = "w3";
