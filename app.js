@@ -1768,13 +1768,16 @@ function compareSetPerformance(current, previous) {
     const difference = values[0][field] - values[1][field];
     if (difference !== 0) return (field === "rpe" ? -difference : difference) > 0 ? ">" : "<";
   }
-  return "-";
+  return "=";
 }
 
-function getShadowProgress(exercise, set) {
-  const sourceWorkout = workouts.find((item) => item.id === workout?.shadowWorkoutId);
+function getSetProgress(exercise, set) {
+  const isShadow = workout?.status !== "completed" && Boolean(workout?.shadowWorkoutId);
+  const sourceWorkout = isShadow
+    ? workouts.find((item) => item.id === workout.shadowWorkoutId)
+    : workout;
   if (!sourceWorkout) return null;
-  const previousWorkout = sourceWorkout.shadowWorkoutId
+  const previousWorkout = isShadow && sourceWorkout.shadowWorkoutId
     ? workouts.find((item) => item.id === sourceWorkout.shadowWorkoutId)
     : workouts.find((item) => item.templateId === sourceWorkout.templateId && item.week === sourceWorkout.week - 1);
   if (!previousWorkout || previousWorkout.id === sourceWorkout.id
@@ -1785,7 +1788,20 @@ function getShadowProgress(exercise, set) {
   const index = exercise.sets.indexOf(set);
   if (index < 0) return null;
   const symbol = compareSetPerformance(sourceExercise?.sets[index], previousExercise?.sets[index]);
-  return symbol ? { symbol, sourceWeek: sourceWorkout.week, previousWeek: previousWorkout.week } : null;
+  return symbol ? { symbol, sourceWeek: sourceWorkout.week, previousWeek: previousWorkout.week, isShadow } : null;
+}
+
+function updateSetProgress(cell, exercise, set, setNumber) {
+  cell.querySelector(".shadow-progress")?.remove();
+  const progress = getSetProgress(exercise, set);
+  if (!progress) return;
+  const indicator = createElement("span", "shadow-progress", progress.symbol);
+  const status = { ">": "Progressive overload", "=": "Stagnant", "<": "Performance decreased" }[progress.symbol];
+  const description = `${status}: ${progress.isShadow ? "shadow " : ""}Week ${progress.sourceWeek} compared with Week ${progress.previousWeek}, set ${setNumber}. Weight, then reps, then RPE.`;
+  indicator.title = description;
+  indicator.setAttribute("role", "img");
+  indicator.setAttribute("aria-label", description);
+  cell.append(indicator);
 }
 
 function getShadowSources(week = null) {
@@ -1907,16 +1923,7 @@ function renderSetRow(exercise, set, index) {
 
   const llpCell = document.createElement("td");
   llpCell.className = "llp-cell";
-  const progress = getShadowProgress(exercise, set);
-  if (progress) {
-    const indicator = createElement("span", "shadow-progress", progress.symbol);
-    const status = { ">": "Progressive overload", "-": "Stagnant", "<": "Performance decreased" }[progress.symbol];
-    const description = `${status}: shadow Week ${progress.sourceWeek} compared with Week ${progress.previousWeek}, set ${setNumber}. Weight, then reps, then RPE.`;
-    indicator.title = description;
-    indicator.setAttribute("role", "img");
-    indicator.setAttribute("aria-label", description);
-    llpCell.append(indicator);
-  }
+  updateSetProgress(llpCell, exercise, set, setNumber);
   const shadowSet = findShadowSet(exercise, set);
   const llpCheckbox = document.createElement("input");
   llpCheckbox.className = "llp-checkbox";
@@ -2583,6 +2590,7 @@ exerciseList.addEventListener("input", (event) => {
       );
     }
     updateInputValidity(input);
+    updateSetProgress(input.closest("tr").querySelector(".llp-cell"), exercise, set, exercise.sets.indexOf(set) + 1);
     updateExerciseProgress();
     saveWorkout();
     return;

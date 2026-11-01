@@ -109,7 +109,7 @@ test("progress comparisons prioritize weight, then reps, then lower RPE and requ
     [{ weight: "75", reps: "12", rpe: "8" }, "<"],
     [{ reps: "11", rpe: "10" }, ">"],
     [{ reps: "9", rpe: "8" }, "<"],
-    [{ rpe: "8.5" }, ">"], [{ rpe: "9.5" }, "<"], [{}, "-"],
+    [{ rpe: "8.5" }, ">"], [{ rpe: "9.5" }, "<"], [{}, "="],
   ]) assert.equal(context.compareSetPerformance({ ...baseline, ...changes }, baseline), symbol);
   for (const changes of [
     { weight: "" }, { weight: "X" }, { weight: "bodyweight" }, { weight: "-1" },
@@ -132,23 +132,42 @@ test("shadow progress compares the source's own shadow or previous week, not the
   const week4 = makeWorkout("w4", 4, "1");
   week4.shadowWorkoutId = "w3";
   const context = loadFunctions({ workout: week4, workouts: [week1, week2, week3, week4] },
-    ["getFieldError", "findMatchingExercise", "compareSetPerformance", "getShadowProgress"]);
+    ["getFieldError", "findMatchingExercise", "compareSetPerformance", "getSetProgress"]);
   const exercise = week4.exercises[0], set = exercise.sets[0];
-  assert.equal(context.getShadowProgress(exercise, set).symbol, ">");
-  assert.equal(context.getShadowProgress(exercise, set).previousWeek, 2);
+  assert.equal(context.getSetProgress(exercise, set).symbol, ">");
+  assert.equal(context.getSetProgress(exercise, set).previousWeek, 2);
   week3.shadowWorkoutId = "w1";
-  assert.equal(context.getShadowProgress(exercise, set).symbol, "<");
-  assert.equal(context.getShadowProgress(exercise, set).previousWeek, 1);
+  assert.equal(context.getSetProgress(exercise, set).symbol, "<");
+  assert.equal(context.getSetProgress(exercise, set).previousWeek, 1);
   week1.exercises[0].sets[0].rpe = "";
-  assert.equal(context.getShadowProgress(exercise, set), null);
+  assert.equal(context.getSetProgress(exercise, set), null);
   week3.shadowWorkoutId = null;
   week2.exercises[0].bailed = true;
-  assert.equal(context.getShadowProgress(exercise, set), null);
+  assert.equal(context.getSetProgress(exercise, set), null);
   week2.exercises[0].bailed = false;
   exercise.sets.push({ weight: "", reps: "", rpe: "" });
-  assert.equal(context.getShadowProgress(exercise, exercise.sets[1]), null);
+  assert.equal(context.getSetProgress(exercise, exercise.sets[1]), null);
   week4.shadowWorkoutId = null;
-  assert.equal(context.getShadowProgress(exercise, set), null);
+  assert.equal(context.getSetProgress(exercise, set).symbol, "<");
+  assert.equal(context.getSetProgress(exercise, set).sourceWeek, 4);
+  assert.equal(context.getSetProgress(exercise, set).previousWeek, 3);
+  assert.equal(context.getSetProgress(exercise, set).isShadow, false);
+  week4.shadowWorkoutId = "w3";
+  week4.status = "in-progress";
+  set.reps = "12";
+  assert.equal(context.getSetProgress(exercise, set).symbol, ">");
+  assert.equal(context.getSetProgress(exercise, set).sourceWeek, 3);
+  week4.status = "completed";
+  assert.equal(context.getSetProgress(exercise, set).sourceWeek, 4);
+  assert.equal(context.getSetProgress(exercise, set).isShadow, false);
+  set.reps = "11";
+  assert.equal(context.getSetProgress(exercise, set).symbol, "=");
+  set.reps = "";
+  assert.equal(context.getSetProgress(exercise, set), null);
+  week4.status = "in-progress";
+  assert.equal(context.getSetProgress(exercise, set).sourceWeek, 3);
+  context.workout = week1;
+  assert.equal(context.getSetProgress(week1.exercises[0], week1.exercises[0].sets[0]), null);
 });
 
 test("completed workout durations remain frozen even with a stale running timestamp", () => {
