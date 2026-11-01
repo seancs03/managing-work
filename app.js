@@ -711,9 +711,10 @@ function saveWorkout(completing = false) {
     localStorage.setItem(`${storageKey}.pending-completions`, JSON.stringify(pending));
     localStorage.setItem(storageKey, JSON.stringify({ workouts, selectedWorkoutId, selectedWeek }));
     if (pendingStructuralUndo) {
-      localStorage.setItem(`${storageKey}.undo`, JSON.stringify({
+      structuralUndoRecord = JSON.parse(JSON.stringify({
         ...pendingStructuralUndo, after: serializeWorkoutState(),
       }));
+      structuralUndoProfile = selectedProfile;
       pendingStructuralUndo = null;
     }
     setNoticeHidden();
@@ -741,6 +742,8 @@ function serializeWorkoutState() {
 }
 
 let pendingStructuralUndo = null;
+let structuralUndoRecord = null;
+let structuralUndoProfile = null;
 const structuralEditStarts = new WeakMap();
 function beginStructuralUndo(label, input = null) {
   pendingStructuralUndo = {
@@ -811,14 +814,19 @@ const undoStructureDialog = document.getElementById("undo-structure-dialog");
 let pendingUndoRecord = null;
 let pendingUndoProfile = null;
 function updateUndoButton() {
-  undoStructureButton.disabled = !storageKey || !localStorage.getItem(`${storageKey}.undo`);
+  undoStructureButton.disabled = false;
 }
 undoStructureButton.addEventListener("click", () => {
   try {
-    pendingUndoRecord = JSON.parse(localStorage.getItem(`${storageKey}.undo`));
+    pendingUndoRecord = structuralUndoProfile === selectedProfile ? structuralUndoRecord : null;
     pendingUndoProfile = selectedProfile;
-    if (!pendingUndoRecord) return;
-    document.getElementById("undo-structure-summary").textContent = pendingUndoRecord.label;
+    document.getElementById("undo-structure-title").textContent = pendingUndoRecord ? "Undo last action?" : "Nothing to undo";
+    document.getElementById("undo-structure-summary").textContent = pendingUndoRecord
+      ? `Are you sure you want to undo: ${pendingUndoRecord.label}?`
+      : "No structural changes have been made in this session.";
+    document.getElementById("undo-structure-explanation").hidden = !pendingUndoRecord;
+    document.getElementById("confirm-undo-structure").hidden = !pendingUndoRecord;
+    document.getElementById("cancel-undo-structure").textContent = pendingUndoRecord ? "Cancel" : "Close";
     undoStructureDialog.showModal();
     document.getElementById("cancel-undo-structure").focus();
   } catch (error) {
@@ -838,7 +846,7 @@ document.getElementById("confirm-undo-structure").addEventListener("click", () =
     if (cloudSaveInFlight) throw new Error("A cloud save is running. Wait a moment and try Undo again.");
     const state = restoreStructuralUndo(pendingUndoRecord, serializeWorkoutState());
     restoreProfileState(state);
-    localStorage.removeItem(`${storageKey}.undo`);
+    structuralUndoRecord = null;
     undoStructureDialog.close();
     render();
     document.getElementById("announcements").textContent = "Last structural change undone.";
@@ -1045,7 +1053,7 @@ document.getElementById("confirm-restore-backup").addEventListener("click", () =
   }
   try {
     restoreProfileState(pendingBackup.state);
-    localStorage.removeItem(`${storageKey}.undo`);
+    structuralUndoRecord = null;
     restoreBackupDialog.close();
     render();
     backupMessage.textContent = "Backup restored on this device. Cloud sync will retry if needed.";
@@ -1456,6 +1464,10 @@ async function activateProfile(profile) {
 }
 
 function returnToProfilePicker() {
+  structuralUndoRecord = null;
+  structuralUndoProfile = null;
+  pendingStructuralUndo = null;
+  if (undoStructureDialog.open) undoStructureDialog.close();
   if (shadowDialog.open) shadowDialog.close();
   if (cloudSaveTimer) {
     window.clearTimeout(cloudSaveTimer);
