@@ -705,19 +705,20 @@ function createProfileBackup(profile, state, now = new Date()) {
   };
 }
 
-function findExerciseTarget(profile, sourceWorkout, exercise) {
+function findExerciseTarget(sourceWorkout, exercise) {
   const data = globalThis.WORKOUT_TARGETS;
-  const mapping = data?.mappings?.[profile]?.[exercise.planId];
-  if (!mapping) return null;
-  return data.targets[`${sourceWorkout.week}:${mapping.workout}:${mapping.order}`] ?? null;
+  const title = sourceWorkout.title.trim().toLowerCase().replace(/\s+day$/, "");
+  const day = title === "leg" ? "legs" : title;
+  const order = sourceWorkout.exercises.indexOf(exercise) + 1;
+  if (order < 1) return null;
+  return data?.targets?.[`${sourceWorkout.week}:${day}:${order}`] ?? null;
 }
 
 const targetDialog = document.getElementById("target-dialog");
 let targetReturnFocus = null;
 function openTargetDialog(sourceWorkout, exercise, trigger) {
-  const target = findExerciseTarget(selectedProfile, sourceWorkout, exercise);
+  const target = findExerciseTarget(sourceWorkout, exercise);
   targetReturnFocus = trigger;
-  document.getElementById("target-exercise").textContent = `Week ${sourceWorkout.week} — ${exercise.name}`;
   const details = document.getElementById("target-details");
   details.replaceChildren();
   const fields = [
@@ -735,7 +736,8 @@ function openTargetDialog(sourceWorkout, exercise, trigger) {
     });
   }
   document.getElementById("target-message").textContent = target
-    ? "" : "No verified target is assigned to this exercise.";
+    ? "" : "No target is available for this workout day, week and exercise position.";
+  document.getElementById("target-message").hidden = Boolean(target);
   targetDialog.showModal();
   document.getElementById("close-target-button").focus({ preventScroll: true });
 }
@@ -1758,7 +1760,7 @@ function renderExerciseCard(exercise, index) {
   targetButton.dataset.exerciseId = exercise.id;
   targetButton.setAttribute("aria-label", `View target for ${exercise.name}`);
   targetButton.title = "Target";
-  targetButton.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="14" r="8"/><circle cx="10" cy="14" r="4"/><path d="M10 14L21 3M17 3h4v4"/></svg>';
+  targetButton.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="14" r="8"/><circle cx="10" cy="14" r="4"/><path d="M21 3L10 14M10 10v4h4M17 3v4h4"/></svg>';
   headerActions.append(targetButton);
   const bailButton = createElement(
     "button",

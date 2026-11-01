@@ -240,24 +240,33 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   assert.equal(attributes["aria-busy"], undefined);
 });
 
-test("verified targets use stable identity and week, not current name or position", () => {
+test("targets follow week, day and current position, including replacement exercises", () => {
   const dataContext = vm.createContext({ window: {} });
   vm.runInContext(fs.readFileSync("workout-targets.js", "utf8"), dataContext);
   const data = dataContext.window.WORKOUT_TARGETS;
   assert.equal(Object.keys(data.targets).length, 408);
-  assert.equal(Object.keys(data.mappings.sean).length, 34);
   const context = loadFunctions({ WORKOUT_TARGETS: data }, ["findExerciseTarget"]);
-  for (const [planId, mapping] of Object.entries(data.mappings.sean)) {
-    for (let week = 1; week <= 12; week++) {
-      const target = context.findExerciseTarget("sean", { week }, { planId, name: "Renamed exercise" });
+  for (const [key, expected] of Object.entries(data.targets)) {
+      const [week, day, order] = key.split(":");
+      const exercises = Array.from({ length: Number(order) }, () => ({ name: "Renamed exercise" }));
+      const workout = { week: Number(week), title: `${day === "legs" ? "Leg" : day} day`, exercises };
+      const target = context.findExerciseTarget(workout, exercises[Number(order) - 1]);
       assert.ok(target);
-      assert.equal(target, data.targets[`${week}:${mapping.workout}:${mapping.order}`]);
+      assert.equal(target, expected);
       for (const field of ["working_sets", "rep_range", "early_sets_rpe", "last_set_rpe", "last_set_intensity_technique"]) {
         assert.equal(typeof target[field], "string");
         assert.notEqual(target[field], "");
       }
-    }
   }
-  assert.equal(context.findExerciseTarget("kick", { week: 6 }, { planId: "unknown" }), null);
-  assert.equal(context.findExerciseTarget("sean", { week: 6 }, { planId: "new-exercise" }), null);
+  const workout = { week: 6, title: "Upper day", exercises: Array.from({ length: 7 }, () => ({})) };
+  workout.exercises.pop();
+  const replacement = { name: "Something completely different", planId: "new-id" };
+  workout.exercises.push(replacement);
+  assert.equal(context.findExerciseTarget(workout, replacement), data.targets["6:upper:7"]);
+  workout.exercises.shift();
+  assert.equal(context.findExerciseTarget(workout, replacement), data.targets["6:upper:6"]);
+  workout.exercises.push({});
+  workout.exercises.push({});
+  assert.equal(context.findExerciseTarget(workout, workout.exercises[7]), null);
+  assert.equal(context.findExerciseTarget({ ...workout, title: "Unknown day" }, replacement), null);
 });
