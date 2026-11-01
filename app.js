@@ -207,8 +207,8 @@ function applyDisplayMode(mode) {
   document.documentElement.dataset.displayMode = mode;
   const button = document.getElementById("display-mode-button");
   const light = mode === "light";
-  button.querySelector(".mode-moon").hidden = light;
-  button.querySelector(".mode-sun").hidden = !light;
+  button.querySelector(".mode-moon").toggleAttribute("hidden", light);
+  button.querySelector(".mode-sun").toggleAttribute("hidden", !light);
   button.setAttribute("aria-pressed", String(light));
   button.setAttribute("aria-label", `${light ? "Light" : "Dark"} mode. Switch to ${light ? "dark" : "light"} mode`);
   button.title = `Switch to ${light ? "dark" : "light"} mode`;

@@ -638,7 +638,7 @@ button {
 .topbar-actions {
   display: flex;
   align-items: center;
-  flex: 1;
+  flex: 0 0 auto;
   gap: 16px;
   flex-wrap: nowrap;
   justify-content: flex-end;
@@ -660,6 +660,7 @@ button {
   background: transparent;
   color: var(--ink);
   cursor: pointer;
+  margin-inline: auto;
 }
 
 .display-mode-button svg[hidden] {

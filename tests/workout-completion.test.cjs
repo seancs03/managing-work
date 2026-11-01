@@ -5,7 +5,8 @@ const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
 test("display mode switches icons and accessibility state without changing the accent scheme", () => {
-  const moon = {}, sun = {}, attributes = {};
+  const makeIcon = () => ({ toggleAttribute(name, enabled) { this[name] = enabled; } });
+  const moon = makeIcon(), sun = makeIcon(), attributes = {};
   const button = {
     querySelector: (selector) => selector === ".mode-moon" ? moon : sun,
     setAttribute: (name, value) => { attributes[name] = value; },
