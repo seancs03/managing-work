@@ -39,6 +39,42 @@ function loadFunctions(context, names) {
   return sandbox;
 }
 
+test("set shadows use current set positions without changing either workout's structure", () => {
+  const sourceExercise = { planId: "bench", name: "Incline bench", sets: [
+    { planId: "s1", weight: "60", reps: "10", rpe: "8" },
+    { planId: "s2", weight: "60", reps: "9", rpe: "9" },
+    { planId: "s3", weight: "60", reps: "8", rpe: "10", myo: true, myoReps: "2", myoNotes: ["8", "6"] },
+  ] };
+  const exercise = { planId: "bench", name: "Incline bench", sets: [
+    { planId: "s1", weight: "65" }, { planId: "s2", weight: "" },
+  ] };
+  const previous = { id: "week5", exercises: [sourceExercise] };
+  const current = { id: "week6", shadowWorkoutId: previous.id, exercises: [exercise] };
+  const context = loadFunctions({ workout: current, workouts: [previous, current] }, ["findShadowSet"]);
+  const snapshot = JSON.stringify([previous, current]);
+  assert.equal(context.findShadowSet(exercise, exercise.sets[0]), sourceExercise.sets[0]);
+  assert.equal(context.findShadowSet(exercise, exercise.sets[1]), sourceExercise.sets[1]);
+  assert.equal(JSON.stringify([previous, current]), snapshot);
+  assert.equal(exercise.sets.length, 2);
+  const added = { planId: "new-third", weight: "" };
+  exercise.sets.push(added);
+  assert.equal(context.findShadowSet(exercise, added), sourceExercise.sets[2]);
+  exercise.sets.pop();
+  const replacement = { planId: "replacement-third", weight: "" };
+  exercise.sets.push(replacement);
+  assert.equal(context.findShadowSet(exercise, replacement), sourceExercise.sets[2]);
+  const extra = { planId: "fourth" };
+  exercise.sets.push(extra);
+  assert.equal(context.findShadowSet(exercise, extra), null);
+  exercise.sets.splice(1, 1);
+  assert.equal(context.findShadowSet(exercise, replacement), sourceExercise.sets[1]);
+  exercise.planId = "different-week-id";
+  assert.equal(context.findShadowSet(exercise, replacement), sourceExercise.sets[1]);
+  current.shadowWorkoutId = null;
+  assert.equal(context.findShadowSet(exercise, replacement), null);
+  assert.doesNotMatch(source, /restoreMissingShadowSets/);
+});
+
 test("session notes shadow the selected source without copying or overwriting local notes", () => {
   const original = { id: "week-2", sessionNotes: ["Keep shoulders down", "Good energy"] };
   const current = { id: "week-3", shadowWorkoutId: original.id, sessionNotes: ["", "My own note"] };
