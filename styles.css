@@ -648,6 +648,30 @@ button {
   flex-shrink: 0;
 }
 
+.display-mode-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.display-mode-button svg[hidden] {
+  display: none;
+}
+
+.display-mode-button:focus-visible {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .storage-indicator strong {
   color: var(--ink);
   font-weight: 700;
@@ -2245,12 +2269,16 @@ body.intensity-theme .myo-notes-button:focus-visible {
   }
 
   .topbar-actions {
-    gap: 4px;
+    gap: 3px;
   }
 
   .topbar .undo-structure-button,
   .topbar .switch-profile-button {
-    padding: 0 6px;
+    padding: 0 4px;
+  }
+
+  .topbar .brand {
+    font-size: 20px;
   }
 
   .topbar .storage-indicator .saved-label {
@@ -2281,7 +2309,7 @@ body.intensity-theme .myo-notes-button:focus-visible {
   }
 
   .topbar-actions {
-    gap: clamp(2px, calc((100vw - 350px) / 5), 10px);
+    gap: clamp(2px, calc((100vw - 350px) / 8), 8px);
   }
 
   .topbar .undo-structure-button,
@@ -2315,16 +2343,135 @@ body.intensity-theme .myo-notes-button:focus-visible {
     .topbar {
       padding: 0 6px;
     }
-
-    .topbar .storage-indicator {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-    }
   }
+}
 
+    html[data-display-mode="light"] {
+      background-color: #ffffff;
+      color-scheme: light;
+    }
+
+    body.intensity-theme[data-display-mode="light"] {
+      color-scheme: light;
+      --ink: #111111;
+      --muted: #555555;
+      --paper: #ffffff;
+      --card: #fafafa;
+      --theme-border: color-mix(in srgb, var(--theme-primary) 20%, #dddddd);
+      --theme-border-strong: color-mix(in srgb, var(--theme-primary) 35%, #cccccc);
+      --theme-line: color-mix(in srgb, var(--theme-primary) 10%, #e5e5e5);
+      --theme-tint: color-mix(in srgb, var(--theme-primary) 10%, #ffffff);
+      --theme-tint-deep: color-mix(in srgb, var(--theme-primary) 15%, #ffffff);
+    }
+
+    body.intensity-theme[data-display-mode="light"]:has(.welcome-screen:not([hidden])),
+    body[data-display-mode="light"] .welcome-screen {
+      background: #ffffff;
+      color: var(--ink);
+    }
+
+    body[data-display-mode="light"] :is(.profile-choice, .color-scheme-options button, .switch-profile-button, .undo-structure-button, .shadow-form select, .myo-note-row input, .workout-context-menu),
+    body.intensity-theme[data-display-mode="light"] :is(.workout-choice, .add-workout-form input, .week-select, .set-input, .start-over-button) {
+      background: #f2f2f2;
+      color: var(--ink);
+    }
+
+    body[data-display-mode="light"] .shadow-dialog {
+      background: var(--card);
+      color: var(--ink);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    body[data-display-mode="light"] .shadow-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    body.intensity-theme[data-display-mode="light"] :is(.workout-choice.is-selected, .workout-choice:hover, .workout-choice.is-selected .workout-choice-status, .start-over-button:hover, .profile-choice:hover) {
+      background: var(--theme-tint);
+      color: var(--ink);
+    }
+
+    body.intensity-theme[data-display-mode="light"] :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
+      color: #111111;
+    }
+
+    body[data-display-mode="light"] :is(.session-notes-paper input, .bail-meter, .bail-meter h2, .bail-meter-counts, .bail-meter-count dt, .bail-meter-count dd, .exercise-name-heading, .exercise-name-editor, .exercise-name-editor:disabled, .myo-note-row label, .sets-table th) {
+      color: var(--ink);
+    }
+
+    body[data-display-mode="light"] :is(.bail-meter-chart) {
+      border-color: var(--ink);
+    }
+
+    body[data-display-mode="light"] :is(.bail-meter-bar, .bail-meter-bar.is-stale, .brand-mark span) {
+      background: var(--ink);
+    }
+
+    body.intensity-theme[data-display-mode="light"] :is(.storage-indicator, .session-date, .workout-choice-status, .exercise-progress, .set-number, .stat-label, .volume-label, .summary-footnote, .privacy-note, .shadow-description, .welcome-brand, .welcome-prompt, .welcome-attribution, .cloud-login-message) {
+      color: var(--muted);
+    }
+
+    body.intensity-theme[data-display-mode="light"] :is(.exercise-header, .exercise-footer, .sets-table td, .summary-stats, .summary-stat + .summary-stat) {
+      border-color: var(--line);
+    }
+
+    body.intensity-theme[data-display-mode="light"] .empty-state {
+      background: var(--card);
+      border-color: var(--theme-border);
+    }
+
+    body.intensity-theme[data-display-mode="light"] .icon-button {
+      color: #666666;
+    }
+
+    body.intensity-theme[data-display-mode="light"] :is(.set-input[aria-invalid="true"], .set-input:disabled, .storage-notice) {
+      background: var(--theme-tint-deep);
+      color: var(--ink);
+      -webkit-text-fill-color: var(--ink);
+    }
+
+    body[data-display-mode="light"] .refresh-icon-button {
+      background: transparent;
+      color: #666666;
+    }
+
+    body[data-display-mode="light"] :is(.refresh-icon-button:hover, .refresh-feedback, .myo-notes-button) {
+      color: #555555;
+    }
+
+    body[data-display-mode="light"] .set-input::placeholder,
+    body.intensity-theme[data-display-mode="light"] :is(.workout-title, .add-workout-form input, .exercise-input-wrap input)::placeholder {
+      color: #777777;
+    }
+
+    @media (max-width: 420px) {
+      .topbar .storage-indicator {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
+    }
+
+    @media (max-width: 374px) {
+      .topbar .brand {
+        font-size: 15px;
+        gap: 5px;
+      }
+
+      .topbar .brand-mark {
+        width: 20px;
+        height: 20px;
+      }
+
+      .topbar .display-mode-button {
+        width: 20px;
+        flex-basis: 20px;
+      }
+    }
+
+@media (max-width: 480px) {
   .storage-indicator .saved-label {
     position: absolute;
     width: 1px;
