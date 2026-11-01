@@ -56,7 +56,9 @@ The backup itself and its logged workout values are not included in the reposito
 
 Pressing an exercise name opens a read-only list of its
 logged sets in the current profile's matching workout day, newest week first.
-Blank weeks are omitted. Weight, reps, RPE, LLP and MYO counts retain their
+Blank weeks are omitted except Week 1, whose unfilled sets appear with `x` in
+each value column. These are display-only placeholders, not recorded bails.
+Weight, reps, RPE, LLP and MYO counts retain their
 original text; opening history does not change selection, logs or shadowing.
 History uses the currently opened exercise name and does not label earlier
 weeks with their old exercise names.

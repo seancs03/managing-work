@@ -12,7 +12,7 @@ test("finishing pencil editing restores the history-linked name", () => {
   assert.equal(input.hidden, true);
   assert.equal(name.hidden, false);
 });
-test("exercise history includes only logged matching days, newest first, without changing state", () => {
+test("exercise history includes logged days and blank Week 1 sets without changing state", () => {
   const exercise = { planId: "bench", name: "Bench", sets: [] };
   const make = (week, sets, overrides = {}) => ({
     templateId: "upper", week, title: "Upper",
@@ -29,6 +29,18 @@ test("exercise history includes only logged matching days, newest first, without
   assert.equal(entries[0].sets[0].number, 2);
   assert.equal(entries[0].sets[0].set.weight, "7.5E");
   assert.equal(JSON.stringify(workouts), snapshot);
+  workouts[0].exercises[0].sets.push({ weight: "", reps: "", rpe: "", llpReps: "", myoReps: "" });
+  const blankSnapshot = JSON.stringify(workouts);
+  const withBlank = context.getExerciseHistory(current, exercise, workouts);
+  const firstWeek = withBlank.find((entry) => entry.week === 1);
+  assert.equal(firstWeek.sets.length, 2);
+  assert.equal(firstWeek.sets[0].set.weight, "BW");
+  for (const field of ["weight", "reps", "rpe", "llpReps", "myoReps"]) {
+    assert.equal(firstWeek.sets[1].set[field], "x");
+  }
+  assert.equal(JSON.stringify(workouts), blankSnapshot);
+  workouts[0].exercises[0].sets = [{ weight: "" }];
+  assert.equal(context.getExerciseHistory(current, exercise, workouts).find((entry) => entry.week === 1).sets[0].set.weight, "x");
   assert.equal(context.getExerciseHistory(current, { planId: "other", name: "Other" }, workouts).length, 0);
 });
 test("display mode switches icons and accessibility state without changing the accent scheme", () => {
