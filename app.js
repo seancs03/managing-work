@@ -1782,12 +1782,10 @@ function compareSetPerformance(current, previous) {
 }
 
 function getSetProgress(exercise, set) {
-  const isShadow = workout?.status !== "completed" && Boolean(workout?.shadowWorkoutId);
-  const sourceWorkout = isShadow
-    ? workouts.find((item) => item.id === workout.shadowWorkoutId)
-    : workout;
+  if (!workout?.shadowWorkoutId) return null;
+  const sourceWorkout = workouts.find((item) => item.id === workout.shadowWorkoutId);
   if (!sourceWorkout) return null;
-  const previousWorkout = isShadow && sourceWorkout.shadowWorkoutId
+  const previousWorkout = sourceWorkout.shadowWorkoutId
     ? workouts.find((item) => item.id === sourceWorkout.shadowWorkoutId)
     : workouts.find((item) => item.templateId === sourceWorkout.templateId && item.week === sourceWorkout.week - 1);
   if (!previousWorkout || previousWorkout.id === sourceWorkout.id
@@ -1798,7 +1796,7 @@ function getSetProgress(exercise, set) {
   const index = exercise.sets.indexOf(set);
   if (index < 0) return null;
   const symbol = compareSetPerformance(sourceExercise?.sets[index], previousExercise?.sets[index]);
-  return symbol ? { symbol, sourceWeek: sourceWorkout.week, previousWeek: previousWorkout.week, isShadow } : null;
+  return symbol ? { symbol, sourceWeek: sourceWorkout.week, previousWeek: previousWorkout.week } : null;
 }
 
 function updateSetProgress(cell, exercise, set, setNumber) {
@@ -1807,7 +1805,7 @@ function updateSetProgress(cell, exercise, set, setNumber) {
   if (!progress) return;
   const indicator = createElement("span", "shadow-progress", progress.symbol);
   const status = { ">": "Progressive overload", "=": "Stagnant", "<": "Performance decreased" }[progress.symbol];
-  const description = `${status}: ${progress.isShadow ? "shadow " : ""}Week ${progress.sourceWeek} compared with Week ${progress.previousWeek}, set ${setNumber}. Weight, then reps, then RPE.`;
+  const description = `${status}: shadow Week ${progress.sourceWeek} compared with Week ${progress.previousWeek}, set ${setNumber}. Weight, then reps, then RPE.`;
   indicator.title = description;
   indicator.setAttribute("role", "img");
   indicator.setAttribute("aria-label", description);
@@ -2600,7 +2598,6 @@ exerciseList.addEventListener("input", (event) => {
       );
     }
     updateInputValidity(input);
-    updateSetProgress(input.closest("tr").querySelector(".llp-cell"), exercise, set, exercise.sets.indexOf(set) + 1);
     updateExerciseProgress();
     saveWorkout();
     return;
