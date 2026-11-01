@@ -1056,6 +1056,45 @@ h1 {
   gap: 6px;
 }
 
+.target-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ff3345;
+  cursor: pointer;
+}
+
+.target-button:focus-visible {
+  outline: 2px solid #ff3345;
+  outline-offset: 2px;
+}
+
+.target-details {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.target-detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(70px, 1fr);
+  gap: 12px;
+}
+
+.target-detail-row dt {
+  color: #dddddd;
+}
+
+.target-detail-row dd {
+  margin: 0;
+  color: #ffffff;
+}
+
 .bail-exercise-button {
   min-height: 32px;
   padding: 0 10px;

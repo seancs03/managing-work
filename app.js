@@ -705,6 +705,47 @@ function createProfileBackup(profile, state, now = new Date()) {
   };
 }
 
+function findExerciseTarget(profile, sourceWorkout, exercise) {
+  const data = globalThis.WORKOUT_TARGETS;
+  const mapping = data?.mappings?.[profile]?.[exercise.planId];
+  if (!mapping) return null;
+  return data.targets[`${sourceWorkout.week}:${mapping.workout}:${mapping.order}`] ?? null;
+}
+
+const targetDialog = document.getElementById("target-dialog");
+let targetReturnFocus = null;
+function openTargetDialog(sourceWorkout, exercise, trigger) {
+  const target = findExerciseTarget(selectedProfile, sourceWorkout, exercise);
+  targetReturnFocus = trigger;
+  document.getElementById("target-exercise").textContent = `Week ${sourceWorkout.week} — ${exercise.name}`;
+  const details = document.getElementById("target-details");
+  details.replaceChildren();
+  const fields = [
+    ["Working sets", "working_sets"],
+    ["Rep range", "rep_range"],
+    ["Early set RPE", "early_sets_rpe"],
+    ["Last set RPE", "last_set_rpe"],
+    ["Last set intensity technique", "last_set_intensity_technique"],
+  ];
+  if (target) {
+    fields.forEach(([label, field]) => {
+      const row = createElement("div", "target-detail-row");
+      row.append(createElement("dt", "", `${label}:`), createElement("dd", "", target[field]));
+      details.append(row);
+    });
+  }
+  document.getElementById("target-message").textContent = target
+    ? "" : "No verified target is assigned to this exercise.";
+  targetDialog.showModal();
+  document.getElementById("close-target-button").focus({ preventScroll: true });
+}
+
+document.getElementById("close-target-button").addEventListener("click", () => targetDialog.close());
+targetDialog.addEventListener("close", () => {
+  if (targetReturnFocus?.isConnected) targetReturnFocus.focus({ preventScroll: true });
+  targetReturnFocus = null;
+});
+
 function parseProfileBackup(text, profile) {
   const backup = JSON.parse(text);
   if (backup?.format !== "spijker-track-backup" || backup.version !== 1) {
@@ -1711,6 +1752,14 @@ function renderExerciseCard(exercise, index) {
   header.append(titleWrap);
 
   const headerActions = createElement("div", "exercise-header-actions");
+  const targetButton = createElement("button", "target-button");
+  targetButton.type = "button";
+  targetButton.dataset.action = "target";
+  targetButton.dataset.exerciseId = exercise.id;
+  targetButton.setAttribute("aria-label", `View target for ${exercise.name}`);
+  targetButton.title = "Target";
+  targetButton.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="14" r="8"/><circle cx="10" cy="14" r="4"/><path d="M10 14L21 3M17 3h4v4"/></svg>';
+  headerActions.append(targetButton);
   const bailButton = createElement(
     "button",
     `bail-exercise-button${exercise.bailed ? " is-bailed" : ""}`,
@@ -2417,6 +2466,10 @@ exerciseList.addEventListener("click", (event) => {
   if (!button) return;
   const exercise = workout.exercises.find((item) => item.id === button.dataset.exerciseId);
   if (!exercise) return;
+  if (button.dataset.action === "target") {
+    openTargetDialog(workout, exercise, button);
+    return;
+  }
   if (button.dataset.action === "myo-notes") {
     const set = exercise.sets.find((item) => item.id === button.dataset.setId);
     if (set) openMyoNotesDialog(exercise, set, button, true);

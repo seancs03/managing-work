@@ -41,6 +41,17 @@ occur during the request. Connection failures leave the current data untouched.
 Queued realtime updates are discarded when a local edit is saved, preventing an
 older queued update from replacing that edit after focus leaves a field.
 
+## Exercise targets
+
+The red target icon beside BAIL opens read-only guidance for the selected week.
+Targets come from `workout-targets.js`, imported from the supplied 12-week CSV
+(the block column is ignored). Sean's supplied backup establishes 34 verified
+exercise-plan-ID mappings by workout day and numbered slot, including Leg day
+to legs. Names may change without changing those mappings. Deleting exercises
+does not shift targets onto another exercise. New exercises and unverified
+profiles show no assigned target rather than guessing by name or position.
+The backup itself and its logged workout values are not included in the repository.
+
 ## Create and secure the Supabase project
 
 1. Create a Supabase project and open its SQL Editor.
