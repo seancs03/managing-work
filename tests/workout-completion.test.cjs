@@ -198,13 +198,14 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   };
   const state = { workouts: [{ id: "a", exercises: [] }], selectedWorkoutId: "a", selectedWeek: 6 };
   const notices = [];
+  const feedback = {};
   const context = loadFunctions({
     selectedProfile: "sean", selectedWorkoutId: "a", selectedWeek: 6,
     cloudEnabled: true, cloudSignedIn: true,
     cloudSaveTimer: null, cloudSaveInFlight: false, cloudSaveQueued: false,
     pendingCloudState: null, workouts: state.workouts,
-    document: { getElementById: (id) => id === "refresh-workout-button" ? button : {} },
-    window: { scrollX: 0, scrollY: 400, scrollTo() {} },
+    document: { getElementById: (id) => id === "refresh-workout-button" ? button : id === "refresh-feedback" ? feedback : {} },
+    window: { scrollX: 0, scrollY: 400, scrollTo() {}, setTimeout() { return 1; }, clearTimeout() {} },
     showNotice: (message) => notices.push(message), console,
     supabaseClient: { from: () => ({ select: () => ({ eq: () => ({
       single: () => new Promise((resolve) => { resolveRead = resolve; }),
@@ -216,9 +217,11 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   vm.runInContext(source.slice(start, end), context);
   const refreshing = handler();
   assert.equal(attributes["aria-busy"], "true");
+  assert.equal(feedback.textContent, "Refreshing...");
   resolveRead({ data: { state: { ...state, selectedWeek: 1 } } });
   await refreshing;
   assert.equal(applied.selectedWeek, 6);
+  assert.equal(feedback.textContent, "Refreshed");
   assert.equal(applied.selectedWorkoutId, "a");
   applied = null;
   const concurrent = handler();
@@ -232,6 +235,7 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   await failed;
   assert.equal(applied, null);
   assert.match(notices.pop(), /Your current data was kept/);
+  assert.equal(feedback.textContent, "Refresh failed");
   assert.equal(button.disabled, false);
   assert.equal(attributes["aria-busy"], undefined);
 });

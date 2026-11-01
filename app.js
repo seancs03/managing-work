@@ -930,6 +930,19 @@ function applyCloudState(state) {
 }
 
 const refreshWorkoutButton = document.getElementById("refresh-workout-button");
+const refreshFeedback = document.getElementById("refresh-feedback");
+let refreshFeedbackTimer = null;
+function showRefreshFeedback(message, clearAfter = 0) {
+  if (refreshFeedbackTimer) window.clearTimeout(refreshFeedbackTimer);
+  refreshFeedbackTimer = null;
+  refreshFeedback.textContent = message;
+  if (clearAfter) {
+    refreshFeedbackTimer = window.setTimeout(() => {
+      refreshFeedback.textContent = "";
+      refreshFeedbackTimer = null;
+    }, clearAfter);
+  }
+}
 refreshWorkoutButton.addEventListener("click", async () => {
   if (!selectedProfile || refreshWorkoutButton.disabled) return;
   if (cloudSaveTimer || cloudSaveInFlight || cloudSaveQueued) {
@@ -941,6 +954,7 @@ refreshWorkoutButton.addEventListener("click", async () => {
   const currentWorkoutId = selectedWorkoutId;
   const currentWeek = selectedWeek;
   refreshWorkoutButton.disabled = true;
+  showRefreshFeedback("Refreshing...");
   refreshWorkoutButton.setAttribute("aria-busy", "true");
   try {
     let state;
@@ -960,10 +974,14 @@ refreshWorkoutButton.addEventListener("click", async () => {
       || state.workouts.some((item) => !item || typeof item !== "object" || !Array.isArray(item.exercises))) {
       throw new Error("The saved workout data has an unexpected format.");
     }
-    if (selectedProfile !== profile) return;
+    if (selectedProfile !== profile) {
+      showRefreshFeedback("");
+      return;
+    }
     if (cloudSaveTimer || cloudSaveInFlight || cloudSaveQueued
       || stableSerialize(serializeWorkoutState()) !== snapshot) {
       showNotice("You edited the workout while it was refreshing. Your edits were kept; refresh again once syncing finishes.");
+      showRefreshFeedback("Not refreshed", 3000);
       return;
     }
     pendingCloudState = null;
@@ -976,9 +994,11 @@ refreshWorkoutButton.addEventListener("click", async () => {
         ? currentWorkoutId : state.selectedWorkoutId,
     });
     window.scrollTo(scrollX, scrollY);
+    showRefreshFeedback(applied ? "Refreshed" : "Refresh failed", 3000);
     if (applied) document.getElementById("announcements").textContent = "Saved workout data refreshed.";
   } catch (error) {
     if (selectedProfile === profile) {
+      showRefreshFeedback("Refresh failed", 3000);
       showNotice(`Refresh failed. Your current data was kept. ${error.message}`);
     }
     console.error("Workout refresh failed:", error);
