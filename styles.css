@@ -403,17 +403,13 @@ button {
 }
 
 .bail-meter {
-  position: absolute;
-  top: 46px;
-  right: 0;
+  flex: 0 0 auto;
   display: grid;
   gap: 3px;
   color: #ffffff;
 }
 
 .bail-meter h2 {
-  position: relative;
-  top: -42px;
   white-space: nowrap;
   margin: 0;
   color: #ffffff;
@@ -576,7 +572,10 @@ button {
 }
 
 .intro {
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 46px 0 25px;
 }
 
@@ -1909,13 +1908,6 @@ body.intensity-theme .myo-notes-button:focus-visible {
     padding: 35px 0 22px;
   }
 
-  .bail-meter {
-    top: 35px;
-  }
-
-  .bail-meter h2 {
-    top: -31px;
-  }
 
   h1 {
     font-size: clamp(42px, 10vw, 55px);
@@ -1985,13 +1977,6 @@ body.intensity-theme .myo-notes-button:focus-visible {
     letter-spacing: -1.2px;
   }
 
-  .bail-meter {
-    top: 37px;
-  }
-
-  .bail-meter h2 {
-    top: -33px;
-  }
 
   .storage-indicator {
     gap: 5px;
