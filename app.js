@@ -198,7 +198,7 @@ function getWorkoutElapsedMs(sourceWorkout, now = Date.now()) {
   const elapsed = Number.isFinite(sourceWorkout.timerElapsedMs)
     ? Math.max(0, sourceWorkout.timerElapsedMs)
     : 0;
-  if (!Number.isFinite(sourceWorkout.timerStartedAt)) return elapsed;
+  if (sourceWorkout.status !== "in-progress" || !Number.isFinite(sourceWorkout.timerStartedAt)) return elapsed;
   return elapsed + Math.max(0, now - sourceWorkout.timerStartedAt);
 }
 
@@ -371,7 +371,7 @@ function normalizeWorkout(source) {
     timerElapsedMs: Number.isFinite(source.timerElapsedMs) && source.timerElapsedMs >= 0
       ? source.timerElapsedMs
       : source.status === "in-progress" ? 0 : null,
-    timerStartedAt: Number.isFinite(source.timerStartedAt) && source.timerStartedAt >= 0
+    timerStartedAt: source.status !== "in-progress" ? null : Number.isFinite(source.timerStartedAt) && source.timerStartedAt >= 0
       ? source.timerStartedAt
       : source.status === "in-progress" ? Date.now() : null,
     week: Number.isInteger(source.week) && source.week >= 1 && source.week <= 12 ? source.week : 1,
@@ -636,9 +636,30 @@ let selectedWeek = 1;
 let workout = null;
 let contextWorkoutId = null;
 
-function saveWorkout() {
+function readPendingCompletions(profile) {
+  return JSON.parse(localStorage.getItem(`${PROFILE_STORAGE_PREFIX}${profile}.pending-completions`) || "{}");
+}
+
+function mergePendingCompletions(profile, state) {
+  const pending = readPendingCompletions(profile);
+  const merged = state.workouts
+    .filter((item) => pending[item.id] !== null)
+    .map((item) => pending[item.id] ?? item);
+  Object.values(pending).forEach((item) => {
+    if (item && !merged.some((existing) => existing.id === item.id)) merged.push(item);
+  });
+  return { ...state, workouts: merged };
+}
+
+function saveWorkout(completing = false) {
   if (!storageKey || !selectedProfile) return;
   try {
+    const pending = readPendingCompletions(selectedProfile);
+    if (completing && workout) pending[workout.id] = workout;
+    Object.keys(pending).forEach((id) => {
+      pending[id] = workouts.find((item) => item.id === id) ?? null;
+    });
+    localStorage.setItem(`${storageKey}.pending-completions`, JSON.stringify(pending));
     localStorage.setItem(storageKey, JSON.stringify({ workouts, selectedWorkoutId, selectedWeek }));
     setNoticeHidden();
   } catch {
@@ -695,11 +716,17 @@ async function saveCloudState() {
   if (!cloudEnabled || !supabaseClient || !selectedProfile) return;
   cloudSaveInFlight = true;
   const profile = selectedProfile;
-  const state = serializeWorkoutState();
+  const state = JSON.parse(JSON.stringify(serializeWorkoutState()));
   const snapshot = stableSerialize(state);
   storageModeLabel.textContent = "Syncing…";
   try {
     await writeCloudState(profile, state);
+    const pending = readPendingCompletions(profile);
+    Object.keys(pending).forEach((id) => {
+      const saved = state.workouts.find((item) => item.id === id) ?? null;
+      if (stableSerialize(pending[id]) === stableSerialize(saved)) delete pending[id];
+    });
+    localStorage.setItem(`${PROFILE_STORAGE_PREFIX}${profile}.pending-completions`, JSON.stringify(pending));
     if (selectedProfile === profile) storageModeLabel.textContent = "";
   } catch (error) {
     const message = "Cloud sync failed. Your latest changes are saved on this device and will retry after the next edit.";
@@ -722,6 +749,7 @@ async function saveCloudState() {
 function applyCloudState(state) {
   if (!selectedProfile || !storageKey) return;
   try {
+    state = mergePendingCompletions(selectedProfile, state);
     localStorage.setItem(storageKey, JSON.stringify(state));
     const profileState = loadWorkouts();
     workouts = profileState.workouts;
@@ -934,8 +962,9 @@ async function activateProfile(profile) {
       };
       const hasLocalData = profileState.workouts.length > 0;
       if (cloudProfile?.state) {
-        localStorage.setItem(storageKey, JSON.stringify(cloudProfile.state));
+        localStorage.setItem(storageKey, JSON.stringify(mergePendingCompletions(profile, cloudProfile.state)));
         profileState = loadWorkouts();
+        if (Object.keys(readPendingCompletions(profile)).length) profileState.needsSave = true;
       } else {
         updateBailMeterFromCloud(profile, localState);
         if (hasLocalData) await writeCloudState(profile, localState);
@@ -1823,7 +1852,12 @@ function finishWorkout() {
   workout.status = "completed";
   document.getElementById("announcements").textContent = `${workout.title} finished.`;
   render();
-  saveWorkout();
+  saveWorkout(true);
+  if (cloudSaveTimer) {
+    window.clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = null;
+  }
+  if (cloudEnabled) saveCloudState();
 }
 
 workoutAction.addEventListener("click", () => {
@@ -1872,14 +1906,29 @@ finishWithoutProofButton.addEventListener("click", finishWorkout);
 
 finishWithProofButton.addEventListener("click", () => {
   if (!workout) return;
+  const finishedWorkout = workout;
+  finishWorkout();
   try {
-    downloadWorkoutProof(workout);
+    downloadWorkoutProof(finishedWorkout);
   } catch (error) {
     showNotice(`Could not download workout proof: ${error.message}`);
-    finishWithProofButton.focus();
     return;
   }
-  finishWorkout();
+});
+
+function retryPendingCompletions() {
+  if (!cloudEnabled || !selectedProfile) return;
+  try {
+    if (Object.keys(readPendingCompletions(selectedProfile)).length) saveCloudState();
+  } catch (error) {
+    showNotice("The pending workout finish could not be read. Your saved workout data was left unchanged.");
+    console.error("Pending workout completion retry failed:", error);
+  }
+}
+
+window.addEventListener("online", retryPendingCompletions);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") retryPendingCompletions();
 });
 
 finishWorkoutDialog.addEventListener("close", () => {
