@@ -58,6 +58,8 @@ Pressing an exercise name opens a read-only list of its
 logged sets in the current profile's matching workout day, newest week first.
 Blank weeks are omitted. Weight, reps, RPE, LLP and MYO counts retain their
 original text; opening history does not change selection, logs or shadowing.
+History uses the currently opened exercise name and does not label earlier
+weeks with their old exercise names.
 The pencil immediately beside the name enables renaming. Enter or leaving the
 field returns to the history-linked name; existing save/mirroring rules apply.
 

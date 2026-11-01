@@ -999,7 +999,6 @@ function openExerciseHistory(sourceWorkout, exercise, trigger) {
   entries.forEach((entry) => {
     const section = createElement("section", "history-week");
     section.append(createElement("h3", "", `Week ${entry.week} · ${entry.title}${entry.bailed ? " · Bailed" : ""}`));
-    if (entry.name !== exercise.name) section.append(createElement("p", "shadow-description", entry.name));
     const table = createElement("table", "history-table");
     const head = document.createElement("thead");
     const headings = document.createElement("tr");
