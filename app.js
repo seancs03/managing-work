@@ -207,7 +207,10 @@ try {
   showNotice("Your color preference could not be loaded. The default red theme is being used.");
   console.error("Color scheme load failed:", error);
 }
-colorSchemeButton.addEventListener("click", () => colorSchemeDialog.showModal());
+colorSchemeButton.addEventListener("click", () => {
+  colorSchemeDialog.showModal();
+  colorSchemeDialog.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
+});
 document.getElementById("close-color-scheme").addEventListener("click", () => colorSchemeDialog.close());
 colorSchemeDialog.addEventListener("close", () => colorSchemeButton.focus({ preventScroll: true }));
 colorSchemeDialog.addEventListener("click", (event) => {

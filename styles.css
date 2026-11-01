@@ -88,7 +88,18 @@ body[data-color-scheme="cyan"] .add-exercise-button {
   border-color: var(--theme-accent);
 }
 
-.color-scheme-options button:focus-visible,
+.color-scheme-options button[aria-pressed="true"]::after {
+  content: "Selected";
+  float: right;
+  color: var(--theme-bright);
+  font-size: 11px;
+}
+
+.color-scheme-options button:focus-visible {
+  outline: 1px dashed #bbbbbb;
+  outline-offset: 3px;
+}
+
 .brand:focus-visible {
   outline: 2px solid var(--theme-accent);
   outline-offset: 3px;
