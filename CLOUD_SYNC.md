@@ -54,6 +54,10 @@ The backup itself and its logged workout values are not included in the reposito
 
 ## Structural undo
 
+Workout shadowing also displays the source day's session notes as placeholders.
+They are references only: typing records notes for the current week without
+changing the source, and clearing a local note reveals its shadow again.
+
 The switch beside the structural-changes note disables forward mirroring for
 manual edits, including day/exercise/set additions, deletions and renames.
 While off, only the selected week changes. These local-only edits and deletions

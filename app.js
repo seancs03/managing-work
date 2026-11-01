@@ -2119,9 +2119,7 @@ function render() {
       : `Delete workout day from Week ${workout?.week ?? ""} onward`,
   );
   sessionNotesSection.hidden = !workout;
-  sessionNoteInputs.forEach((input, index) => {
-    input.value = workout?.sessionNotes[index] ?? "";
-  });
+  renderSessionNotes();
   workoutLayout.classList.toggle("is-training", workout?.status === "in-progress");
   addExerciseForm.hidden = !workout || workout.status === "in-progress";
   renderExercises();
@@ -2356,6 +2354,16 @@ workoutTitle.addEventListener("input", () => {
   renderWorkoutChoices();
   saveWorkout();
 });
+
+function renderSessionNotes() {
+  const shadowWorkout = workouts.find((item) => item.id === workout?.shadowWorkoutId);
+  sessionNoteInputs.forEach((input, index) => {
+    input.value = workout?.sessionNotes[index] ?? "";
+    const shadowNote = shadowWorkout?.sessionNotes[index] ?? "";
+    input.placeholder = shadowNote;
+    input.title = shadowNote ? `Shadow session note: ${shadowNote}` : "";
+  });
+}
 
 sessionNotesSection.addEventListener("input", (event) => {
   const input = event.target.closest("[data-session-note]");

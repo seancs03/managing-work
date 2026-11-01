@@ -39,6 +39,32 @@ function loadFunctions(context, names) {
   return sandbox;
 }
 
+test("session notes shadow the selected source without copying or overwriting local notes", () => {
+  const original = { id: "week-2", sessionNotes: ["Keep shoulders down", "Good energy"] };
+  const current = { id: "week-3", shadowWorkoutId: original.id, sessionNotes: ["", "My own note"] };
+  const inputs = [{}, {}];
+  const context = loadFunctions({
+    workouts: [original, current], workout: current, sessionNoteInputs: inputs,
+  }, ["renderSessionNotes"]);
+  context.renderSessionNotes();
+  assert.equal(inputs[0].value, "");
+  assert.equal(inputs[0].placeholder, original.sessionNotes[0]);
+  assert.equal(inputs[1].value, "My own note");
+  assert.equal(inputs[1].placeholder, original.sessionNotes[1]);
+  assert.deepEqual(current.sessionNotes, ["", "My own note"]);
+  current.sessionNotes[1] = "";
+  context.renderSessionNotes();
+  assert.equal(inputs[1].placeholder, "Good energy");
+  current.shadowWorkoutId = null;
+  context.renderSessionNotes();
+  assert.equal(inputs[0].placeholder, "");
+  assert.equal(inputs[1].title, "");
+  assert.deepEqual(original.sessionNotes, ["Keep shoulders down", "Good energy"]);
+  context.workout = null;
+  context.renderSessionNotes();
+  assert.equal(inputs[0].value, "");
+});
+
 test("completed workout durations remain frozen even with a stale running timestamp", () => {
   const context = loadFunctions({}, ["getWorkoutElapsedMs"]);
   assert.equal(context.getWorkoutElapsedMs({
