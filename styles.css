@@ -641,7 +641,7 @@ button {
   flex: 1;
   gap: 16px;
   flex-wrap: nowrap;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .topbar-actions > * {
@@ -2261,7 +2261,7 @@ body.intensity-theme .myo-notes-button:focus-visible {
   }
 
   .topbar-actions {
-    gap: 2px;
+    gap: clamp(2px, calc((100vw - 350px) / 5), 10px);
   }
 
   .topbar .undo-structure-button,
