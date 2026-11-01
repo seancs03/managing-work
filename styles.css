@@ -1703,6 +1703,21 @@ body.intensity-theme .session-controls :focus-visible {
   vertical-align: middle;
 }
 
+.llp-cell {
+  position: relative;
+}
+
+.shadow-progress {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--theme-accent);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .myo-cell {
   white-space: nowrap;
 }

@@ -1736,16 +1736,56 @@ function isSetComplete(set) {
     && !getFieldError("reps", set.reps);
 }
 
+function findMatchingExercise(sourceWorkout, exercise) {
+  return sourceWorkout?.exercises.find(
+    (item) => item.planId === exercise.planId,
+  ) ?? sourceWorkout?.exercises.find(
+    (item) => item.name.trim().toLocaleLowerCase() === exercise.name.trim().toLocaleLowerCase(),
+  );
+}
+
 function findShadowSet(exercise, set) {
   if (!workout?.shadowWorkoutId) return null;
   const shadowWorkout = workouts.find((item) => item.id === workout.shadowWorkoutId);
-  const shadowExercise = shadowWorkout?.exercises.find(
-    (item) => item.planId === exercise.planId,
-  ) ?? shadowWorkout?.exercises.find(
-    (item) => item.name.trim().toLocaleLowerCase() === exercise.name.trim().toLocaleLowerCase(),
-  );
+  const shadowExercise = findMatchingExercise(shadowWorkout, exercise);
   const setIndex = exercise.sets.indexOf(set);
   return setIndex >= 0 ? shadowExercise?.sets[setIndex] ?? null : null;
+}
+
+function compareSetPerformance(current, previous) {
+  const values = [current, previous].map((set) => {
+    if (!set) return null;
+    const result = {};
+    for (const field of ["weight", "reps", "rpe"]) {
+      const value = String(set[field] ?? "").trim();
+      if (!/^\d+(?:\.\d+)?$/.test(value) || getFieldError(field, value)) return null;
+      result[field] = Number(value);
+    }
+    return result;
+  });
+  if (values.some((value) => !value)) return null;
+  for (const field of ["weight", "reps", "rpe"]) {
+    const difference = values[0][field] - values[1][field];
+    if (difference !== 0) return (field === "rpe" ? -difference : difference) > 0 ? ">" : "<";
+  }
+  return "-";
+}
+
+function getShadowProgress(exercise, set) {
+  const sourceWorkout = workouts.find((item) => item.id === workout?.shadowWorkoutId);
+  if (!sourceWorkout) return null;
+  const previousWorkout = sourceWorkout.shadowWorkoutId
+    ? workouts.find((item) => item.id === sourceWorkout.shadowWorkoutId)
+    : workouts.find((item) => item.templateId === sourceWorkout.templateId && item.week === sourceWorkout.week - 1);
+  if (!previousWorkout || previousWorkout.id === sourceWorkout.id
+    || previousWorkout.templateId !== sourceWorkout.templateId) return null;
+  const sourceExercise = findMatchingExercise(sourceWorkout, exercise);
+  const previousExercise = sourceExercise && findMatchingExercise(previousWorkout, sourceExercise);
+  if (sourceExercise?.bailed || previousExercise?.bailed) return null;
+  const index = exercise.sets.indexOf(set);
+  if (index < 0) return null;
+  const symbol = compareSetPerformance(sourceExercise?.sets[index], previousExercise?.sets[index]);
+  return symbol ? { symbol, sourceWeek: sourceWorkout.week, previousWeek: previousWorkout.week } : null;
 }
 
 function getShadowSources(week = null) {
@@ -1867,6 +1907,16 @@ function renderSetRow(exercise, set, index) {
 
   const llpCell = document.createElement("td");
   llpCell.className = "llp-cell";
+  const progress = getShadowProgress(exercise, set);
+  if (progress) {
+    const indicator = createElement("span", "shadow-progress", progress.symbol);
+    const status = { ">": "Progressive overload", "-": "Stagnant", "<": "Performance decreased" }[progress.symbol];
+    const description = `${status}: shadow Week ${progress.sourceWeek} compared with Week ${progress.previousWeek}, set ${setNumber}. Weight, then reps, then RPE.`;
+    indicator.title = description;
+    indicator.setAttribute("role", "img");
+    indicator.setAttribute("aria-label", description);
+    llpCell.append(indicator);
+  }
   const shadowSet = findShadowSet(exercise, set);
   const llpCheckbox = document.createElement("input");
   llpCheckbox.className = "llp-checkbox";
