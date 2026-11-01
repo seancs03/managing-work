@@ -538,6 +538,26 @@ button {
   flex: 0 0 32px;
 }
 
+.undo-structure-button {
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #999999;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.undo-structure-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.undo-structure-button:focus-visible {
+  outline: 2px solid #ff3345;
+  outline-offset: 2px;
+}
+
 .refresh-feedback {
   position: absolute;
   top: 100%;

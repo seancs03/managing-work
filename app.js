@@ -672,7 +672,14 @@ function saveWorkout(completing = false) {
     });
     localStorage.setItem(`${storageKey}.pending-completions`, JSON.stringify(pending));
     localStorage.setItem(storageKey, JSON.stringify({ workouts, selectedWorkoutId, selectedWeek }));
+    if (pendingStructuralUndo) {
+      localStorage.setItem(`${storageKey}.undo`, JSON.stringify({
+        ...pendingStructuralUndo, after: serializeWorkoutState(),
+      }));
+      pendingStructuralUndo = null;
+    }
     setNoticeHidden();
+    updateUndoButton();
   } catch {
     showNotice("This workout couldn't be saved in this browser. Your current changes are still visible until you leave this page.");
   }
@@ -694,6 +701,114 @@ function hasCloudConfig() {
 function serializeWorkoutState() {
   return { workouts, selectedWorkoutId, selectedWeek };
 }
+
+let pendingStructuralUndo = null;
+const structuralEditStarts = new WeakMap();
+function beginStructuralUndo(label, input = null) {
+  pendingStructuralUndo = {
+    label,
+    before: structuralEditStarts.get(input) ?? JSON.parse(JSON.stringify(serializeWorkoutState())),
+  };
+}
+
+document.addEventListener("focusin", (event) => {
+  if (event.target === workoutTitle || event.target.matches?.("input[data-exercise-name]")) {
+    structuralEditStarts.set(event.target, JSON.parse(JSON.stringify(serializeWorkoutState())));
+  }
+});
+
+function workoutStructure(item) {
+  if (!item) return null;
+  return {
+    title: item.title, templateEndWeek: item.templateEndWeek ?? 12,
+    planCustomized: item.planCustomized === true,
+    shadowWorkoutId: item.shadowWorkoutId ?? null,
+    exercises: item.exercises.map((exercise) => ({
+      id: exercise.id, planId: exercise.planId, name: exercise.name,
+      sets: exercise.sets.map((set) => ({ id: set.id, planId: set.planId })),
+    })),
+  };
+}
+
+function restoreStructuralUndo(record, current) {
+  const affected = new Set([...record.before.workouts, ...record.after.workouts].map((item) => item.id)
+    .filter((id) => stableSerialize(workoutStructure(record.before.workouts.find((item) => item.id === id)))
+      !== stableSerialize(workoutStructure(record.after.workouts.find((item) => item.id === id)))));
+  for (const id of affected) {
+    if (stableSerialize(workoutStructure(current.workouts.find((item) => item.id === id)))
+      !== stableSerialize(workoutStructure(record.after.workouts.find((item) => item.id === id)))) {
+      throw new Error("The affected workout structure has changed since this action. Refresh and review it before undoing.");
+    }
+  }
+  const restored = current.workouts.filter((item) => !affected.has(item.id));
+  record.before.workouts.filter((item) => affected.has(item.id)).forEach((before) => {
+    const live = current.workouts.find((item) => item.id === before.id);
+    restored.push({
+      ...before, ...live,
+      title: before.title, planCustomized: before.planCustomized,
+      templateEndWeek: before.templateEndWeek ?? 12,
+      shadowWorkoutId: before.shadowWorkoutId ?? null,
+      exercises: before.exercises.map((exercise) => {
+        const liveExercise = live?.exercises.find((item) => item.id === exercise.id);
+        return {
+          ...exercise, ...liveExercise, name: exercise.name, planId: exercise.planId,
+          sets: exercise.sets.map((set) =>
+            liveExercise?.sets.find((item) => item.id === set.id) ?? set),
+        };
+      }),
+    });
+  });
+  const priorIds = record.before.workouts.map((item) => item.id);
+  restored.sort((a, b) => priorIds.indexOf(a.id) - priorIds.indexOf(b.id));
+  const selectedId = restored.some((item) => item.id === current.selectedWorkoutId)
+    ? current.selectedWorkoutId : record.before.selectedWorkoutId;
+  return {
+    workouts: restored, selectedWorkoutId: selectedId,
+    selectedWeek: selectedId === current.selectedWorkoutId ? current.selectedWeek : record.before.selectedWeek,
+  };
+}
+
+const undoStructureButton = document.getElementById("undo-structure-button");
+const undoStructureDialog = document.getElementById("undo-structure-dialog");
+let pendingUndoRecord = null;
+let pendingUndoProfile = null;
+function updateUndoButton() {
+  undoStructureButton.disabled = !storageKey || !localStorage.getItem(`${storageKey}.undo`);
+}
+undoStructureButton.addEventListener("click", () => {
+  try {
+    pendingUndoRecord = JSON.parse(localStorage.getItem(`${storageKey}.undo`));
+    pendingUndoProfile = selectedProfile;
+    if (!pendingUndoRecord) return;
+    document.getElementById("undo-structure-summary").textContent = pendingUndoRecord.label;
+    undoStructureDialog.showModal();
+    document.getElementById("cancel-undo-structure").focus();
+  } catch (error) {
+    showNotice(`Undo could not be opened: ${error.message}`);
+    console.error("Structural undo load failed:", error);
+  }
+});
+document.getElementById("cancel-undo-structure").addEventListener("click", () => undoStructureDialog.close());
+undoStructureDialog.addEventListener("close", () => {
+  pendingUndoRecord = null;
+  pendingUndoProfile = null;
+  undoStructureButton.focus({ preventScroll: true });
+});
+document.getElementById("confirm-undo-structure").addEventListener("click", () => {
+  if (!pendingUndoRecord || pendingUndoProfile !== selectedProfile) return;
+  try {
+    if (cloudSaveInFlight) throw new Error("A cloud save is running. Wait a moment and try Undo again.");
+    const state = restoreStructuralUndo(pendingUndoRecord, serializeWorkoutState());
+    restoreProfileState(state);
+    localStorage.removeItem(`${storageKey}.undo`);
+    undoStructureDialog.close();
+    render();
+    document.getElementById("announcements").textContent = "Last structural change undone.";
+  } catch (error) {
+    showNotice(`Undo failed: ${error.message}`);
+    console.error("Structural undo failed:", error);
+  }
+});
 
 function createProfileBackup(profile, state, now = new Date()) {
   return {
@@ -851,6 +966,30 @@ restoreBackupDialog.addEventListener("close", () => {
   pendingBackup = null;
   document.getElementById("restore-backup-button").focus({ preventScroll: true });
 });
+function restoreProfileState(state) {
+  const pending = Object.create(null);
+  workouts.forEach((item) => { pending[item.id] = null; });
+  state.workouts.forEach((item) => { pending[item.id] = item; });
+  const pendingKey = `${storageKey}.pending-completions`;
+  const previousPending = localStorage.getItem(pendingKey);
+  localStorage.setItem(pendingKey, JSON.stringify(pending));
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  } catch (error) {
+    if (previousPending === null) localStorage.removeItem(pendingKey);
+    else localStorage.setItem(pendingKey, previousPending);
+    throw error;
+  }
+  workouts = state.workouts;
+  selectedWorkoutId = state.selectedWorkoutId;
+  selectedWeek = state.selectedWeek;
+  workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
+  pendingCloudState = null;
+  if (cloudSaveTimer) window.clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = null;
+  if (cloudEnabled) saveCloudState();
+}
+
 document.getElementById("confirm-restore-backup").addEventListener("click", () => {
   if (!pendingBackup || pendingBackup.profile !== selectedProfile) return;
   if (cloudSaveInFlight) {
@@ -858,30 +997,10 @@ document.getElementById("confirm-restore-backup").addEventListener("click", () =
     return;
   }
   try {
-    const state = pendingBackup.state;
-    const pending = Object.create(null);
-    workouts.forEach((item) => { pending[item.id] = null; });
-    state.workouts.forEach((item) => { pending[item.id] = item; });
-    const pendingKey = `${storageKey}.pending-completions`;
-    const previousPending = localStorage.getItem(pendingKey);
-    localStorage.setItem(pendingKey, JSON.stringify(pending));
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(state));
-    } catch (error) {
-      if (previousPending === null) localStorage.removeItem(pendingKey);
-      else localStorage.setItem(pendingKey, previousPending);
-      throw error;
-    }
-    workouts = state.workouts;
-    selectedWorkoutId = state.selectedWorkoutId;
-    selectedWeek = state.selectedWeek;
-    workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
-    pendingCloudState = null;
-    if (cloudSaveTimer) window.clearTimeout(cloudSaveTimer);
-    cloudSaveTimer = null;
+    restoreProfileState(pendingBackup.state);
+    localStorage.removeItem(`${storageKey}.undo`);
     restoreBackupDialog.close();
     render();
-    if (cloudEnabled) saveCloudState();
     backupMessage.textContent = "Backup restored on this device. Cloud sync will retry if needed.";
   } catch (error) {
     showNotice(`Backup could not be restored: ${error.message}`);
@@ -1868,6 +1987,12 @@ function updateExerciseProgress() {
 }
 
 function render() {
+  try {
+    updateUndoButton();
+  } catch (error) {
+    undoStructureButton.disabled = true;
+    console.error("Structural undo availability failed:", error);
+  }
   renderBailMeter();
   workoutPlanner.hidden = workout?.status === "in-progress";
   renderWeekOptions();
@@ -1960,6 +2085,7 @@ addWorkoutForm.addEventListener("submit", (event) => {
     newWorkoutNameInput.focus();
     return;
   }
+  beginStructuralUndo(`Add workout day: ${title}`);
   workout = createWorkout(title.slice(0, 60));
   workouts.push(workout);
   syncWorkoutPlan(workout, workouts);
@@ -2005,6 +2131,7 @@ function confirmDeleteWorkoutDay() {
   pendingDeleteWorkoutReturnFocus = null;
   deleteWorkoutDialog.close();
   if (!deletedWorkout) return;
+  beginStructuralUndo(`Delete workout day: ${deletedWorkout.title}, Week ${deletedWorkout.week} onward`);
   const deletesAllWeeks = deletedWorkout.week === 1;
   const deletedTemplateId = deletedWorkout.templateId;
   const deletedWorkoutIds = new Set(
@@ -2128,6 +2255,7 @@ document.addEventListener("keydown", (event) => {
 
 workoutTitle.addEventListener("input", () => {
   if (!workout) return;
+  beginStructuralUndo("Rename workout day", workoutTitle);
   workout.title = workoutTitle.value;
   syncWorkoutPlan(workout, workouts, false);
   renderWorkoutChoices();
@@ -2293,6 +2421,7 @@ addExerciseForm.addEventListener("submit", (event) => {
     exerciseNameInput.focus();
     return;
   }
+  beginStructuralUndo(`Add exercise: ${name}`);
   workout.exercises.push({
     id: makeId(),
     planId: makeId(),
@@ -2343,6 +2472,7 @@ exerciseList.addEventListener("input", (event) => {
   if (!nameInput) return;
   const exercise = workout.exercises.find((item) => item.id === nameInput.dataset.exerciseId);
   if (!exercise) return;
+  beginStructuralUndo("Rename exercise", nameInput);
   exercise.name = nameInput.value.slice(0, 60);
   syncWorkoutPlan(workout, workouts, false);
   propagateExerciseName(workout, exercise, workouts);
@@ -2527,17 +2657,19 @@ exerciseList.addEventListener("click", (event) => {
   let focusId = "";
   let announcement = "";
   if (button.dataset.action === "add-set") {
+    beginStructuralUndo(`Add set to ${exercise.name}`);
     const set = { id: makeId(), planId: makeId(), weight: "", reps: "", rpe: "", llp: false, llpReps: "", myo: false, myoReps: "", myoNotes: [], myoNotesConfirmed: false };
     exercise.sets.push(set);
     syncWorkoutPlan(workout, workouts, false);
     focusId = `add-set-${exercise.id}`;
     announcement = `Set ${exercise.sets.length} added to ${exercise.name}.`;
   } else if (button.dataset.action === "remove-set") {
-    const removedIndex = exercise.sets.findIndex((set) => set.id === button.dataset.setId);
-    exercise.sets = exercise.sets.filter((set) => set.id !== button.dataset.setId);
-    syncWorkoutPlan(workout, workouts, false);
-    focusId = `add-set-${exercise.id}`;
-    announcement = `Set removed from ${exercise.name}.`;
+    pendingDeleteSet = { workoutId: workout.id, exerciseId: exercise.id, setId: button.dataset.setId, trigger: button };
+    document.getElementById("delete-set-title").textContent =
+      `Delete set ${exercise.sets.findIndex((set) => set.id === button.dataset.setId) + 1} from ${exercise.name}?`;
+    deleteSetDialog.showModal();
+    document.getElementById("cancel-delete-set").focus();
+    return;
   } else {
     return;
   }
@@ -2547,6 +2679,28 @@ exerciseList.addEventListener("click", (event) => {
   document.getElementById("announcements").textContent = announcement;
   const focusTarget = focusId && document.getElementById(focusId);
   (focusTarget || exerciseNameInput).focus();
+});
+
+const deleteSetDialog = document.getElementById("delete-set-dialog");
+let pendingDeleteSet = null;
+document.getElementById("cancel-delete-set").addEventListener("click", () => deleteSetDialog.close());
+deleteSetDialog.addEventListener("close", () => {
+  const trigger = pendingDeleteSet?.trigger;
+  pendingDeleteSet = null;
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+});
+document.getElementById("confirm-delete-set").addEventListener("click", () => {
+  if (!pendingDeleteSet || workout?.id !== pendingDeleteSet.workoutId) return;
+  const exercise = workout.exercises.find((item) => item.id === pendingDeleteSet.exerciseId);
+  if (!exercise?.sets.some((item) => item.id === pendingDeleteSet.setId)) return;
+  beginStructuralUndo(`Delete set from ${exercise.name}`);
+  exercise.sets = exercise.sets.filter((item) => item.id !== pendingDeleteSet.setId);
+  syncWorkoutPlan(workout, workouts, false);
+  pendingDeleteSet = null;
+  deleteSetDialog.close();
+  render();
+  saveWorkout();
+  document.getElementById(`add-set-${exercise.id}`)?.focus({ preventScroll: true });
 });
 
 cancelBailButton.addEventListener("click", () => {
@@ -2567,6 +2721,7 @@ confirmDeleteExerciseButton.addEventListener("click", () => {
   pendingDeleteExerciseId = null;
   deleteExerciseDialog.close();
   if (!workout || !exercise) return;
+  beginStructuralUndo(`Delete exercise: ${exercise.name}`);
   const removedIndex = workout.exercises.indexOf(exercise);
   workout.exercises = workout.exercises.filter((item) => item.id !== exercise.id);
   syncWorkoutPlan(workout, workouts, false);

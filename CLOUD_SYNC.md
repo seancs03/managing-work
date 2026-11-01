@@ -52,6 +52,19 @@ exercise updates the positional mapping: a new seventh exercise receives slot
 seven's targets. Unsupported days or positions show no available target.
 The backup itself and its logged workout values are not included in the repository.
 
+## Structural undo
+
+Set deletion requires confirmation, like deleting exercises and workout days.
+The subtle **Undo** control in the header restores the last structural action
+(adding, removing or renaming days/exercises/sets), after confirmation. A single
+before/after record is saved on this device separately for each profile, including
+data deleted from future weeks. Weight/rep/note edits do not replace that record.
+Undo retains current logged data on surviving items and restores deleted items
+from the snapshot; it refuses to overwrite conflicting later structure changes.
+The restored state retries cloud sync until acknowledged. A new structural action
+replaces the undo record; restoring a backup clears it. Undo history is not included
+in downloadable backups or shared between devices.
+
 ## Create and secure the Supabase project
 
 1. Create a Supabase project and open its SQL Editor.
