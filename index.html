@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=set-number-under-e">
+    <link rel="stylesheet" href="styles.css?v=profile-backup-restore">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=forward-plan-edits" defer></script>
+    <script src="app.js?v=profile-backup-restore" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -79,6 +79,23 @@
       </section>
 
       <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
+      <div class="backup-controls" role="group" aria-label="Profile backups">
+        <button id="download-backup-button" class="switch-profile-button" type="button">Download backup</button>
+        <button id="restore-backup-button" class="switch-profile-button" type="button">Restore backup</button>
+        <input id="restore-backup-file" type="file" accept=".json,application/json" hidden>
+        <span id="backup-message" role="status" aria-live="polite"></span>
+      </div>
+      <dialog id="restore-backup-dialog" class="shadow-dialog" aria-labelledby="restore-backup-title">
+        <div class="shadow-form">
+          <h2 id="restore-backup-title">Restore backup?</h2>
+          <p id="restore-backup-summary"></p>
+          <p>This replaces all weeks in the selected profile and syncs them to the cloud. Download a backup of your current data first.</p>
+          <div class="shadow-dialog-actions">
+            <button id="cancel-restore-backup" class="start-over-button" type="button">Cancel</button>
+            <button id="confirm-restore-backup" class="workout-action-button" type="button">Restore</button>
+          </div>
+        </div>
+      </dialog>
       <section class="workout-planner" aria-labelledby="workouts-heading">
         <div class="workout-planner-heading">
           <div>

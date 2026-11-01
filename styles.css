@@ -1182,6 +1182,14 @@ h1 {
   margin-left: 7px;
 }
 
+.backup-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
 .set-number {
   color: #666666;
   font: 600 11px "Manrope", sans-serif;

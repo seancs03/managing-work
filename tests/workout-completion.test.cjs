@@ -158,3 +158,30 @@ test("template end week prevents deleted future workout days from returning", ()
   context.prepareWorkoutTemplates(weeks);
   assert.equal(weeks.length, 2);
 });
+
+test("backup round-trip preserves all profile values and rejects wrong users and malformed files", () => {
+  const context = loadFunctions({}, ["createProfileBackup", "parseProfileBackup"]);
+  const state = { selectedWorkoutId: "workout-1", selectedWeek: 6, workouts: [{
+    id: "workout-1", templateId: "upper", title: "Upper", week: 6,
+    status: "completed", timerElapsedMs: 123000, timerStartedAt: null,
+    templateEndWeek: 12, sessionNotes: ["Good session", ""], exercises: [{
+      id: "exercise-1", planId: "bench", name: "Bench", sets: [{
+        id: "set-1", planId: "set-plan", weight: "42.5", reps: "10", rpe: "8.5",
+        llp: true, llpReps: "3", myo: true, myoReps: "2", myoNotes: ["5", "4"],
+        myoNotesConfirmed: true,
+      }],
+    }],
+  }] };
+  const backup = context.createProfileBackup("sean", state, new Date("2026-11-01T13:00:00Z"));
+  const text = JSON.stringify(backup);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.parseProfileBackup(text, "sean").state)), state);
+  state.workouts[0].title = "Changed after download";
+  assert.equal(backup.state.workouts[0].title, "Upper");
+  assert.throws(() => context.parseProfileBackup(text, "kick"), /different user/);
+  assert.throws(() => context.parseProfileBackup("{}", "sean"), /backup file/);
+  backup.state.workouts[0].exercises[0].sets[0].myoNotes = "invalid";
+  assert.throws(() => context.parseProfileBackup(JSON.stringify(backup), "sean"), /invalid set/);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.parseProfileBackup(JSON.stringify(
+    context.createProfileBackup("sean", { workouts: [], selectedWorkoutId: null, selectedWeek: 1 }),
+  ), "sean").state.workouts)), []);
+});
