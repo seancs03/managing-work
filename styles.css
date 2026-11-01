@@ -64,8 +64,59 @@ body[data-color-scheme="cyan"] {
   --theme-glow: rgba(0, 200, 255, 0.22);
 }
 
-body[data-color-scheme="cyan"] .workout-action-button,
-body[data-color-scheme="cyan"] .add-exercise-button {
+body[data-color-scheme="yellow"] {
+  --theme-accent: #ffff00;
+  --theme-welcome: #ffff00;
+  --theme-bright: #ffff66;
+  --theme-logo: #ffff00;
+  --theme-primary: #ffff00;
+  --theme-hover: #aaaa00;
+  --theme-border: #494930;
+  --theme-border-strong: #6d6d34;
+  --theme-tint: #353511;
+  --theme-tint-deep: #303014;
+  --theme-line: #3b3b25;
+  --theme-soft: #ffff9a;
+  --theme-muted: #a2a23c;
+  --theme-glow: rgba(255, 255, 0, 0.22);
+}
+
+body[data-color-scheme="orange"] {
+  --theme-accent: #ff6e00;
+  --theme-welcome: #ff6e00;
+  --theme-bright: #ffa866;
+  --theme-logo: #ff6e00;
+  --theme-primary: #ff6e00;
+  --theme-hover: #aa4900;
+  --theme-border: #493b30;
+  --theme-border-strong: #6d4d34;
+  --theme-tint: #352111;
+  --theme-tint-deep: #302014;
+  --theme-line: #3b2f25;
+  --theme-soft: #ffc69a;
+  --theme-muted: #a2683c;
+  --theme-glow: rgba(255, 110, 0, 0.22);
+}
+
+body[data-color-scheme="lime"] {
+  --theme-accent: #5aff00;
+  --theme-welcome: #5aff00;
+  --theme-bright: #9cff66;
+  --theme-logo: #5aff00;
+  --theme-primary: #5aff00;
+  --theme-hover: #3caa00;
+  --theme-border: #394930;
+  --theme-border-strong: #486d34;
+  --theme-tint: #1e3511;
+  --theme-tint-deep: #1e3014;
+  --theme-line: #2d3b25;
+  --theme-soft: #beff9a;
+  --theme-muted: #60a23c;
+  --theme-glow: rgba(90, 255, 0, 0.22);
+}
+
+body:is([data-color-scheme="cyan"], [data-color-scheme="yellow"], [data-color-scheme="orange"], [data-color-scheme="lime"]) .workout-action-button,
+body:is([data-color-scheme="cyan"], [data-color-scheme="yellow"], [data-color-scheme="orange"], [data-color-scheme="lime"]) .add-exercise-button {
   color: #111111;
 }
 

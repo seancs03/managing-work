@@ -3,6 +3,7 @@
 const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
 const COLOR_SCHEME_KEY = "spijker-track.color-scheme";
+const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime"];
 const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
 const cloudLoginPanel = document.getElementById("cloud-login-panel");
 const profileChoicePanel = document.getElementById("profile-choice-panel");
@@ -189,7 +190,7 @@ function showNotice(message) {
 }
 
 function applyColorScheme(scheme) {
-  if (!["red", "magenta", "cyan"].includes(scheme)) throw new Error("Unknown color scheme.");
+  if (!COLOR_SCHEMES.includes(scheme)) throw new Error("Unknown color scheme.");
   document.body.dataset.colorScheme = scheme;
   document.querySelectorAll("[data-color-scheme]").forEach((button) => {
     if (button.tagName === "BUTTON") {
@@ -202,7 +203,7 @@ const colorSchemeDialog = document.getElementById("color-scheme-dialog");
 const colorSchemeButton = document.getElementById("color-scheme-button");
 try {
   const savedScheme = localStorage.getItem(COLOR_SCHEME_KEY);
-  applyColorScheme(["red", "magenta", "cyan"].includes(savedScheme) ? savedScheme : "red");
+  applyColorScheme(COLOR_SCHEMES.includes(savedScheme) ? savedScheme : "red");
 } catch (error) {
   showNotice("Your color preference could not be loaded. The default red theme is being used.");
   console.error("Color scheme load failed:", error);
