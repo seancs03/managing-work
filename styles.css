@@ -1448,62 +1448,6 @@ h1 {
 
 .exercise-name-heading {
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.exercise-name-heading .exercise-name-editor {
-  min-width: 0;
-  max-width: 270px;
-  flex-shrink: 1;
-}
-
-.exercise-history-button {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 28px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--theme-accent);
-  cursor: pointer;
-}
-
-.exercise-history-button:focus-visible {
-  outline: 2px solid var(--theme-accent);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-.exercise-history-content {
-  max-height: 55vh;
-  overflow: auto;
-}
-
-.history-week + .history-week {
-  margin-top: 18px;
-}
-
-.history-week h3 {
-  margin: 0 0 8px;
-  font-size: 12px;
-}
-
-.history-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-
-.history-table th,
-.history-table td {
-  padding: 8px 4px;
-  text-align: left;
-  border-bottom: 1px solid var(--theme-border);
-  overflow-wrap: anywhere;
 }
 
 .exercise-name-editor {
