@@ -66,7 +66,9 @@ if it has no shadow source. These shadow-history symbols stay until Finish worko
 Finished workouts, and workouts without a shadow, show their own logged sets'
 performance against the same day in the immediately preceding week. Weight
 takes priority, then reps, then RPE (lower is better). Both sets must have valid
-numeric weight, reps and RPE; missing data and bailed exercises show no symbol.
+weight, reps and RPE; weight comparisons treat `BW` as zero added weight and
+ignore an `E` suffix (each), so `7.5E` compares as `7.5`. Case and spacing around
+these weight notations are ignored. Missing data and bailed exercises show no symbol.
 They are references only: typing records notes for the current week without
 changing the source, and clearing a local note reveals its shadow again.
 
