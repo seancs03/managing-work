@@ -115,3 +115,46 @@ test("exercise substitutions propagate only forward and survive template reload 
   assert.equal(weeks[4].exercises[0].name, "DB flye");
   assert.equal(weeks[11].exercises[0].name, "Cable flye");
 });
+
+test("later-week structural edits preserve matching logs and leave earlier weeks unchanged", () => {
+  let id = 0;
+  const context = loadFunctions({ makeId: () => `new-${++id}` }, ["syncWorkoutPlan"]);
+  const makeWeek = (week) => ({
+    week, templateStartWeek: 1, templateId: "upper", title: "Upper", exercises: [
+      { planId: "bench", name: "Bench", sets: [
+        { id: `a-${week}`, planId: "a", weight: "20" },
+        { id: `b-${week}`, planId: "b", weight: "30" },
+      ] },
+      { planId: "row", name: "Row", sets: [] },
+    ],
+  });
+  const earlier = makeWeek(2);
+  const current = makeWeek(3);
+  const later = makeWeek(4);
+  const originalEarlier = JSON.stringify(earlier);
+  current.exercises.pop();
+  current.exercises[0].sets.shift();
+  current.exercises[0].sets.push({ planId: "c", weight: "99" });
+  current.exercises.push({ planId: "flye", name: "Flye", sets: [{ planId: "d", weight: "80" }] });
+  context.syncWorkoutPlan(current, [earlier, current, later], false);
+  assert.equal(JSON.stringify(earlier), originalEarlier);
+  assert.deepEqual(later.exercises.map((item) => item.planId), ["bench", "flye"]);
+  assert.equal(later.exercises[0].sets[0].id, "b-4");
+  assert.equal(later.exercises[0].sets[0].weight, "30");
+  assert.equal(later.exercises[0].sets[1].weight, "");
+  assert.equal(later.exercises[1].sets[0].weight, "");
+  assert.equal(later.planCustomized, true);
+});
+
+test("template end week prevents deleted future workout days from returning", () => {
+  let id = 0;
+  const context = loadFunctions({
+    makeId: () => `new-${++id}`,
+    createWorkout: (title, templateId, templateStartWeek) => ({ title, templateId, templateStartWeek }),
+  }, ["syncWorkoutPlan", "prepareWorkoutTemplates"]);
+  const weeks = [1, 2].map((week) => ({
+    week, title: "Upper", templateId: "upper", templateEndWeek: 2, exercises: [],
+  }));
+  context.prepareWorkoutTemplates(weeks);
+  assert.equal(weeks.length, 2);
+});

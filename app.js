@@ -366,6 +366,7 @@ function normalizeWorkout(source) {
       ? source.templateStartWeek
       : null,
     planCustomized: source.planCustomized === true,
+    templateEndWeek: Number.isInteger(source.templateEndWeek) ? source.templateEndWeek : 12,
     title: typeof source.title === "string" ? source.title.slice(0, 60) : "Workout",
     status: ["planned", "in-progress", "completed"].includes(source.status) ? source.status : "planned",
     timerElapsedMs: Number.isFinite(source.timerElapsedMs) && source.timerElapsedMs >= 0
@@ -442,7 +443,6 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
   sourceWorkout.templateStartWeek = templateStartWeek;
   if (sourceWorkout.week !== templateStartWeek) {
     sourceWorkout.planCustomized = true;
-    return false;
   }
 
   sourceWorkout.exercises.forEach((exercise) => {
@@ -454,7 +454,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
 
   let peers = allWorkouts.filter((item) => item.templateId === sourceWorkout.templateId);
   if (createMissingWeeks) {
-    for (let week = templateStartWeek; week <= 12; week += 1) {
+    for (let week = sourceWorkout.week; week <= (sourceWorkout.templateEndWeek ?? 12); week += 1) {
       if (peers.some((item) => item.week === week)) continue;
       const peer = createWorkout(sourceWorkout.title, sourceWorkout.templateId, templateStartWeek);
       peer.week = week;
@@ -482,14 +482,13 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
   }
 
   peers.forEach((peer) => {
-    if (peer === sourceWorkout || peer.week <= templateStartWeek || peer.planCustomized) return;
+    if (peer === sourceWorkout || peer.week <= sourceWorkout.week) return;
+    if (sourceWorkout.week === templateStartWeek && peer.planCustomized) return;
     const usedExercises = new Set();
     peer.exercises = sourceWorkout.exercises.map((planExercise, exerciseIndex) => {
       const existingExercise = peer.exercises.find((item) =>
-        !usedExercises.has(item)
-        && (item.planId === planExercise.planId
-          || item.name.trim().toLocaleLowerCase() === planExercise.name.trim().toLocaleLowerCase()),
-      ) ?? peer.exercises[exerciseIndex];
+        !usedExercises.has(item) && item.planId === planExercise.planId,
+      );
       if (existingExercise) usedExercises.add(existingExercise);
       const existingSets = existingExercise?.sets ?? [];
       const usedSets = new Set();
@@ -502,7 +501,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
         sets: planExercise.sets.map((planSet, setIndex) => {
           const existingSet = existingSets.find((item) =>
             !usedSets.has(item) && item.planId === planSet.planId,
-          ) ?? existingSets[setIndex];
+          );
           if (existingSet) usedSets.add(existingSet);
           return existingSet
             ? { ...existingSet, planId: planSet.planId }
@@ -524,6 +523,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
     });
     peer.title = sourceWorkout.title;
     peer.templateStartWeek = templateStartWeek;
+    if (sourceWorkout.week !== templateStartWeek) peer.planCustomized = true;
   });
 }
 
@@ -1352,7 +1352,7 @@ function openWorkoutContextMenu(button, x, y) {
   const contextWorkout = workouts.find((item) => item.id === contextWorkoutId);
   deleteWorkoutButton.textContent = contextWorkout?.week === 1
     ? "Delete day from all weeks"
-    : `Delete day from Week ${contextWorkout?.week ?? selectedWeek}`;
+    : `Delete day from Week ${contextWorkout?.week ?? selectedWeek} onward`;
   workoutContextMenu.hidden = false;
   const bounds = workoutContextMenu.getBoundingClientRect();
   workoutContextMenu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
@@ -1367,7 +1367,7 @@ function openDeleteWorkoutDialog(workoutId, returnFocus = null) {
   pendingDeleteWorkoutReturnFocus = returnFocus;
   deleteWorkoutDialogTitle.textContent = targetWorkout.week === 1
     ? `Delete ${targetWorkout.title} from all 12 weeks?`
-    : `Delete ${targetWorkout.title} from Week ${targetWorkout.week}?`;
+    : `Delete ${targetWorkout.title} from Week ${targetWorkout.week} and all later weeks?`;
   deleteWorkoutDialog.showModal();
   cancelDeleteWorkoutButton.focus();
 }
@@ -1610,12 +1610,12 @@ function render() {
     : "Choose a workout to shadow";
   deleteWorkoutDayButton.title = workout?.week === 1
     ? "Delete this workout day from all 12 weeks"
-    : `Delete this workout day from Week ${workout?.week ?? ""}`;
+    : `Delete this workout day from Week ${workout?.week ?? ""} onward`;
   deleteWorkoutDayButton.setAttribute(
     "aria-label",
     workout?.week === 1
       ? "Delete workout day from all 12 weeks"
-      : `Delete workout day from Week ${workout?.week ?? ""}`,
+      : `Delete workout day from Week ${workout?.week ?? ""} onward`,
   );
   sessionNotesSection.hidden = !workout;
   sessionNoteInputs.forEach((input, index) => {
@@ -1726,9 +1726,14 @@ function confirmDeleteWorkoutDay() {
   const deletedWorkoutIds = new Set(
     deletesAllWeeks && deletedTemplateId
       ? workouts.filter((item) => item.templateId === deletedTemplateId).map((item) => item.id)
-      : [deletedWorkout.id],
+      : workouts.filter((item) =>
+        item.templateId === deletedTemplateId && item.week >= deletedWorkout.week,
+      ).map((item) => item.id),
   );
   workouts = workouts.filter((item) => !deletedWorkoutIds.has(item.id));
+  workouts.forEach((item) => {
+    if (item.templateId === deletedTemplateId) item.templateEndWeek = deletedWorkout.week - 1;
+  });
   workouts.forEach((item) => {
     if (deletedWorkoutIds.has(item.shadowWorkoutId)) item.shadowWorkoutId = null;
   });
@@ -1743,7 +1748,7 @@ function confirmDeleteWorkoutDay() {
   document.getElementById("announcements").textContent =
     deletesAllWeeks
       ? `${deletedWorkout.title} deleted from all 12 weeks.`
-      : `${deletedWorkout.title} deleted from Week ${deletedWorkout.week}.`;
+      : `${deletedWorkout.title} deleted from Week ${deletedWorkout.week} onward.`;
   (workoutList.querySelector(".workout-choice") || newWorkoutNameInput).focus();
 }
 
