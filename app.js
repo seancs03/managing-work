@@ -1826,15 +1826,17 @@ function renderShadowWeekOptions() {
   const sources = getShadowSources();
   shadowWeekSelect.replaceChildren();
   const availableWeeks = [...new Set(sources.map((item) => item.week))].sort((a, b) => a - b);
+  const selectedSource = sources.find((item) => item.id === workout?.shadowWorkoutId);
+  const previousWeekSource = sources.find((item) => item.week === workout?.week - 1);
+  const defaultWeek = selectedSource?.week ?? previousWeekSource?.week ?? sources[0]?.week ?? workout?.week ?? 1;
   for (const week of availableWeeks) {
     const option = document.createElement("option");
     option.value = String(week);
     option.textContent = `Week ${week}`;
+    option.defaultSelected = week === defaultWeek;
+    option.selected = week === defaultWeek;
     shadowWeekSelect.append(option);
   }
-  const selectedSource = sources.find((item) => item.id === workout?.shadowWorkoutId);
-  const previousWeekSource = sources.find((item) => item.week === workout?.week - 1);
-  const defaultWeek = selectedSource?.week ?? previousWeekSource?.week ?? sources[0]?.week ?? workout?.week ?? 1;
   shadowWeekSelect.value = String(defaultWeek);
   shadowWeekSelect.disabled = sources.length === 0;
   shadowForm.querySelector('[type="submit"]').disabled = sources.length === 0;
@@ -2329,7 +2331,7 @@ shadowButton.addEventListener("click", () => {
   }
   renderShadowWeekOptions();
   shadowDialog.showModal();
-  if (!shadowWeekSelect.disabled) shadowWeekSelect.focus();
+  if (!shadowWeekSelect.disabled) shadowForm.querySelector('[type="submit"]').focus();
 });
 
 shadowForm.addEventListener("submit", (event) => {

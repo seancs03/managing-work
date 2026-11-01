@@ -208,6 +208,32 @@ test("shadow progress compares the source's own shadow or previous week, not the
   assert.equal(context.getSetProgress(week1.exercises[0], week1.exercises[0].sets[0]), null);
 });
 
+test("shadow picker fully preselects the previous week and allows another week", () => {
+  const select = { options: [], replaceChildren() { this.options = []; }, append(option) { this.options.push(option); } };
+  const submit = {};
+  const current = { id: "w7", week: 7, templateId: "upper" };
+  const context = loadFunctions({
+    workout: current,
+    workouts: [current, { id: "w5", week: 5, templateId: "upper" }, { id: "w6", week: 6, templateId: "upper" }],
+    document: { createElement: () => ({}) }, shadowWeekSelect: select,
+    shadowForm: { querySelector: () => submit }, clearShadowButton: {},
+  }, ["getShadowSources", "renderShadowWeekOptions"]);
+  context.renderShadowWeekOptions();
+  assert.equal(select.value, "6");
+  assert.equal(select.options.find((option) => option.selected).value, "6");
+  assert.equal(select.options.find((option) => option.defaultSelected).value, "6");
+  assert.equal(submit.disabled, false);
+  select.value = "5";
+  assert.equal(select.value, "5");
+  current.week = 8;
+  context.renderShadowWeekOptions();
+  assert.equal(select.value, "5");
+  context.workouts = [current];
+  context.renderShadowWeekOptions();
+  assert.equal(select.disabled, true);
+  assert.equal(submit.disabled, true);
+});
+
 test("completed workout durations remain frozen even with a stale running timestamp", () => {
   const context = loadFunctions({}, ["getWorkoutElapsedMs"]);
   assert.equal(context.getWorkoutElapsedMs({
