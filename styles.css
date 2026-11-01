@@ -609,7 +609,7 @@ button {
   display: flex;
   align-items: flex-end;
   gap: 7px;
-  border-bottom: 1px solid #ffffff;
+  border-bottom: 1px solid var(--theme-accent);
 }
 
 .bail-meter-bar {
@@ -622,11 +622,11 @@ button {
 
 .bail-meter-bar--sean,
 .bail-meter-bar--kick {
-  background: #ffffff;
+  background: var(--theme-accent);
 }
 
 .bail-meter-bar.is-stale {
-  background: #ffffff;
+  background: var(--theme-accent);
 }
 
 .storage-indicator {
@@ -2408,10 +2408,14 @@ body.intensity-theme .myo-notes-button:focus-visible {
     }
 
     body[data-display-mode="light"] :is(.bail-meter-chart) {
-      border-color: var(--ink);
+      border-color: var(--theme-accent);
     }
 
-    body[data-display-mode="light"] :is(.bail-meter-bar, .bail-meter-bar.is-stale, .brand-mark span) {
+    body[data-display-mode="light"] :is(.bail-meter-bar, .bail-meter-bar.is-stale) {
+      background: var(--theme-accent);
+    }
+
+    body[data-display-mode="light"] .brand-mark span {
       background: var(--ink);
     }
 
