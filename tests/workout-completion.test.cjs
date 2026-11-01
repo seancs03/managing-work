@@ -239,3 +239,25 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   assert.equal(button.disabled, false);
   assert.equal(attributes["aria-busy"], undefined);
 });
+
+test("verified targets use stable identity and week, not current name or position", () => {
+  const dataContext = vm.createContext({ window: {} });
+  vm.runInContext(fs.readFileSync("workout-targets.js", "utf8"), dataContext);
+  const data = dataContext.window.WORKOUT_TARGETS;
+  assert.equal(Object.keys(data.targets).length, 408);
+  assert.equal(Object.keys(data.mappings.sean).length, 34);
+  const context = loadFunctions({ WORKOUT_TARGETS: data }, ["findExerciseTarget"]);
+  for (const [planId, mapping] of Object.entries(data.mappings.sean)) {
+    for (let week = 1; week <= 12; week++) {
+      const target = context.findExerciseTarget("sean", { week }, { planId, name: "Renamed exercise" });
+      assert.ok(target);
+      assert.equal(target, data.targets[`${week}:${mapping.workout}:${mapping.order}`]);
+      for (const field of ["working_sets", "rep_range", "early_sets_rpe", "last_set_rpe", "last_set_intensity_technique"]) {
+        assert.equal(typeof target[field], "string");
+        assert.notEqual(target[field], "");
+      }
+    }
+  }
+  assert.equal(context.findExerciseTarget("kick", { week: 6 }, { planId: "unknown" }), null);
+  assert.equal(context.findExerciseTarget("sean", { week: 6 }, { planId: "new-exercise" }), null);
+});
