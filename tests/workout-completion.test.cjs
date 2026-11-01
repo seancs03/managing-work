@@ -4,6 +4,30 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
+test("HTML nesting keeps the training interface inside the hidden app shell", () => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const stack = [];
+  const voidTags = new Set(["meta", "link", "input", "br", "hr", "img"]);
+  const appSections = new Set(["workout-planner", "workout-layout", "session-notes-card", "backup-menu"]);
+  let checked = 0;
+  for (const match of html.matchAll(/<\/?([a-z][a-z0-9-]*)\b[^>]*>/gi)) {
+    const [tag, name] = match;
+    if (tag.startsWith("</")) {
+      assert.equal(stack.pop()?.name, name, `Mismatched closing tag: ${tag}`);
+    } else {
+      const classes = (tag.match(/class="([^"]*)"/)?.[1] ?? "").split(/\s+/);
+      if (classes.some((value) => appSections.has(value))) {
+        assert.ok(stack.some((item) => item.tag.includes('id="app-shell"')), tag);
+        checked++;
+      }
+      if (!voidTags.has(name) && !tag.endsWith("/>")) stack.push({ name, tag });
+    }
+  }
+  assert.equal(stack.length, 0);
+  assert.equal(checked, 4);
+  assert.match(html, /<div id="app-shell" hidden>/);
+});
+
 function loadFunctions(context, names) {
   const sandbox = vm.createContext(context);
   for (const name of names) {
