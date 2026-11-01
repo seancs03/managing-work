@@ -500,6 +500,8 @@ button {
 }
 
 .brand {
+  flex-shrink: 0;
+  white-space: nowrap;
   padding: 0;
   border: 0;
   background: transparent;
@@ -518,6 +520,7 @@ button {
 }
 
 .brand-mark {
+  flex-shrink: 0;
   width: 25px;
   height: 25px;
   padding: 5px;
@@ -631,6 +634,8 @@ button {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .storage-indicator strong {
