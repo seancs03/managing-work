@@ -316,12 +316,13 @@ test("structural undo is recorded separately and non-structural saves keep the p
     setNoticeHidden() {}, updateUndoButton() {}, showNotice(message) { throw new Error(message); },
   }, ["readPendingCompletions", "serializeWorkoutState", "saveWorkout"]);
   context.saveWorkout();
-  const undo = storage.get("profile.sean.undo");
-  assert.equal(JSON.parse(undo).label, "Delete set");
+  const undo = JSON.stringify(context.structuralUndoRecord);
+  assert.equal(context.structuralUndoRecord.label, "Delete set");
+  assert.equal(storage.has("profile.sean.undo"), false);
   assert.equal(context.pendingStructuralUndo, null);
   context.selectedWeek = 2;
   context.saveWorkout();
-  assert.equal(storage.get("profile.sean.undo"), undo);
+  assert.equal(JSON.stringify(context.structuralUndoRecord), undo);
 });
 
 test("set-deletion Cancel leaves data untouched and confirmed deletion records undo", () => {

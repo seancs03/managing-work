@@ -55,15 +55,17 @@ The backup itself and its logged workout values are not included in the reposito
 ## Structural undo
 
 Set deletion requires confirmation, like deleting exercises and workout days.
-The subtle **Undo** control in the header restores the last structural action
+The subtle **Undo** control left of the BAIL meter restores the last structural action
 (adding, removing or renaming days/exercises/sets), after confirmation. A single
-before/after record is saved on this device separately for each profile, including
+before/after record is held in memory for the current user session, including
 data deleted from future weeks. Weight/rep/note edits do not replace that record.
 Undo retains current logged data on surviving items and restores deleted items
 from the snapshot; it refuses to overwrite conflicting later structure changes.
 The restored state retries cloud sync until acknowledged. A new structural action
 replaces the undo record; restoring a backup clears it. Undo history is not included
-in downloadable backups or shared between devices.
+in downloadable backups or shared between devices. Logging out, switching users
+or fully closing/reloading the app resets it. Pressing Undo with no action opens
+a “Nothing to undo” message; otherwise the dialog names the action before confirmation.
 
 ## Color scheme
 

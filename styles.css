@@ -692,6 +692,13 @@ button {
   padding: 46px 0 25px;
 }
 
+.intro-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .section-kicker {
   margin: 0;
   color: #555555;

@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=expanded-backup-spacing">
+    <link rel="stylesheet" href="styles.css?v=session-undo">
     <script src="cloud-config.js" defer></script>
     <script src="workout-targets.js?v=ordered-targets" defer></script>
-    <script src="app.js?v=expanded-backup-spacing" defer></script>
+    <script src="app.js?v=session-undo" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -45,7 +45,6 @@
           <span>SPIJKER TRACK<span class="brand-period">.</span></span>
         </button>
         <div class="topbar-actions">
-          <button id="undo-structure-button" class="undo-structure-button" type="button" disabled>Undo</button>
           <div class="refresh-control">
           <button id="refresh-workout-button" class="switch-profile-button refresh-icon-button" type="button" aria-label="Refresh saved workout data" title="Refresh saved workout data">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -67,6 +66,8 @@
       <main class="page-shell">
       <section class="intro" aria-labelledby="page-title">
         <h1 id="page-title">Workout log</h1>
+        <div class="intro-tools">
+        <button id="undo-structure-button" class="undo-structure-button" type="button">Undo</button>
         <section id="bail-meter" class="bail-meter" aria-label="BAIL meter: total bailed exercises across saved workouts">
           <h2>BAIL meter:</h2>
           <div class="bail-meter-content">
@@ -86,6 +87,7 @@
             </div>
           </div>
         </section>
+        </div>
       </section>
 
       <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
@@ -125,9 +127,9 @@
       </dialog>
       <dialog id="undo-structure-dialog" class="shadow-dialog" aria-labelledby="undo-structure-title">
         <div class="shadow-form">
-          <h2 id="undo-structure-title">Undo last structural change?</h2>
+          <h2 id="undo-structure-title">Undo last action?</h2>
           <p id="undo-structure-summary"></p>
-          <p>This restores the affected weeks and any deleted data. Later weight, rep and note entries on retained sets are kept.</p>
+          <p id="undo-structure-explanation">This restores the affected weeks and any deleted data. Later weight, rep and note entries on retained sets are kept.</p>
           <div class="shadow-dialog-actions">
             <button id="cancel-undo-structure" class="start-over-button" type="button">Cancel</button>
             <button id="confirm-undo-structure" class="workout-action-button" type="button">Undo</button>
