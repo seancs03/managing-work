@@ -102,7 +102,7 @@ test("session notes shadow the selected source without copying or overwriting lo
 });
 
 test("progress comparisons prioritize weight, then reps, then lower RPE and require valid data", () => {
-  const context = loadFunctions({}, ["getFieldError", "compareSetPerformance"]);
+  const context = loadFunctions({}, ["getFieldError", "parsePerformanceValue", "compareSetPerformance"]);
   const baseline = { weight: "80", reps: "10", rpe: "9" };
   for (const [changes, symbol] of [
     [{ weight: "85", reps: "8", rpe: "10" }, ">"],
@@ -121,6 +121,26 @@ test("progress comparisons prioritize weight, then reps, then lower RPE and requ
   assert.equal(context.compareSetPerformance(baseline, null), null);
 });
 
+test("BW and each-weight notation compare without changing recorded text", () => {
+  const context = loadFunctions({}, ["getFieldError", "parsePerformanceValue", "compareSetPerformance"]);
+  const makeSet = (weight) => ({ weight, reps: "10", rpe: "9" });
+  for (const [current, previous, symbol] of [
+    ["5", "BW", ">"], ["bw", "5", "<"], [" B W ", "0", "="],
+    ["7.5E", "5e", ">"], ["7.5 e", "10 E", "<"], ["7.5e", "7.5", "="],
+    ["BW", "bw", "="], ["0E", "BW", "="],
+  ]) {
+    const currentSet = makeSet(current), previousSet = makeSet(previous);
+    assert.equal(context.compareSetPerformance(currentSet, previousSet), symbol);
+    assert.equal(currentSet.weight, current);
+    assert.equal(previousSet.weight, previous);
+  }
+  for (const value of ["E", "-5E", "7.5EE", "7.5kg", "BWE", "Infinity"]) {
+    assert.equal(context.parsePerformanceValue("weight", value), null);
+  }
+  assert.equal(context.parsePerformanceValue("reps", "10E"), null);
+  assert.equal(context.parsePerformanceValue("rpe", "BW"), null);
+});
+
 test("shadow progress compares the source's own shadow or previous week, not the current logs", () => {
   const makeWorkout = (id, week, reps) => ({
     id, week, templateId: "upper",
@@ -132,7 +152,7 @@ test("shadow progress compares the source's own shadow or previous week, not the
   const week4 = makeWorkout("w4", 4, "1");
   week4.shadowWorkoutId = "w3";
   const context = loadFunctions({ workout: week4, workouts: [week1, week2, week3, week4] },
-    ["getFieldError", "findMatchingExercise", "compareSetPerformance", "getSetProgress"]);
+    ["getFieldError", "parsePerformanceValue", "findMatchingExercise", "compareSetPerformance", "getSetProgress"]);
   const exercise = week4.exercises[0], set = exercise.sets[0];
   assert.equal(context.getSetProgress(exercise, set).symbol, ">");
   assert.equal(context.getSetProgress(exercise, set).previousWeek, 2);

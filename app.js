@@ -1752,14 +1752,24 @@ function findShadowSet(exercise, set) {
   return setIndex >= 0 ? shadowExercise?.sets[setIndex] ?? null : null;
 }
 
+function parsePerformanceValue(field, value) {
+  let text = String(value ?? "").trim();
+  if (field === "weight") {
+    if (/^b\s*w$/i.test(text)) return 0;
+    text = text.replace(/\s*e$/i, "");
+  }
+  if (!/^\d+(?:\.\d+)?$/.test(text) || getFieldError(field, text)) return null;
+  return Number(text);
+}
+
 function compareSetPerformance(current, previous) {
   const values = [current, previous].map((set) => {
     if (!set) return null;
     const result = {};
     for (const field of ["weight", "reps", "rpe"]) {
-      const value = String(set[field] ?? "").trim();
-      if (!/^\d+(?:\.\d+)?$/.test(value) || getFieldError(field, value)) return null;
-      result[field] = Number(value);
+      const value = parsePerformanceValue(field, set[field]);
+      if (value === null) return null;
+      result[field] = value;
     }
     return result;
   });
