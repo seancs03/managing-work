@@ -599,7 +599,7 @@ mirroringToggle.addEventListener("change", () => {
   mirroringEnabled = mirroringToggle.checked;
   render();
   document.getElementById("announcements").textContent = mirroringEnabled
-    ? "Mirroring on. Future structural edits carry forward."
+    ? "Mirroring on. Future structural edits mirror to remaining weeks."
     : "Mirroring off. Structural edits affect only the selected week.";
 });
 

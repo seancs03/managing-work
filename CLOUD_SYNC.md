@@ -14,7 +14,7 @@ unchanged. Substitutions made after the template's first week are retained when
 the profile is reloaded rather than reset to the original week's exercise name.
 
 Workout plan edits (adding/removing exercises or sets, and renaming the workout)
-carry forward from the edited week. Matching exercises and sets retain their
+mirror from the edited week. Matching exercises and sets retain their
 logged values; newly added items start blank in later weeks. Deleting a workout
 day removes that week and all later copies, and records the template's end week
 so reopening does not recreate deleted days.
