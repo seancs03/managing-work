@@ -951,6 +951,15 @@ function parseProfileBackup(text, profile) {
 }
 
 const backupMessage = document.getElementById("backup-message");
+const backupMenu = document.querySelector(".backup-menu");
+backupMenu.addEventListener("toggle", () => {
+  if (!backupMenu.open) return;
+  window.requestAnimationFrame(() => {
+    if (backupMenu.open) {
+      backupMenu.querySelector(".backup-controls").scrollIntoView({ block: "nearest", behavior: "instant" });
+    }
+  });
+});
 const restoreBackupFile = document.getElementById("restore-backup-file");
 const restoreBackupDialog = document.getElementById("restore-backup-dialog");
 let pendingBackup = null;
