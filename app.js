@@ -1760,7 +1760,7 @@ function renderExerciseCard(exercise, index) {
   targetButton.dataset.exerciseId = exercise.id;
   targetButton.setAttribute("aria-label", `View target for ${exercise.name}`);
   targetButton.title = "Target";
-  targetButton.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="14" r="8"/><circle cx="10" cy="14" r="4"/><path d="M21 3L10 14M10 10v4h4M17 3v4h4"/></svg>';
+  targetButton.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><path d="M10.5 3.1a9 9 0 0 0-7.4 7.4M13.5 3.1a9 9 0 0 1 7.4 7.4M20.9 13.5a9 9 0 0 1-7.4 7.4M10.5 20.9a9 9 0 0 1-7.4-7.4"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><path d="M12 1.5v7M12 15.5v7M1.5 12h7M15.5 12h7" stroke-width="1.2" stroke-linecap="round"/></svg>';
   headerActions.append(targetButton);
   const bailButton = createElement(
     "button",
