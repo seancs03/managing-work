@@ -496,6 +496,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -634,8 +635,12 @@ button {
   display: flex;
   align-items: center;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+}
+
+.topbar-actions > * {
+  flex-shrink: 0;
 }
 
 .storage-indicator strong {
@@ -2146,8 +2151,56 @@ body.intensity-theme .myo-notes-button:focus-visible {
 
 @media (max-width: 760px) {
   .topbar {
-    height: 64px;
-    padding: 0 24px;
+    height: auto;
+    min-height: 100px;
+    padding: 12px 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px 8px;
+  }
+
+  .topbar-actions {
+    display: contents;
+  }
+
+  .topbar .brand {
+    grid-row: 1;
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .topbar .undo-structure-button {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .topbar .refresh-control {
+    grid-row: 1;
+    grid-column: 3;
+    width: 32px;
+  }
+
+  .topbar .storage-indicator {
+    grid-row: 2;
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .topbar #cloud-signout-active-button {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .topbar #switch-profile-button {
+    grid-row: 2;
+    grid-column: 3;
+  }
+
+  .topbar .undo-structure-button,
+  .topbar .switch-profile-button {
+    min-height: 32px;
+    white-space: nowrap;
   }
 
   .page-shell {
