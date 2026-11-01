@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=profile-backup-restore">
+    <link rel="stylesheet" href="styles.css?v=refresh-icon">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=workout-refresh" defer></script>
+    <script src="app.js?v=refresh-icon" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -44,7 +44,11 @@
           <span>SPIJKER TRACK<span class="brand-period">.</span></span>
         </a>
         <div class="topbar-actions">
-          <button id="refresh-workout-button" class="switch-profile-button" type="button">Refresh</button>
+          <button id="refresh-workout-button" class="switch-profile-button refresh-icon-button" type="button" aria-label="Refresh saved workout data" title="Refresh saved workout data">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M20 7v5h-5M4 17v-5h5M6.1 6.1a8 8 0 0 1 13.8 5.4M4.1 12.5a8 8 0 0 0 13.8 5.4"/>
+            </svg>
+          </button>
           <div class="storage-indicator">
             <span class="storage-dot" aria-hidden="true"></span>
             <span id="storage-mode-label" class="saved-label">Saved for</span>

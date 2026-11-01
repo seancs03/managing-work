@@ -941,7 +941,7 @@ refreshWorkoutButton.addEventListener("click", async () => {
   const currentWorkoutId = selectedWorkoutId;
   const currentWeek = selectedWeek;
   refreshWorkoutButton.disabled = true;
-  refreshWorkoutButton.textContent = "Refreshing…";
+  refreshWorkoutButton.setAttribute("aria-busy", "true");
   try {
     let state;
     if (cloudEnabled) {
@@ -984,7 +984,7 @@ refreshWorkoutButton.addEventListener("click", async () => {
     console.error("Workout refresh failed:", error);
   } finally {
     refreshWorkoutButton.disabled = false;
-    refreshWorkoutButton.textContent = "Refresh";
+    refreshWorkoutButton.removeAttribute("aria-busy");
   }
 });
 

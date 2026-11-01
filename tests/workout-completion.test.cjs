@@ -190,7 +190,12 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   let handler;
   let resolveRead;
   let applied;
-  const button = { addEventListener: (_, callback) => { handler = callback; } };
+  const attributes = {};
+  const button = {
+    addEventListener: (_, callback) => { handler = callback; },
+    setAttribute: (key, value) => { attributes[key] = value; },
+    removeAttribute: (key) => { delete attributes[key]; },
+  };
   const state = { workouts: [{ id: "a", exercises: [] }], selectedWorkoutId: "a", selectedWeek: 6 };
   const notices = [];
   const context = loadFunctions({
@@ -210,6 +215,7 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   const end = source.indexOf('\nfunction queueIncomingCloudState', start);
   vm.runInContext(source.slice(start, end), context);
   const refreshing = handler();
+  assert.equal(attributes["aria-busy"], "true");
   resolveRead({ data: { state: { ...state, selectedWeek: 1 } } });
   await refreshing;
   assert.equal(applied.selectedWeek, 6);
@@ -227,4 +233,5 @@ test("refresh reloads cloud data, retains selection, and does not replace concur
   assert.equal(applied, null);
   assert.match(notices.pop(), /Your current data was kept/);
   assert.equal(button.disabled, false);
+  assert.equal(attributes["aria-busy"], undefined);
 });
