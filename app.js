@@ -974,6 +974,63 @@ targetDialog.addEventListener("close", () => {
   targetReturnFocus = null;
 });
 
+function getExerciseHistory(sourceWorkout, exercise, allWorkouts) {
+  return allWorkouts.filter((item) => item.templateId === sourceWorkout.templateId)
+    .map((item) => {
+      const matching = findMatchingExercise(item, exercise);
+      const sets = matching?.sets.map((set, index) => ({ set, number: index + 1 }))
+        .filter(({ set }) => ["weight", "reps", "rpe", "llpReps", "myoReps"]
+          .some((field) => String(set[field] ?? "").trim() !== "")) ?? [];
+      return { week: item.week, title: item.title, name: matching?.name, bailed: matching?.bailed, sets };
+    })
+    .filter((entry) => entry.sets.length > 0)
+    .sort((a, b) => b.week - a.week);
+}
+
+const historyDialog = document.getElementById("exercise-history-dialog");
+let historyReturnFocus = null;
+function openExerciseHistory(sourceWorkout, exercise, trigger) {
+  historyReturnFocus = trigger;
+  document.getElementById("exercise-history-title").textContent = `${exercise.name || "Exercise"} history`;
+  const content = document.getElementById("exercise-history-content");
+  content.replaceChildren();
+  const entries = getExerciseHistory(sourceWorkout, exercise, workouts);
+  if (!entries.length) content.append(createElement("p", "shadow-description", "No logged sets yet for this exercise."));
+  entries.forEach((entry) => {
+    const section = createElement("section", "history-week");
+    section.append(createElement("h3", "", `Week ${entry.week} · ${entry.title}${entry.bailed ? " · Bailed" : ""}`));
+    if (entry.name !== exercise.name) section.append(createElement("p", "shadow-description", entry.name));
+    const table = createElement("table", "history-table");
+    const head = document.createElement("thead");
+    const headings = document.createElement("tr");
+    ["Set", "Weight", "Reps", "RPE", "LLP", "MYO"].forEach((label) => {
+      const cell = createElement("th", "", label);
+      cell.scope = "col";
+      headings.append(cell);
+    });
+    head.append(headings);
+    const body = document.createElement("tbody");
+    entry.sets.forEach(({ set, number }) => {
+      const row = document.createElement("tr");
+      [number, set.weight, set.reps, set.rpe, set.llpReps, set.myoReps].forEach((value) => {
+        row.append(createElement("td", "", String(value ?? "").trim() || "—"));
+      });
+      body.append(row);
+    });
+    table.append(head, body);
+    section.append(table);
+    content.append(section);
+  });
+  historyDialog.showModal();
+  document.getElementById("close-exercise-history").focus({ preventScroll: true });
+}
+
+document.getElementById("close-exercise-history").addEventListener("click", () => historyDialog.close());
+historyDialog.addEventListener("close", () => {
+  if (historyReturnFocus?.isConnected) historyReturnFocus.focus({ preventScroll: true });
+  historyReturnFocus = null;
+});
+
 function parseProfileBackup(text, profile) {
   const backup = JSON.parse(text);
   if (backup?.format !== "spijker-track-backup" || backup.version !== 1) {
@@ -2021,6 +2078,7 @@ function renderExerciseCard(exercise, index) {
   nameInput.type = "text";
   nameInput.maxLength = 60;
   nameInput.value = exercise.name;
+  nameInput.hidden = true;
   nameInput.disabled = exercise.bailed === true;
   nameInput.id = `exercise-name-${exercise.id}`;
   nameInput.dataset.exerciseId = exercise.id;
@@ -2028,7 +2086,21 @@ function renderExerciseCard(exercise, index) {
   nameInput.setAttribute("aria-label", `Exercise ${index + 1} name`);
   const heading = createElement("h2", "exercise-name-heading");
   heading.setAttribute("aria-label", `Exercise: ${exercise.name || "unnamed exercise"}`);
-  heading.append(nameLabel, nameInput);
+  const historyButton = createElement("button", "exercise-history-name", exercise.name || "Unnamed exercise");
+  historyButton.type = "button";
+  historyButton.dataset.action = "history";
+  historyButton.dataset.exerciseId = exercise.id;
+  historyButton.setAttribute("aria-label", `View history for ${exercise.name || "exercise"}`);
+  historyButton.title = "Exercise history";
+  const editButton = createElement("button", "exercise-edit-button");
+  editButton.type = "button";
+  editButton.dataset.action = "edit-name";
+  editButton.dataset.exerciseId = exercise.id;
+  editButton.disabled = exercise.bailed === true;
+  editButton.setAttribute("aria-label", `Edit name of ${exercise.name || "exercise"}`);
+  editButton.title = "Edit exercise name";
+  editButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>';
+  heading.append(nameLabel, historyButton, nameInput, editButton);
   const progress = createElement("span", "exercise-progress");
   progress.id = `progress-${exercise.id}`;
   headingWrap.append(heading, progress);
@@ -2647,6 +2719,11 @@ exerciseList.addEventListener("input", (event) => {
   if (!exercise) return;
   beginStructuralUndo("Rename exercise", nameInput);
   exercise.name = nameInput.value.slice(0, 60);
+  const historyName = nameInput.closest(".exercise-name-heading").querySelector(".exercise-history-name");
+  historyName.textContent = exercise.name || "Unnamed exercise";
+  historyName.setAttribute("aria-label", `View history for ${exercise.name || "exercise"}`);
+  nameInput.closest(".exercise-name-heading").querySelector(".exercise-edit-button")
+    .setAttribute("aria-label", `Edit name of ${exercise.name || "exercise"}`);
   applyWorkoutPlanEdit(workout, workouts);
   propagateExerciseName(workout, exercise, workouts);
   const removeButton = nameInput.closest(".exercise-card").querySelector('[data-action="remove-exercise"]');
@@ -2677,6 +2754,24 @@ exerciseList.addEventListener("input", (event) => {
   });
   nameInput.setAttribute("aria-label", `Exercise ${workout.exercises.indexOf(exercise) + 1} name`);
   saveWorkout();
+});
+
+function finishExerciseNameEdit(input) {
+  const heading = input.closest(".exercise-name-heading");
+  input.hidden = true;
+  heading.querySelector(".exercise-history-name").hidden = false;
+}
+
+exerciseList.addEventListener("focusout", (event) => {
+  const input = event.target.closest("input[data-exercise-name]");
+  if (input) finishExerciseNameEdit(input);
+});
+exerciseList.addEventListener("keydown", (event) => {
+  const input = event.target.closest("input[data-exercise-name]");
+  if (!input || event.key !== "Enter") return;
+  event.preventDefault();
+  finishExerciseNameEdit(input);
+  input.closest(".exercise-name-heading").querySelector(".exercise-edit-button").focus();
 });
 
 function clearSetTechnique(set, field) {
@@ -2798,6 +2893,20 @@ exerciseList.addEventListener("click", (event) => {
   if (!exercise) return;
   if (button.dataset.action === "target") {
     openTargetDialog(workout, exercise, button);
+    return;
+  }
+  if (button.dataset.action === "history") {
+    openExerciseHistory(workout, exercise, button);
+    return;
+  }
+  if (button.dataset.action === "edit-name") {
+    if (exercise.bailed) return;
+    const heading = button.closest(".exercise-name-heading");
+    heading.querySelector(".exercise-history-name").hidden = true;
+    const input = heading.querySelector("input[data-exercise-name]");
+    input.hidden = false;
+    input.focus({ preventScroll: true });
+    input.select();
     return;
   }
   if (button.dataset.action === "myo-notes") {
