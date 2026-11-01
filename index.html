@@ -8,7 +8,7 @@
     <title>SPIJKER TRACK — workout log</title>
     <link rel="stylesheet" href="styles.css?v=profile-backup-restore">
     <script src="cloud-config.js" defer></script>
-    <script src="app.js?v=profile-backup-restore" defer></script>
+    <script src="app.js?v=workout-refresh" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -44,6 +44,7 @@
           <span>SPIJKER TRACK<span class="brand-period">.</span></span>
         </a>
         <div class="topbar-actions">
+          <button id="refresh-workout-button" class="switch-profile-button" type="button">Refresh</button>
           <div class="storage-indicator">
             <span class="storage-dot" aria-hidden="true"></span>
             <span id="storage-mode-label" class="saved-label">Saved for</span>

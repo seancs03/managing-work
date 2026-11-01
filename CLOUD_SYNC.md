@@ -34,6 +34,13 @@ succeeds. Only data present on the device at download time is included; backups
 cannot recover edits made after their date. Backups contain personal workout data,
 not login credentials.
 
+The **Refresh** button in the top bar reloads the selected user's saved cloud
+profile (or device data in local-only mode), retaining the current workout/week
+where possible. It refuses to replace data while a save is running or if edits
+occur during the request. Connection failures leave the current data untouched.
+Queued realtime updates are discarded when a local edit is saved, preventing an
+older queued update from replacing that edit after focus leaves a field.
+
 ## Create and secure the Supabase project
 
 1. Create a Supabase project and open its SQL Editor.

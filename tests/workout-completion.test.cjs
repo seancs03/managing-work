@@ -185,3 +185,46 @@ test("backup round-trip preserves all profile values and rejects wrong users and
     context.createProfileBackup("sean", { workouts: [], selectedWorkoutId: null, selectedWeek: 1 }),
   ), "sean").state.workouts)), []);
 });
+
+test("refresh reloads cloud data, retains selection, and does not replace concurrent edits", async () => {
+  let handler;
+  let resolveRead;
+  let applied;
+  const button = { addEventListener: (_, callback) => { handler = callback; } };
+  const state = { workouts: [{ id: "a", exercises: [] }], selectedWorkoutId: "a", selectedWeek: 6 };
+  const notices = [];
+  const context = loadFunctions({
+    selectedProfile: "sean", selectedWorkoutId: "a", selectedWeek: 6,
+    cloudEnabled: true, cloudSignedIn: true,
+    cloudSaveTimer: null, cloudSaveInFlight: false, cloudSaveQueued: false,
+    pendingCloudState: null, workouts: state.workouts,
+    document: { getElementById: (id) => id === "refresh-workout-button" ? button : {} },
+    window: { scrollX: 0, scrollY: 400, scrollTo() {} },
+    showNotice: (message) => notices.push(message), console,
+    supabaseClient: { from: () => ({ select: () => ({ eq: () => ({
+      single: () => new Promise((resolve) => { resolveRead = resolve; }),
+    }) }) }) },
+    applyCloudState: (value) => { applied = value; return true; },
+  }, ["serializeWorkoutState", "stableSerialize"]);
+  const start = source.indexOf('const refreshWorkoutButton =');
+  const end = source.indexOf('\nfunction queueIncomingCloudState', start);
+  vm.runInContext(source.slice(start, end), context);
+  const refreshing = handler();
+  resolveRead({ data: { state: { ...state, selectedWeek: 1 } } });
+  await refreshing;
+  assert.equal(applied.selectedWeek, 6);
+  assert.equal(applied.selectedWorkoutId, "a");
+  applied = null;
+  const concurrent = handler();
+  state.workouts[0].title = "New edit";
+  resolveRead({ data: { state } });
+  await concurrent;
+  assert.equal(applied, null);
+  assert.match(notices.pop(), /edits were kept/);
+  const failed = handler();
+  resolveRead({ error: new Error("Offline") });
+  await failed;
+  assert.equal(applied, null);
+  assert.match(notices.pop(), /Your current data was kept/);
+  assert.equal(button.disabled, false);
+});

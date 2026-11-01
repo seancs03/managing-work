@@ -663,6 +663,7 @@ function mergePendingCompletions(profile, state) {
 
 function saveWorkout(completing = false) {
   if (!storageKey || !selectedProfile) return;
+  pendingCloudState = null;
   try {
     const pending = readPendingCompletions(selectedProfile);
     if (completing && workout) pending[workout.id] = workout;
@@ -920,11 +921,72 @@ function applyCloudState(state) {
     render();
     storageModeLabel.textContent = "";
     document.getElementById("announcements").textContent = "Workout changes from the other device were loaded.";
+    return true;
   } catch (error) {
     showNotice("A cloud update arrived but couldn't be applied on this device. Your current workout remains visible.");
     console.error("Cloud workout update could not be applied:", error);
+    return false;
   }
 }
+
+const refreshWorkoutButton = document.getElementById("refresh-workout-button");
+refreshWorkoutButton.addEventListener("click", async () => {
+  if (!selectedProfile || refreshWorkoutButton.disabled) return;
+  if (cloudSaveTimer || cloudSaveInFlight || cloudSaveQueued) {
+    showNotice("Your latest edits are still syncing. Wait a moment, then press Refresh again.");
+    return;
+  }
+  const profile = selectedProfile;
+  const snapshot = stableSerialize(serializeWorkoutState());
+  const currentWorkoutId = selectedWorkoutId;
+  const currentWeek = selectedWeek;
+  refreshWorkoutButton.disabled = true;
+  refreshWorkoutButton.textContent = "Refreshing…";
+  try {
+    let state;
+    if (cloudEnabled) {
+      if (!supabaseClient || !cloudSignedIn) throw new Error("Sign in before refreshing cloud data.");
+      const { data, error } = await supabaseClient
+        .from("workout_profiles")
+        .select("state")
+        .eq("profile_id", profile)
+        .single();
+      if (error) throw error;
+      state = data?.state;
+    } else {
+      state = JSON.parse(localStorage.getItem(storageKey));
+    }
+    if (!state || !Array.isArray(state.workouts)
+      || state.workouts.some((item) => !item || typeof item !== "object" || !Array.isArray(item.exercises))) {
+      throw new Error("The saved workout data has an unexpected format.");
+    }
+    if (selectedProfile !== profile) return;
+    if (cloudSaveTimer || cloudSaveInFlight || cloudSaveQueued
+      || stableSerialize(serializeWorkoutState()) !== snapshot) {
+      showNotice("You edited the workout while it was refreshing. Your edits were kept; refresh again once syncing finishes.");
+      return;
+    }
+    pendingCloudState = null;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const applied = applyCloudState({
+      ...state,
+      selectedWeek: currentWeek,
+      selectedWorkoutId: state.workouts.some((item) => item.id === currentWorkoutId)
+        ? currentWorkoutId : state.selectedWorkoutId,
+    });
+    window.scrollTo(scrollX, scrollY);
+    if (applied) document.getElementById("announcements").textContent = "Saved workout data refreshed.";
+  } catch (error) {
+    if (selectedProfile === profile) {
+      showNotice(`Refresh failed. Your current data was kept. ${error.message}`);
+    }
+    console.error("Workout refresh failed:", error);
+  } finally {
+    refreshWorkoutButton.disabled = false;
+    refreshWorkoutButton.textContent = "Refresh";
+  }
+});
 
 function queueIncomingCloudState(state) {
   if (stableSerialize(serializeWorkoutState()) === stableSerialize(state)) return;
