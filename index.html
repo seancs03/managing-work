@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=ordered-targets">
+    <link rel="stylesheet" href="styles.css?v=subtle-backup-menu">
     <script src="cloud-config.js" defer></script>
     <script src="workout-targets.js?v=ordered-targets" defer></script>
     <script src="app.js?v=crosshair-target" defer></script>
@@ -88,12 +88,6 @@
       </section>
 
       <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
-      <div class="backup-controls" role="group" aria-label="Profile backups">
-        <button id="download-backup-button" class="switch-profile-button" type="button">Download backup</button>
-        <button id="restore-backup-button" class="switch-profile-button" type="button">Restore backup</button>
-        <input id="restore-backup-file" type="file" accept=".json,application/json" hidden>
-        <span id="backup-message" role="status" aria-live="polite"></span>
-      </div>
       <dialog id="restore-backup-dialog" class="shadow-dialog" aria-labelledby="restore-backup-title">
         <div class="shadow-form">
           <h2 id="restore-backup-title">Restore backup?</h2>
@@ -284,6 +278,15 @@
           <input id="session-note-2" data-session-note="1" type="text" maxlength="500">
         </div>
       </section>
+      <details class="backup-menu">
+        <summary>Backup</summary>
+        <div class="backup-controls" role="group" aria-label="Profile backups">
+          <button id="download-backup-button" class="switch-profile-button" type="button">Download backup</button>
+          <button id="restore-backup-button" class="switch-profile-button" type="button">Restore backup</button>
+          <input id="restore-backup-file" type="file" accept=".json,application/json" hidden>
+          <span id="backup-message" role="status" aria-live="polite"></span>
+        </div>
+      </details>
       </main>
     </div>
   </body>
