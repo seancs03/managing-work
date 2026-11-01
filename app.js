@@ -694,6 +694,157 @@ function serializeWorkoutState() {
   return { workouts, selectedWorkoutId, selectedWeek };
 }
 
+function createProfileBackup(profile, state, now = new Date()) {
+  return {
+    format: "spijker-track-backup",
+    version: 1,
+    profile,
+    createdAt: now.toISOString(),
+    state: JSON.parse(JSON.stringify(state)),
+  };
+}
+
+function parseProfileBackup(text, profile) {
+  const backup = JSON.parse(text);
+  if (backup?.format !== "spijker-track-backup" || backup.version !== 1) {
+    throw new Error("Select a SPIJKER TRACK backup file (version 1).");
+  }
+  if (backup.profile !== profile) throw new Error("This backup belongs to a different user. Switch to that user first.");
+  const state = backup.state;
+  if (!state || !Array.isArray(state.workouts) || !Number.isInteger(state.selectedWeek)
+    || state.selectedWeek < 1 || state.selectedWeek > 12 || Number.isNaN(Date.parse(backup.createdAt))) {
+    throw new Error("The backup contains invalid profile data.");
+  }
+  const ids = new Set();
+  const validId = (id) => {
+    if (typeof id !== "string" || !/^[a-zA-Z0-9-]+$/.test(id)
+      || ["constructor", "prototype"].includes(id) || ids.has(id)) {
+      throw new Error("The backup contains invalid or duplicate IDs.");
+    }
+    ids.add(id);
+  };
+  for (const item of state.workouts) {
+    validId(item?.id);
+    if (typeof item.templateId !== "string" || typeof item.title !== "string"
+      || !["planned", "in-progress", "completed"].includes(item.status)
+      || !Number.isInteger(item.week) || item.week < 1 || item.week > 12 || !Array.isArray(item.exercises)
+      || (item.timerElapsedMs !== null && (!Number.isFinite(item.timerElapsedMs) || item.timerElapsedMs < 0))
+      || (item.timerStartedAt !== null && (!Number.isFinite(item.timerStartedAt) || item.timerStartedAt < 0))) {
+      throw new Error("The backup contains an invalid workout.");
+    }
+    for (const exercise of item.exercises) {
+      validId(exercise?.id);
+      if (typeof exercise.name !== "string" || typeof exercise.planId !== "string" || !Array.isArray(exercise.sets)) {
+        throw new Error("The backup contains an invalid exercise.");
+      }
+      for (const set of exercise.sets) {
+        validId(set?.id);
+        if (typeof set.planId !== "string"
+          || ["weight", "reps", "rpe", "llpReps", "myoReps"].some((field) => typeof set[field] !== "string")
+          || !Array.isArray(set.myoNotes) || set.myoNotes.some((note) => typeof note !== "string")) {
+          throw new Error("The backup contains an invalid set.");
+        }
+      }
+    }
+  }
+  if (state.selectedWorkoutId !== null && !state.workouts.some((item) => item.id === state.selectedWorkoutId)) {
+    throw new Error("The backup's selected workout is missing.");
+  }
+  return backup;
+}
+
+const backupMessage = document.getElementById("backup-message");
+const restoreBackupFile = document.getElementById("restore-backup-file");
+const restoreBackupDialog = document.getElementById("restore-backup-dialog");
+let pendingBackup = null;
+
+document.getElementById("download-backup-button").addEventListener("click", () => {
+  if (!selectedProfile) return;
+  try {
+    const backup = createProfileBackup(selectedProfile, serializeWorkoutState());
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `spijker-track-${selectedProfile}-${backup.createdAt.replace(/[:.]/g, "-")}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    backupMessage.textContent = "Backup download requested. Keep the file in Files or another safe location.";
+  } catch (error) {
+    showNotice(`Backup could not be downloaded: ${error.message}`);
+    console.error("Profile backup failed:", error);
+  }
+});
+
+document.getElementById("restore-backup-button").addEventListener("click", () => {
+  if (!selectedProfile) return;
+  restoreBackupFile.value = "";
+  restoreBackupFile.click();
+});
+
+restoreBackupFile.addEventListener("change", async () => {
+  const file = restoreBackupFile.files[0];
+  const profile = selectedProfile;
+  if (!file || !profile) return;
+  try {
+    if (file.size > 20 * 1024 * 1024) throw new Error("The backup file exceeds 20 MB.");
+    const backup = parseProfileBackup(await file.text(), profile);
+    if (selectedProfile !== profile) throw new Error("The selected user changed. Choose the backup again.");
+    pendingBackup = backup;
+    document.getElementById("restore-backup-summary").textContent =
+      `${profile === "sean" ? "Sean" : "Kick"}: ${backup.state.workouts.length} workout days across all weeks. Backup dated ${new Date(backup.createdAt).toLocaleString()}.`;
+    restoreBackupDialog.showModal();
+    document.getElementById("cancel-restore-backup").focus();
+  } catch (error) {
+    showNotice(`Backup could not be opened: ${error.message}`);
+    console.error("Profile backup import failed:", error);
+  }
+});
+
+document.getElementById("cancel-restore-backup").addEventListener("click", () => restoreBackupDialog.close());
+restoreBackupDialog.addEventListener("close", () => {
+  pendingBackup = null;
+  document.getElementById("restore-backup-button").focus({ preventScroll: true });
+});
+document.getElementById("confirm-restore-backup").addEventListener("click", () => {
+  if (!pendingBackup || pendingBackup.profile !== selectedProfile) return;
+  if (cloudSaveInFlight) {
+    backupMessage.textContent = "A cloud save is still running. Wait a moment, then press Restore again.";
+    return;
+  }
+  try {
+    const state = pendingBackup.state;
+    const pending = Object.create(null);
+    workouts.forEach((item) => { pending[item.id] = null; });
+    state.workouts.forEach((item) => { pending[item.id] = item; });
+    const pendingKey = `${storageKey}.pending-completions`;
+    const previousPending = localStorage.getItem(pendingKey);
+    localStorage.setItem(pendingKey, JSON.stringify(pending));
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    } catch (error) {
+      if (previousPending === null) localStorage.removeItem(pendingKey);
+      else localStorage.setItem(pendingKey, previousPending);
+      throw error;
+    }
+    workouts = state.workouts;
+    selectedWorkoutId = state.selectedWorkoutId;
+    selectedWeek = state.selectedWeek;
+    workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
+    pendingCloudState = null;
+    if (cloudSaveTimer) window.clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = null;
+    restoreBackupDialog.close();
+    render();
+    if (cloudEnabled) saveCloudState();
+    backupMessage.textContent = "Backup restored on this device. Cloud sync will retry if needed.";
+  } catch (error) {
+    showNotice(`Backup could not be restored: ${error.message}`);
+    console.error("Profile backup restore failed:", error);
+  }
+});
+
 function stableSerialize(value) {
   if (Array.isArray(value)) return `[${value.map(stableSerialize).join(",")}]`;
   if (value && typeof value === "object") {

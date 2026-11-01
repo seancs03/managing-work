@@ -19,6 +19,21 @@ logged values; newly added items start blank in later weeks. Deleting a workout
 day removes that week and all later copies, and records the template's end week
 so reopening does not recreate deleted days.
 
+## Profile backups
+
+Use **Download backup** to save a dated JSON file containing every workout week,
+set value, technique note, timer, and plan setting for the selected user. Store it
+outside the browser (for example in Files or iCloud Drive). Downloads are manual
+and independent of finishing a workout.
+
+**Restore backup** validates the file and requires the matching user profile.
+It previews the date and workout count, then asks for confirmation before replacing
+that profile's data locally and in the cloud. Download the current profile first
+if you want to keep it. Restore records remain on the device until the cloud save
+succeeds. Only data present on the device at download time is included; backups
+cannot recover edits made after their date. Backups contain personal workout data,
+not login credentials.
+
 ## Create and secure the Supabase project
 
 1. Create a Supabase project and open its SQL Editor.
