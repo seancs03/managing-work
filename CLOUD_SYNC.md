@@ -70,8 +70,8 @@ a “Nothing to undo” message; otherwise the dialog names the action before co
 ## Color scheme
 
 Click the SPIJKER TRACK logo to choose Red (the original theme), Magenta
-(`#CC00CC`), Cyan (`#00C8FF`), Yellow (`#FFFF00`), Orange (`#FF6E00`) or
-Lime (`#5AFF00`). Accents, focus outlines and tinted surfaces
+(`#CC00CC`), Cyan (`#00C8FF`), Yellow (`#FFC30B`), Orange (`#FF6E00`) or
+Lime (`#4CBB17`). Accents, focus outlines and tinted surfaces
 use the selected palette. The preference is saved on this device, not in workout
 profiles or backups. The logo opens this dialog without navigating away.
 
