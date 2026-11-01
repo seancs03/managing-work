@@ -1843,7 +1843,7 @@ body.intensity-theme .myo-notes-button:focus-visible {
 
 .session-notes-paper {
   padding: 0 10px 0 35px;
-  border-left: 2px solid rgba(240, 25, 45, 0.45);
+  border-left: 2px solid color-mix(in srgb, var(--theme-primary) 45%, transparent);
   background: repeating-linear-gradient(
     to bottom,
     transparent 0,
