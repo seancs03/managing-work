@@ -54,6 +54,9 @@ The backup itself and its logged workout values are not included in the reposito
 
 ## Structural undo
 
+The shadow picker preselects the previous week when available and focuses Apply
+shadow, allowing immediate confirmation. The week selector remains editable.
+
 Enabling LLP or MYO replaces its checkbox with the count input, keeping the
 table uncluttered. Clearing the count and committing/leaving the field disables
 the technique and restores the unchecked box; MYO also clears its local notes.
