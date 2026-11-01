@@ -668,7 +668,7 @@ button {
 }
 
 .display-mode-button .mode-moon {
-  transform: rotate(-90deg);
+  transform: rotate(-45deg);
 }
 
 .display-mode-button:focus-visible {
