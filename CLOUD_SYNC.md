@@ -54,6 +54,11 @@ The backup itself and its logged workout values are not included in the reposito
 
 ## Structural undo
 
+The moon/sun control beside Undo switches dark/light display mode without
+changing the selected accent palette. The mode is stored on this device under
+`spijker-track.display-mode`, independently of profile/cloud workout state.
+New devices default to dark mode.
+
 The shadow picker preselects the previous week when available and focuses Apply
 shadow, allowing immediate confirmation. The week selector remains editable.
 

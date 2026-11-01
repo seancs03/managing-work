@@ -4,6 +4,31 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
+test("display mode switches icons and accessibility state without changing the accent scheme", () => {
+  const moon = {}, sun = {}, attributes = {};
+  const button = {
+    querySelector: (selector) => selector === ".mode-moon" ? moon : sun,
+    setAttribute: (name, value) => { attributes[name] = value; },
+  };
+  const body = { dataset: { colorScheme: "lime" } }, root = { dataset: {} };
+  const context = loadFunctions({
+    document: { body, documentElement: root, getElementById: () => button },
+  }, ["applyDisplayMode"]);
+  context.applyDisplayMode("light");
+  assert.equal(body.dataset.displayMode, "light");
+  assert.equal(root.dataset.displayMode, "light");
+  assert.equal(moon.hidden, true);
+  assert.equal(sun.hidden, false);
+  assert.equal(attributes["aria-pressed"], "true");
+  assert.equal(attributes["aria-label"], "Light mode. Switch to dark mode");
+  assert.equal(body.dataset.colorScheme, "lime");
+  context.applyDisplayMode("dark");
+  assert.equal(moon.hidden, false);
+  assert.equal(sun.hidden, true);
+  assert.equal(attributes["aria-pressed"], "false");
+  assert.equal(body.dataset.colorScheme, "lime");
+  assert.throws(() => context.applyDisplayMode("invalid"), /Unknown display mode/);
+});
 test("clearing technique counts disables them and clears MYO notes without affecting other values", () => {
   const context = loadFunctions({}, ["clearSetTechnique"]);
   const set = { llp: true, llpReps: "3", myo: true, myoReps: "2", myoNotes: ["5", "4"], myoNotesConfirmed: true, weight: "80" };

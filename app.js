@@ -3,6 +3,7 @@
 const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
 const COLOR_SCHEME_KEY = "spijker-track.color-scheme";
+const DISPLAY_MODE_KEY = "spijker-track.display-mode";
 const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime"];
 let mirroringEnabled = true;
 const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
@@ -199,6 +200,38 @@ function applyColorScheme(scheme) {
     }
   });
 }
+
+function applyDisplayMode(mode) {
+  if (!["dark", "light"].includes(mode)) throw new Error("Unknown display mode.");
+  document.body.dataset.displayMode = mode;
+  document.documentElement.dataset.displayMode = mode;
+  const button = document.getElementById("display-mode-button");
+  const light = mode === "light";
+  button.querySelector(".mode-moon").hidden = light;
+  button.querySelector(".mode-sun").hidden = !light;
+  button.setAttribute("aria-pressed", String(light));
+  button.setAttribute("aria-label", `${light ? "Light" : "Dark"} mode. Switch to ${light ? "dark" : "light"} mode`);
+  button.title = `Switch to ${light ? "dark" : "light"} mode`;
+}
+
+try {
+  const savedMode = localStorage.getItem(DISPLAY_MODE_KEY);
+  applyDisplayMode(savedMode === "light" ? "light" : "dark");
+} catch (error) {
+  applyDisplayMode("dark");
+  showNotice("Your display mode could not be loaded. Dark mode is being used.");
+  console.error("Display mode load failed:", error);
+}
+document.getElementById("display-mode-button").addEventListener("click", () => {
+  const mode = document.body.dataset.displayMode === "light" ? "dark" : "light";
+  applyDisplayMode(mode);
+  try {
+    localStorage.setItem(DISPLAY_MODE_KEY, mode);
+  } catch (error) {
+    showNotice("The display mode changed, but it could not be saved for next time.");
+    console.error("Display mode save failed:", error);
+  }
+});
 
 const colorSchemeDialog = document.getElementById("color-scheme-dialog");
 const colorSchemeButton = document.getElementById("color-scheme-button");
