@@ -63,11 +63,14 @@ While shadowing, each set can show a theme-colored performance symbol beside LLP
 This compares the shadow day's logged set
 against its own shadow source, or the same day in the immediately preceding week
 if it has no shadow source. Symbols always describe the shadow's history, never
-the current workout's performance, even after finishing. Removing shadow hides
-the symbols; workouts without shadowing show none. Weight
+the current workout's performance. Finishing hides the symbols even when the
+saved shadow link remains; resuming with shadow enabled shows them again.
+Removing shadow also hides the symbols; workouts without shadowing show none. Weight
 takes priority, then reps, then RPE (lower is better). Both sets must have valid
-weight, reps and RPE; weight comparisons treat `BW` as zero added weight and
-ignore an `E` suffix (each), so `7.5E` compares as `7.5`. Case and spacing around
+weight, reps and RPE; weight comparisons rank numeric entries above `BAR`
+(bar weight), and `BAR` above `BW` (bodyweight), without assuming a bar's kilogram
+weight. Numeric entries compare by amount. Comparisons ignore an `E` suffix
+(each), so `7.5E` compares as `7.5`. Case and spacing around
 these weight notations are ignored. Missing data and bailed exercises show no symbol.
 They are references only: typing records notes for the current week without
 changing the source, and clearing a local note reveals its shadow again.
