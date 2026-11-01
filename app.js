@@ -406,6 +406,7 @@ function normalizeWorkout(source) {
       ? source.templateStartWeek
       : null,
     planCustomized: source.planCustomized === true,
+    planIsolated: source.planIsolated === true,
     templateEndWeek: Number.isInteger(source.templateEndWeek) ? source.templateEndWeek : 12,
     excludedWeeks: Array.isArray(source.excludedWeeks) ? source.excludedWeeks.filter((week) => Number.isInteger(week) && week >= 1 && week <= 12) : [],
     title: typeof source.title === "string" ? source.title.slice(0, 60) : "Workout",
@@ -479,7 +480,7 @@ function normalizeWorkout(source) {
   };
 }
 
-function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) {
+function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true, isPlanEdit = false) {
   const templateStartWeek = sourceWorkout.templateStartWeek ?? sourceWorkout.week;
   sourceWorkout.templateStartWeek = templateStartWeek;
   if (sourceWorkout.week !== templateStartWeek) {
@@ -525,6 +526,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
 
   peers.forEach((peer) => {
     if (peer === sourceWorkout || peer.week <= sourceWorkout.week) return;
+    if (!isPlanEdit && peer.planIsolated) return;
     if (sourceWorkout.week === templateStartWeek && peer.planCustomized) return;
     const usedExercises = new Set();
     peer.exercises = sourceWorkout.exercises.map((planExercise, exerciseIndex) => {
@@ -582,12 +584,12 @@ function propagateExerciseName(sourceWorkout, exercise, allWorkouts) {
 
 function applyWorkoutPlanEdit(sourceWorkout, allWorkouts, createMissingWeeks = false) {
   if (mirroringEnabled) {
-    syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks);
+    syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks, true);
     return;
   }
-  sourceWorkout.planCustomized = true;
+  sourceWorkout.planIsolated = true;
   allWorkouts.forEach((peer) => {
-    if (peer.templateId === sourceWorkout.templateId && peer.week > sourceWorkout.week) peer.planCustomized = true;
+    if (peer.templateId === sourceWorkout.templateId && peer.week > sourceWorkout.week) peer.planIsolated = true;
   });
   if (createMissingWeeks) sourceWorkout.templateEndWeek = sourceWorkout.week;
 }
@@ -595,6 +597,7 @@ function applyWorkoutPlanEdit(sourceWorkout, allWorkouts, createMissingWeeks = f
 const mirroringToggle = document.getElementById("mirroring-toggle");
 mirroringToggle.addEventListener("change", () => {
   mirroringEnabled = mirroringToggle.checked;
+  render();
   document.getElementById("announcements").textContent = mirroringEnabled
     ? "Mirroring on. Future structural edits carry forward."
     : "Mirroring off. Structural edits affect only the selected week.";
@@ -788,6 +791,7 @@ function workoutStructure(item) {
   return {
     title: item.title, templateEndWeek: item.templateEndWeek ?? 12,
     planCustomized: item.planCustomized === true,
+    planIsolated: item.planIsolated === true,
     shadowWorkoutId: item.shadowWorkoutId ?? null,
     excludedWeeks: item.excludedWeeks ?? [],
     exercises: item.exercises.map((exercise) => ({
@@ -813,6 +817,7 @@ function restoreStructuralUndo(record, current) {
     restored.push({
       ...before, ...live,
       title: before.title, planCustomized: before.planCustomized,
+      planIsolated: before.planIsolated === true,
       templateEndWeek: before.templateEndWeek ?? 12,
       shadowWorkoutId: before.shadowWorkoutId ?? null,
       excludedWeeks: before.excludedWeeks ?? [],
@@ -2219,7 +2224,7 @@ function confirmDeleteWorkoutDay() {
   pendingDeleteWorkoutReturnFocus = null;
   deleteWorkoutDialog.close();
   if (!deletedWorkout) return;
-  beginStructuralUndo(`Delete workout day: ${deletedWorkout.title}, Week ${deletedWorkout.week} onward`);
+  beginStructuralUndo(`Delete workout day: ${deletedWorkout.title}, Week ${deletedWorkout.week}${mirroringEnabled ? " onward" : " only"}`);
   const deletesAllWeeks = mirroringEnabled && deletedWorkout.week === 1;
   const deletedTemplateId = deletedWorkout.templateId;
   const deletedWorkoutIds = new Set(

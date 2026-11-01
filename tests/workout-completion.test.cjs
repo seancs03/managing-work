@@ -382,6 +382,10 @@ test("set-deletion Cancel leaves data untouched and confirmed deletion records u
     const remaining = [first];
     context.prepareWorkoutTemplates(remaining);
     assert.equal(remaining.length, 1);
+    context.mirroringEnabled = true;
+    context.applyWorkoutPlanEdit(first, [first, later]);
+    assert.equal(later.exercises[0].name, "Local rename");
+    context.mirroringEnabled = false;
     const single = { ...first, week: 4 };
     context.applyWorkoutPlanEdit(single, [single], true);
     assert.equal(single.templateEndWeek, 4);
