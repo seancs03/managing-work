@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=preserved-logo-layout">
+    <link rel="stylesheet" href="styles.css?v=mirroring-toggle">
     <script src="cloud-config.js" defer></script>
     <script src="workout-targets.js?v=ordered-targets" defer></script>
-    <script src="app.js?v=six-color-schemes" defer></script>
+    <script src="app.js?v=mirroring-toggle" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -121,7 +121,7 @@
       <dialog id="delete-set-dialog" class="shadow-dialog" aria-labelledby="delete-set-title">
         <div class="shadow-form">
           <h2 id="delete-set-title">Delete set?</h2>
-          <p>This removes the set and its recorded values from this week and all remaining weeks.</p>
+          <p id="delete-set-scope">This removes the set and its recorded values from this week and all remaining weeks.</p>
           <div class="shadow-dialog-actions">
             <button id="cancel-delete-set" class="start-over-button" type="button">Cancel</button>
             <button id="confirm-delete-set" class="workout-action-button" type="button">Delete</button>
@@ -156,7 +156,13 @@
           </form>
         </div>
         <div id="workout-list" class="workout-list" role="group" aria-label="Choose a workout"></div>
-        <p class="plan-note">Structural changes carry forward from the edited week to all remaining weeks. Logged results stay separate for each week.</p>
+        <div class="plan-note-row">
+          <p class="plan-note">Structural changes carry forward from the edited week to all remaining weeks. Logged results stay separate for each week.</p>
+          <label class="mirroring-switch">
+            <input id="mirroring-toggle" type="checkbox" role="switch" checked aria-label="Mirror structural changes to remaining weeks">
+            <span aria-hidden="true"></span>
+          </label>
+        </div>
       </section>
       <div id="workout-context-menu" class="workout-context-menu" role="group" aria-label="Workout actions" hidden>
         <button id="delete-workout-button" class="delete-workout-button" type="button">Delete day from all weeks</button>

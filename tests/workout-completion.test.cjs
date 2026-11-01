@@ -111,6 +111,7 @@ test("cloud save acknowledges only the exact pending snapshot, preserving edits 
 test("exercise substitutions propagate only forward and survive template reload syncing", () => {
   let id = 0;
   const context = loadFunctions({
+    mirroringEnabled: true,
     makeId: () => `generated-${++id}`,
     createWorkout() { throw new Error("All weeks already exist"); },
   }, ["syncWorkoutPlan", "propagateExerciseName", "prepareWorkoutTemplates"]);
@@ -359,7 +360,31 @@ test("set-deletion Cancel leaves data untouched and confirmed deletion records u
       addEventListener: (event, callback) => { callbacks[`${id}:${event}`] = callback; },
       close: () => callbacks["delete-set-dialog:close"](), focus() {},
     }) },
-    beginStructuralUndo: () => { recorded++; }, syncWorkoutPlan() {}, render() {}, saveWorkout() {},
+    beginStructuralUndo: () => { recorded++; }, applyWorkoutPlanEdit() {}, render() {}, saveWorkout() {},
+  });
+
+  test("mirroring off edits only the current week and excluded days stay deleted on reload", () => {
+    const context = loadFunctions({
+      mirroringEnabled: false, makeId: () => "new",
+      createWorkout() { throw new Error("Deleted day must not be recreated"); },
+    }, ["syncWorkoutPlan", "applyWorkoutPlanEdit", "propagateExerciseName", "prepareWorkoutTemplates"]);
+    const first = { week: 1, templateId: "upper", title: "Upper", exercises: [{ planId: "a", name: "Original", sets: [] }] };
+    const later = JSON.parse(JSON.stringify(first));
+    later.week = 2;
+    first.exercises[0].name = "Local rename";
+    context.applyWorkoutPlanEdit(first, [first, later]);
+    context.propagateExerciseName(first, first.exercises[0], [first, later]);
+    assert.equal(later.exercises[0].name, "Original");
+    first.templateEndWeek = 2;
+    context.prepareWorkoutTemplates([first, later]);
+    assert.equal(later.exercises[0].name, "Original");
+    first.excludedWeeks = [2];
+    const remaining = [first];
+    context.prepareWorkoutTemplates(remaining);
+    assert.equal(remaining.length, 1);
+    const single = { ...first, week: 4 };
+    context.applyWorkoutPlanEdit(single, [single], true);
+    assert.equal(single.templateEndWeek, 4);
   });
 
   test("color schemes update the device theme and selected choice without changing workouts", () => {
