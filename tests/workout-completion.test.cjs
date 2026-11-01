@@ -4,6 +4,20 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
+test("clearing technique counts disables them and clears MYO notes without affecting other values", () => {
+  const context = loadFunctions({}, ["clearSetTechnique"]);
+  const set = { llp: true, llpReps: "3", myo: true, myoReps: "2", myoNotes: ["5", "4"], myoNotesConfirmed: true, weight: "80" };
+  context.clearSetTechnique(set, "llpReps");
+  assert.equal(set.llp, false);
+  assert.equal(set.llpReps, "");
+  assert.equal(set.myoReps, "2");
+  context.clearSetTechnique(set, "myoReps");
+  assert.equal(set.myo, false);
+  assert.equal(set.myoReps, "");
+  assert.equal(set.myoNotes.length, 0);
+  assert.equal(set.myoNotesConfirmed, false);
+  assert.equal(set.weight, "80");
+});
 test("HTML nesting keeps the training interface inside the hidden app shell", () => {
   const html = fs.readFileSync("index.html", "utf8");
   const stack = [];

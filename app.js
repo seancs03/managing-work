@@ -2644,9 +2644,34 @@ exerciseList.addEventListener("input", (event) => {
   saveWorkout();
 });
 
+function clearSetTechnique(set, field) {
+  const technique = field === "myoReps" ? "myo" : "llp";
+  set[technique] = false;
+  set[field] = "";
+  if (technique === "myo") {
+    set.myoNotes = [];
+    set.myoNotesConfirmed = false;
+  }
+}
+
 exerciseList.addEventListener("change", (event) => {
   const input = event.target.closest("input[data-field]");
   if (!input || getFieldError(input.dataset.field, input.value)) return;
+  if (["llpReps", "myoReps"].includes(input.dataset.field) && input.value.trim() === "") {
+    const exercise = workout.exercises.find((item) => item.id === input.dataset.exerciseId);
+    const set = exercise?.sets.find((item) => item.id === input.dataset.setId);
+    if (!set) return;
+    clearSetTechnique(set, input.dataset.field);
+    const cell = input.closest("td");
+    const checkbox = cell.querySelector("input[type='checkbox']");
+    checkbox.checked = false;
+    cell.querySelector(".myo-notes-button")?.remove();
+    document.getElementById(`${set.id}-${input.dataset.field}-hint`)?.remove();
+    input.remove();
+    saveWorkout();
+    checkbox.focus();
+    return;
+  }
   if (input.dataset.field === "myoReps") {
     const count = Number(input.value);
     if (Number.isInteger(count) && count > 0) {

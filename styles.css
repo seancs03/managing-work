@@ -1722,16 +1722,21 @@ body.intensity-theme .session-controls :focus-visible {
   white-space: nowrap;
 }
 
+.llp-cell:has(.llp-reps-input) .llp-checkbox,
+.myo-cell:has(.myo-reps-input) .myo-checkbox {
+  display: none;
+}
+
 .llp-reps-input {
   min-width: 0;
-  margin: 0 0 0 3px;
+  margin: 0;
   padding: 0 2px;
 }
 
 .myo-reps-input {
   display: inline-block;
   min-width: 0;
-  margin: 0 0 0 3px;
+  margin: 0;
   padding: 0 2px;
   vertical-align: middle;
 }
