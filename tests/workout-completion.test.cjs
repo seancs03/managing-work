@@ -33,6 +33,7 @@ test("finish persists a retry record; reopening merges it without losing other c
     selectedProfile: "sean", storageKey: "profile.sean", workouts: [finished],
     workout: finished, selectedWorkoutId: "a", selectedWeek: 1,
     cloudEnabled: true, supabaseClient: {}, cloudSaveTimer: null,
+    pendingStructuralUndo: null, updateUndoButton() {},
     localStorage: {
       getItem: (key) => storage.get(key),
       setItem: (key, value) => storage.set(key, value),
@@ -269,4 +270,84 @@ test("targets follow week, day and current position, including replacement exerc
   workout.exercises.push({});
   assert.equal(context.findExerciseTarget(workout, workout.exercises[7]), null);
   assert.equal(context.findExerciseTarget({ ...workout, title: "Unknown day" }, replacement), null);
+});
+
+test("structural undo restores deleted weeks/exercises/sets with logs and preserves later logged edits", () => {
+  const context = loadFunctions({}, ["stableSerialize", "workoutStructure", "restoreStructuralUndo"]);
+  const makeWeek = (week) => ({
+    id: `week-${week}`, week, title: "Upper", templateEndWeek: 12,
+    planCustomized: false, shadowWorkoutId: null, status: "completed",
+    exercises: [{
+      id: `exercise-${week}`, planId: "bench", name: "Bench", sets: [
+        { id: `a-${week}`, planId: "a", weight: "20", myoNotes: ["5"] },
+        { id: `b-${week}`, planId: "b", weight: "30", reps: "10" },
+      ],
+    }],
+  });
+  const before = { workouts: [makeWeek(1), makeWeek(2)], selectedWorkoutId: "week-1", selectedWeek: 1 };
+  const after = JSON.parse(JSON.stringify(before));
+  after.workouts.forEach((item) => item.exercises[0].sets.shift());
+  const current = JSON.parse(JSON.stringify(after));
+  current.workouts[1].exercises[0].sets[0].weight = "45";
+  const restored = context.restoreStructuralUndo({ before, after }, current);
+  assert.equal(restored.workouts[1].exercises[0].sets[0].weight, "20");
+  assert.equal(restored.workouts[1].exercises[0].sets[0].myoNotes[0], "5");
+  assert.equal(restored.workouts[1].exercises[0].sets[1].weight, "45");
+  const deleted = { ...before, workouts: [] };
+  const recovered = context.restoreStructuralUndo({ before, after: deleted }, { ...deleted, selectedWorkoutId: null });
+  assert.equal(recovered.workouts.length, 2);
+  assert.equal(recovered.workouts[1].exercises[0].sets[1].reps, "10");
+  const removedExercise = JSON.parse(JSON.stringify(before));
+  removedExercise.workouts.forEach((item) => { item.exercises = []; });
+  const recoveredExercise = context.restoreStructuralUndo({ before, after: removedExercise }, removedExercise);
+  assert.equal(recoveredExercise.workouts[0].exercises[0].sets[0].weight, "20");
+  current.workouts[0].exercises[0].name = "Conflicting rename";
+  assert.throws(() => context.restoreStructuralUndo({ before, after }, current), /structure has changed/);
+});
+
+test("structural undo is recorded separately and non-structural saves keep the previous record", () => {
+  const storage = new Map();
+  const context = loadFunctions({
+    pendingStructuralUndo: { label: "Delete set", before: { workouts: [{ id: "old" }] } },
+    selectedProfile: "sean", storageKey: "profile.sean", PROFILE_STORAGE_PREFIX: "profile.",
+    workouts: [], workout: null, selectedWorkoutId: null, selectedWeek: 1,
+    cloudEnabled: false,
+    localStorage: { getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value) },
+    setNoticeHidden() {}, updateUndoButton() {}, showNotice(message) { throw new Error(message); },
+  }, ["readPendingCompletions", "serializeWorkoutState", "saveWorkout"]);
+  context.saveWorkout();
+  const undo = storage.get("profile.sean.undo");
+  assert.equal(JSON.parse(undo).label, "Delete set");
+  assert.equal(context.pendingStructuralUndo, null);
+  context.selectedWeek = 2;
+  context.saveWorkout();
+  assert.equal(storage.get("profile.sean.undo"), undo);
+});
+
+test("set-deletion Cancel leaves data untouched and confirmed deletion records undo", () => {
+  const callbacks = {};
+  let recorded = 0;
+  const exercise = { id: "exercise", name: "Bench", sets: [{ id: "set", weight: "50" }] };
+  const context = vm.createContext({
+    workout: { id: "workout", exercises: [exercise] }, workouts: [],
+    document: { getElementById: (id) => ({
+      addEventListener: (event, callback) => { callbacks[`${id}:${event}`] = callback; },
+      close: () => callbacks["delete-set-dialog:close"](), focus() {},
+    }) },
+    beginStructuralUndo: () => { recorded++; }, syncWorkoutPlan() {}, render() {}, saveWorkout() {},
+  });
+  const start = source.indexOf('const deleteSetDialog =');
+  const end = source.indexOf('\ncancelBailButton.addEventListener', start);
+  vm.runInContext(source.slice(start, end), context);
+  const setPending = () => vm.runInContext(
+    'pendingDeleteSet = { workoutId: "workout", exerciseId: "exercise", setId: "set" };', context,
+  );
+  setPending();
+  callbacks["cancel-delete-set:click"]();
+  assert.equal(exercise.sets.length, 1);
+  assert.equal(recorded, 0);
+  setPending();
+  callbacks["confirm-delete-set:click"]();
+  assert.equal(exercise.sets.length, 0);
+  assert.equal(recorded, 1);
 });
