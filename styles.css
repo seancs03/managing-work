@@ -1277,7 +1277,23 @@ h1 {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
+  padding-top: 10px;
+}
+
+.backup-menu {
+  margin-top: 20px;
+  color: #888888;
+  font-size: 11px;
+}
+
+.backup-menu summary {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.backup-menu summary:focus-visible {
+  outline: 2px solid #ff3345;
+  outline-offset: 3px;
 }
 
 .set-number {
