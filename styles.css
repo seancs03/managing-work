@@ -522,6 +522,14 @@ button {
   width: 32px;
   padding: 0;
   flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #777777;
+}
+
+.refresh-icon-button:hover {
+  background: transparent;
+  color: #dddddd;
 }
 
 .refresh-icon-button:disabled {
