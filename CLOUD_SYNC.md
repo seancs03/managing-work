@@ -8,6 +8,11 @@ acknowledged by the cloud. On reopening the profile, pending workouts take prece
 over stale cloud copies; other cloud workouts are preserved. Saves retry when the
 profile loads, the connection returns, or the app returns to the foreground.
 
+Renaming an exercise updates that exercise in later weeks of the same workout
+template, using its shared plan ID. Earlier weeks and recorded set values remain
+unchanged. Substitutions made after the template's first week are retained when
+the profile is reloaded rather than reset to the original week's exercise name.
+
 ## Create and secure the Supabase project
 
 1. Create a Supabase project and open its SQL Editor.

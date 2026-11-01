@@ -82,3 +82,36 @@ test("cloud save acknowledges only the exact pending snapshot, preserving edits 
   await retry;
   assert.deepEqual(JSON.parse(storage.get("profile.sean.pending-completions")), {});
 });
+
+test("exercise substitutions propagate only forward and survive template reload syncing", () => {
+  let id = 0;
+  const context = loadFunctions({
+    makeId: () => `generated-${++id}`,
+    createWorkout() { throw new Error("All weeks already exist"); },
+  }, ["syncWorkoutPlan", "propagateExerciseName", "prepareWorkoutTemplates"]);
+  const weeks = Array.from({ length: 12 }, (_, index) => ({
+    id: `week-${index + 1}`, templateId: "upper", templateStartWeek: 1,
+    week: index + 1, title: "Upper day", planCustomized: false,
+    exercises: [
+      { id: `bench-${index}`, planId: "bench", name: "45 incline bench",
+        sets: [{ id: `set-${index}`, planId: "set", weight: "40", reps: "10" }] },
+      { id: `row-${index}`, planId: "row", name: "Row", sets: [] },
+    ],
+  }));
+  const other = { templateId: "lower", week: 5,
+    exercises: [{ planId: "bench", name: "Unrelated" }] };
+  weeks[3].exercises[0].name = "DB flye";
+  context.syncWorkoutPlan(weeks[3], weeks, false);
+  context.propagateExerciseName(weeks[3], weeks[3].exercises[0], [...weeks, other]);
+  context.prepareWorkoutTemplates(weeks);
+  for (const peer of weeks) {
+    assert.equal(peer.exercises[0].name, peer.week < 4 ? "45 incline bench" : "DB flye");
+    assert.equal(peer.exercises[0].sets[0].weight, "40");
+    assert.equal(peer.exercises[1].name, "Row");
+  }
+  assert.equal(other.exercises[0].name, "Unrelated");
+  weeks[5].exercises[0].name = "Cable flye";
+  context.propagateExerciseName(weeks[5], weeks[5].exercises[0], weeks);
+  assert.equal(weeks[4].exercises[0].name, "DB flye");
+  assert.equal(weeks[11].exercises[0].name, "Cable flye");
+});

@@ -527,6 +527,16 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true) 
   });
 }
 
+function propagateExerciseName(sourceWorkout, exercise, allWorkouts) {
+  allWorkouts.forEach((peer) => {
+    if (peer.templateId !== sourceWorkout.templateId || peer.week <= sourceWorkout.week) return;
+    const matchingExercise = peer.exercises.find((item) => item.planId === exercise.planId);
+    if (!matchingExercise) return;
+    matchingExercise.name = exercise.name;
+    if (sourceWorkout.week !== sourceWorkout.templateStartWeek) peer.planCustomized = true;
+  });
+}
+
 function prepareWorkoutTemplates(allWorkouts) {
   const originalWorkouts = JSON.stringify(allWorkouts);
   const unassignedByTitle = new Map();
@@ -2046,6 +2056,7 @@ exerciseList.addEventListener("input", (event) => {
   if (!exercise) return;
   exercise.name = nameInput.value.slice(0, 60);
   syncWorkoutPlan(workout, workouts, false);
+  propagateExerciseName(workout, exercise, workouts);
   const removeButton = nameInput.closest(".exercise-card").querySelector('[data-action="remove-exercise"]');
   removeButton.setAttribute("aria-label", `Remove ${exercise.name || "exercise"}`);
   const card = nameInput.closest(".exercise-card");
