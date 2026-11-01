@@ -58,13 +58,13 @@ Workout shadowing also displays the source day's session notes as placeholders.
 Shadowing never adds or removes sets. Existing sets reference the corresponding
 set number in the source exercise; manually added or re-added sets show that
 number's shadow when available.
-Each set can also show a theme-colored performance symbol beside LLP:
+While shadowing, each set can show a theme-colored performance symbol beside LLP:
 `>` for progress, `=` for unchanged performance, and `<` for decreased performance.
-While shadowing an unfinished workout, this compares the shadow day's logged set
+This compares the shadow day's logged set
 against its own shadow source, or the same day in the immediately preceding week
-if it has no shadow source. These shadow-history symbols stay until Finish workout.
-Finished workouts, and workouts without a shadow, show their own logged sets'
-performance against the same day in the immediately preceding week. Weight
+if it has no shadow source. Symbols always describe the shadow's history, never
+the current workout's performance, even after finishing. Removing shadow hides
+the symbols; workouts without shadowing show none. Weight
 takes priority, then reps, then RPE (lower is better). Both sets must have valid
 weight, reps and RPE; weight comparisons treat `BW` as zero added weight and
 ignore an `E` suffix (each), so `7.5E` compares as `7.5`. Case and spacing around
