@@ -638,9 +638,10 @@ button {
 .topbar-actions {
   display: flex;
   align-items: center;
+  flex: 1;
   gap: 16px;
   flex-wrap: nowrap;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 
 .topbar-actions > * {
