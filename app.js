@@ -950,10 +950,10 @@ function openTargetDialog(sourceWorkout, exercise, trigger) {
   const fields = [
     ["Working sets", "working_sets"],
     ["Rep range", "rep_range"],
+    ["Rest time", "rest"],
     ["Early set RPE", "early_sets_rpe"],
     ["Last set RPE", "last_set_rpe"],
     ["Last set intensity technique", "last_set_intensity_technique"],
-    ["Rest time", "rest"],
   ];
   if (target) {
     fields.forEach(([label, field]) => {
