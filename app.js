@@ -953,6 +953,7 @@ function openTargetDialog(sourceWorkout, exercise, trigger) {
     ["Early set RPE", "early_sets_rpe"],
     ["Last set RPE", "last_set_rpe"],
     ["Last set intensity technique", "last_set_intensity_technique"],
+    ["Rest time", "rest"],
   ];
   if (target) {
     fields.forEach(([label, field]) => {
