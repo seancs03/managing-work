@@ -1,0 +1,42 @@
+name: Auto publish
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  pages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor == github.repository_owner
+    steps:
+      - name: Merge pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr merge "${{ github.event.pull_request.number }}" --squash --delete-branch --repo "${{ github.repository }}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Stamp asset cache versions
+        run: |
+          sed -i -E "s/(styles\.css|workout-targets\.js|app\.js)\?v=[A-Za-z0-9_-]+/\1?v=${GITHUB_SHA::8}/" index.html
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "Stamp asset cache versions"
+            git push origin main
+          fi
+
+      - name: Trigger Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
