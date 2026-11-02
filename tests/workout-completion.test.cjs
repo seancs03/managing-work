@@ -539,7 +539,7 @@ test("targets follow week, day and current position, including replacement exerc
       const target = context.findExerciseTarget(workout, exercises[Number(order) - 1]);
       assert.ok(target);
       assert.equal(target, expected);
-      for (const field of ["working_sets", "rep_range", "early_sets_rpe", "last_set_rpe", "last_set_intensity_technique"]) {
+      for (const field of ["working_sets", "rep_range", "early_sets_rpe", "last_set_rpe", "last_set_intensity_technique", "rest", "rest_seconds"]) {
         assert.equal(typeof target[field], "string");
         assert.notEqual(target[field], "");
       }
