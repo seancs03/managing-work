@@ -154,6 +154,46 @@ body.intensity-theme[data-color-scheme="ultramarine"] :is(.storage-indicator, .s
   width: 100%;
 }
 
+.pull-refresh-indicator {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--theme-accent);
+  border-radius: 24px;
+  background: var(--card);
+  color: var(--theme-accent);
+  font-size: 12px;
+  pointer-events: none;
+  transform: translate(-50%, var(--pull-offset, 0px));
+}
+
+.pull-refresh-indicator[hidden] {
+  display: none;
+}
+
+.pull-refresh-indicator.is-refreshing svg {
+  animation: pull-refresh-spin 0.7s linear infinite;
+}
+
+@keyframes pull-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
+html.pull-refresh-enabled:has(#app-shell:not([hidden])) {
+  overscroll-behavior-y: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-refresh-indicator.is-refreshing svg {
+    animation: none;
+  }
+}
+
 body[data-color-scheme="lava"] {
   --theme-accent: #00edff;
   --theme-welcome: #00edff;

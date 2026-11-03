@@ -1306,7 +1306,7 @@ function showRefreshFeedback(message, clearAfter = 0) {
     }, clearAfter);
   }
 }
-refreshWorkoutButton.addEventListener("click", async () => {
+async function refreshWorkoutData() {
   if (!selectedProfile || refreshWorkoutButton.disabled) return;
   if (cloudSaveTimer || cloudSaveInFlight || cloudSaveQueued) {
     showNotice("Your latest edits are still syncing. Wait a moment, then press Refresh again.");
@@ -1369,7 +1369,8 @@ refreshWorkoutButton.addEventListener("click", async () => {
     refreshWorkoutButton.disabled = false;
     refreshWorkoutButton.removeAttribute("aria-busy");
   }
-});
+}
+refreshWorkoutButton.addEventListener("click", refreshWorkoutData);
 
 function queueIncomingCloudState(state) {
   if (stableSerialize(serializeWorkoutState()) === stableSerialize(state)) return;
@@ -3211,4 +3212,79 @@ window.addEventListener("online", () => {
 });
 
 window.setInterval(updateWorkoutTimerDisplay, 1000);
+function initializePullToRefresh() {
+  const shell = document.getElementById("app-shell");
+  const indicator = document.getElementById("pull-refresh-indicator");
+  const label = indicator.querySelector("span");
+  let start = null;
+  let distance = 0;
+  let refreshing = false;
+  let pulling = false;
+  const reset = () => {
+    start = null;
+    distance = 0;
+    pulling = false;
+    if (!refreshing) indicator.hidden = true;
+  };
+  const eligible = () => !shell.hidden && Boolean(selectedProfile)
+    && !refreshWorkoutButton.disabled && !document.querySelector("dialog[open]");
+  document.documentElement.classList.add("pull-refresh-enabled");
+  document.addEventListener("touchstart", (event) => {
+    if (refreshing) return;
+    reset();
+    if (event.touches.length !== 1 || window.scrollY > 0 || !eligible()) return;
+    if (event.target.closest("input, textarea, select, button, a, summary, [contenteditable], [role='slider']")) return;
+    for (let node = event.target; node && node !== document.body; node = node.parentElement) {
+      if (node.scrollHeight > node.clientHeight
+        && /auto|scroll/.test(window.getComputedStyle(node).overflowY)) return;
+    }
+    start = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  }, { passive: true });
+  document.addEventListener("touchmove", (event) => {
+    if (!start || refreshing) return;
+    if (event.touches.length !== 1 || !eligible() || window.scrollY > 0) {
+      reset();
+      return;
+    }
+    const dx = event.touches[0].clientX - start.x;
+    const dy = event.touches[0].clientY - start.y;
+    if (!pulling && (dy < 0 || Math.abs(dx) > Math.max(10, dy))) {
+      reset();
+      return;
+    }
+    if (dy < 8 && !pulling) return;
+    if (!event.cancelable) {
+      reset();
+      return;
+    }
+    event.preventDefault();
+    pulling = true;
+    distance = Math.min(96, Math.max(0, dy) * 0.45);
+    indicator.hidden = false;
+    indicator.style.setProperty("--pull-offset", `${distance}px`);
+    indicator.querySelector("svg").style.transform = `rotate(${distance * 3}deg)`;
+    label.textContent = distance >= 64 ? "Release to refresh" : "Pull to refresh";
+  }, { passive: false });
+  document.addEventListener("touchend", async () => {
+    const shouldRefresh = pulling && distance >= 64 && eligible();
+    reset();
+    if (!shouldRefresh || refreshing) return;
+    refreshing = true;
+    indicator.hidden = false;
+    indicator.style.setProperty("--pull-offset", "40px");
+    indicator.querySelector("svg").style.removeProperty("transform");
+    indicator.classList.add("is-refreshing");
+    label.textContent = "Refreshing...";
+    try {
+      await refreshWorkoutData();
+    } finally {
+      refreshing = false;
+      indicator.classList.remove("is-refreshing");
+      reset();
+    }
+  });
+  document.addEventListener("touchcancel", reset, { passive: true });
+}
+
+initializePullToRefresh();
 initializeCloud();

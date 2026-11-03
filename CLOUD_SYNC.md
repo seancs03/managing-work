@@ -54,6 +54,13 @@ The backup itself and its logged workout values are not included in the reposito
 
 ## Structural undo
 
+On touch devices, pull down from the top of the workout page and release past
+the indicated threshold to run the same saved-data refresh as the header button.
+Short pulls, horizontal gestures, form controls, nested scrollers and open
+dialogs do not trigger it. The accent-colored indicator spins during refresh
+(static when reduced motion is requested). Existing sync/concurrent-edit guards
+and visible failure feedback apply; this never resets workout data.
+
 Pressing an exercise name opens a read-only list of its
 logged sets in the current profile's matching workout day, newest week first.
 Blank weeks are omitted except Week 1, whose unfilled sets appear with `x` in

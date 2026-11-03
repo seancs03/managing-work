@@ -4,6 +4,68 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
+test("pull refresh requires a deliberate top-edge gesture and shares the refresh action", async () => {
+  const handlers = {};
+  const classes = new Set();
+  const icon = { style: { removeProperty() {} } };
+  const label = {};
+  const indicator = {
+    hidden: true, style: { setProperty() {} },
+    querySelector: (selector) => selector === "span" ? label : icon,
+    classList: { add: (value) => classes.add(value), remove: (value) => classes.delete(value) },
+  };
+  const shell = { hidden: false };
+  const body = {};
+  let modal = false, calls = 0, release;
+  const context = loadFunctions({
+    selectedProfile: "sean", refreshWorkoutButton: { disabled: false },
+    window: { scrollY: 0, getComputedStyle: () => ({ overflowY: "visible" }) },
+    document: {
+      body, documentElement: { classList: { add() {} } },
+      getElementById: (id) => id === "app-shell" ? shell : indicator,
+      querySelector: () => modal ? {} : null,
+      addEventListener: (name, handler) => { handlers[name] = handler; },
+    },
+    refreshWorkoutData: () => { calls++; return new Promise((resolve) => { release = resolve; }); },
+  }, ["initializePullToRefresh"]);
+  context.initializePullToRefresh();
+  const target = { closest: () => null, parentElement: body };
+  const event = (y, x = 0) => ({
+    target, touches: [{ clientY: y, clientX: x }], cancelable: true,
+    preventDefault() { this.prevented = true; },
+  });
+  handlers.touchstart(event(0));
+  handlers.touchmove(event(80));
+  await handlers.touchend();
+  assert.equal(calls, 0);
+  handlers.touchstart(event(0));
+  handlers.touchmove(event(160));
+  assert.equal(label.textContent, "Release to refresh");
+  const pending = handlers.touchend();
+  assert.equal(calls, 1);
+  assert.equal(classes.has("is-refreshing"), true);
+  handlers.touchstart(event(0));
+  handlers.touchmove(event(200));
+  await handlers.touchend();
+  assert.equal(calls, 1);
+  release();
+  await pending;
+  assert.equal(indicator.hidden, true);
+  assert.equal(classes.has("is-refreshing"), false);
+  for (const blocked of ["scrolled", "dialog", "input", "horizontal", "cancel", "multitouch"]) {
+    context.window.scrollY = blocked === "scrolled" ? 10 : 0;
+    modal = blocked === "dialog";
+    target.closest = () => blocked === "input" ? {} : null;
+    handlers.touchstart(event(0));
+    const move = event(180, blocked === "horizontal" ? 250 : 0);
+    if (blocked === "multitouch") move.touches.push({ clientY: 180, clientX: 10 });
+    handlers.touchmove(move);
+    if (blocked === "cancel") handlers.touchcancel();
+    await handlers.touchend();
+    assert.equal(calls, 1, blocked);
+  }
+});
+
 test("pencil popup loads a draft without changing exercise data", () => {
   const fields = {
     "exercise-edit-name": { setCustomValidity(value) { this.validity = value; }, focus() { this.focused = true; } },
