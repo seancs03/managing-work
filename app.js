@@ -3,8 +3,9 @@
 const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
 const COLOR_SCHEME_KEY = "spijker-track.color-scheme";
+const SCHEME_NATIVE_MODES = { grape: "dark", ultramarine: "dark" };
 const DISPLAY_MODE_KEY = "spijker-track.display-mode";
-const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime"];
+const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime", "grape", "ultramarine"];
 let mirroringEnabled = true;
 const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
 const cloudLoginPanel = document.getElementById("cloud-login-panel");
@@ -199,6 +200,8 @@ function applyColorScheme(scheme) {
       button.setAttribute("aria-pressed", String(button.dataset.colorScheme === scheme));
     }
   });
+  const select = document.querySelector?.("#color-scheme-select");
+  if (select) select.value = scheme;
 }
 
 function applyDisplayMode(mode) {
@@ -244,16 +247,18 @@ try {
 }
 colorSchemeButton.addEventListener("click", () => {
   colorSchemeDialog.showModal();
-  colorSchemeDialog.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
+  document.getElementById("color-scheme-select").focus({ preventScroll: true });
 });
 document.getElementById("close-color-scheme").addEventListener("click", () => colorSchemeDialog.close());
 colorSchemeDialog.addEventListener("close", () => colorSchemeButton.focus({ preventScroll: true }));
-colorSchemeDialog.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-color-scheme]");
-  if (!button) return;
-  applyColorScheme(button.dataset.colorScheme);
+document.getElementById("color-scheme-select").addEventListener("change", (event) => {
+  const scheme = event.target.value;
+  applyColorScheme(scheme);
+  const nativeMode = SCHEME_NATIVE_MODES[scheme];
+  if (nativeMode) applyDisplayMode(nativeMode);
   try {
-    localStorage.setItem(COLOR_SCHEME_KEY, button.dataset.colorScheme);
+    localStorage.setItem(COLOR_SCHEME_KEY, scheme);
+    if (nativeMode) localStorage.setItem(DISPLAY_MODE_KEY, nativeMode);
   } catch (error) {
     showNotice("The color scheme changed, but it could not be saved for next time.");
     console.error("Color scheme save failed:", error);

@@ -120,39 +120,66 @@ body:is([data-color-scheme="cyan"], [data-color-scheme="yellow"], [data-color-sc
   color: #111111;
 }
 
-.color-scheme-options {
-  display: grid;
-  gap: 10px;
+body[data-color-scheme="grape"] {
+  --theme-accent: #e8ff37;
+  --theme-welcome: #e8ff37;
+  --theme-bright: color-mix(in srgb, #e8ff37 70%, #ffffff);
+  --theme-logo: #e8ff37;
+  --theme-primary: #e8ff37;
+  --theme-hover: color-mix(in srgb, #e8ff37 75%, #000000);
+  --theme-border: color-mix(in srgb, #e8ff37 22%, #301170);
+  --theme-border-strong: color-mix(in srgb, #e8ff37 38%, #301170);
+  --theme-tint: color-mix(in srgb, #e8ff37 14%, #301170);
+  --theme-tint-deep: color-mix(in srgb, #e8ff37 18%, #301170);
+  --theme-line: color-mix(in srgb, #e8ff37 12%, #301170);
+  --theme-soft: color-mix(in srgb, #e8ff37 70%, #ffffff);
+  --theme-muted: color-mix(in srgb, #e8ff37 60%, #301170);
+  --theme-glow: color-mix(in srgb, #e8ff37 16%, transparent);
 }
 
-.color-scheme-options button {
-  padding: 12px;
-  border: 1px solid var(--theme-border);
-  border-radius: 7px;
-  background: #1d1b1b;
-  color: #ffffff;
-  text-align: left;
-  cursor: pointer;
+body[data-color-scheme="ultramarine"] {
+  --theme-accent: #ff7869;
+  --theme-welcome: #ff7869;
+  --theme-bright: color-mix(in srgb, #ff7869 70%, #ffffff);
+  --theme-logo: #ff7869;
+  --theme-primary: #ff7869;
+  --theme-hover: color-mix(in srgb, #ff7869 75%, #000000);
+  --theme-border: color-mix(in srgb, #ff7869 22%, #142a8d);
+  --theme-border-strong: color-mix(in srgb, #ff7869 38%, #142a8d);
+  --theme-tint: color-mix(in srgb, #ff7869 14%, #142a8d);
+  --theme-tint-deep: color-mix(in srgb, #ff7869 18%, #142a8d);
+  --theme-line: color-mix(in srgb, #ff7869 12%, #142a8d);
+  --theme-soft: color-mix(in srgb, #ff7869 70%, #ffffff);
+  --theme-muted: color-mix(in srgb, #ff7869 60%, #142a8d);
+  --theme-glow: color-mix(in srgb, #ff7869 16%, transparent);
 }
 
-.color-scheme-options button[aria-pressed="true"] {
-  border-color: var(--theme-accent);
+/* Dark mode surfaces for the saturated schemes. */
+body.intensity-theme[data-display-mode="dark"][data-color-scheme="grape"] {
+  --paper: #5522d8;
+  --card: #301170;
+  --scheme-card: #301170;
+  --scheme-input: color-mix(in srgb, #301170 75%, #000000);
 }
 
-.color-scheme-options button[aria-pressed="true"]::after {
-  content: "Selected";
-  float: right;
-  color: var(--theme-bright);
-  font-size: 11px;
+body.intensity-theme[data-display-mode="dark"][data-color-scheme="ultramarine"] {
+  --paper: #2145ef;
+  --card: #142a8d;
+  --scheme-card: #142a8d;
+  --scheme-input: color-mix(in srgb, #142a8d 75%, #000000);
 }
 
-.color-scheme-options button:focus-visible {
-  outline: 1px solid #bbbbbb;
-  outline-offset: -1px;
+body.intensity-theme[data-display-mode="light"]:is([data-color-scheme="grape"], [data-color-scheme="ultramarine"]) {
+  --theme-accent: color-mix(in srgb, var(--theme-primary) 45%, #000000);
+  --theme-welcome: var(--theme-accent);
+  --theme-bright: var(--theme-accent);
+  --theme-logo: var(--theme-accent);
+  --theme-primary: var(--theme-accent);
+  --theme-hover: color-mix(in srgb, var(--theme-accent) 75%, #000000);
 }
 
-.color-scheme-options button[aria-pressed="true"]:focus-visible {
-  outline: none;
+.color-scheme-select {
+  width: 100%;
 }
 
 .brand:focus-visible {
@@ -300,7 +327,7 @@ body {
   min-height: 54px;
   border: 1px solid var(--theme-border-strong);
   border-radius: 8px;
-  background: #151515;
+  background: var(--scheme-card, #151515);
   color: #ffffff;
   cursor: pointer;
   font: 700 15px "Manrope", sans-serif;
@@ -383,7 +410,7 @@ body.intensity-theme .add-workout-form input,
 body.intensity-theme .week-select,
 body.intensity-theme .set-input {
   border-color: var(--theme-border);
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   color: #ffffff;
 }
 
@@ -422,6 +449,10 @@ body.intensity-theme .add-exercise-button {
   color: #ffffff;
 }
 
+body.intensity-theme[data-display-mode="dark"]:is([data-color-scheme="grape"], [data-color-scheme="ultramarine"]) :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
+  color: #111111;
+}
+
 body.intensity-theme .workout-action-button:hover:not(:disabled),
 body.intensity-theme .add-workout-button:hover,
 body.intensity-theme .add-exercise-button:hover {
@@ -430,7 +461,7 @@ body.intensity-theme .add-exercise-button:hover {
 
 body.intensity-theme .start-over-button {
   border-color: var(--theme-border-strong);
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   color: #ffffff;
 }
 
@@ -690,7 +721,7 @@ button {
   padding: 0 10px;
   border: 1px solid var(--theme-border-strong);
   border-radius: 6px;
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   color: #ffffff;
   cursor: pointer;
   font-size: 10px;
@@ -734,7 +765,7 @@ button {
   padding: 0 12px;
   border: 1px solid var(--theme-border-strong);
   border-radius: 6px;
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   color: #ffffff;
   font: inherit;
   font-size: 11px;
@@ -927,7 +958,7 @@ h1 {
   padding: 0 29px 0 10px;
   border: 1px solid var(--theme-border);
   border-radius: 7px;
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   color: #ffffff;
   font: 600 12px "DM Sans", sans-serif;
 }
@@ -1030,7 +1061,7 @@ h1 {
   z-index: 10;
   border: 1px solid var(--theme-border);
   border-radius: 8px;
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
@@ -1705,7 +1736,7 @@ h1 {
   padding: 0;
   border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #151515;
+  background: var(--scheme-card, #151515);
   color: #f5f5f5;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65);
 }
@@ -1744,7 +1775,7 @@ h1 {
   padding: 0 10px;
   border: 1px solid var(--theme-border);
   border-radius: 7px;
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   color: #ffffff;
   font: inherit;
 }
@@ -1919,7 +1950,7 @@ body.intensity-theme .myo-notes-button:focus-visible {
   padding: 0 9px;
   border: 1px solid var(--theme-border);
   border-radius: 7px;
-  background: #1d1b1b;
+  background: var(--scheme-input, #1d1b1b);
   color: #ffffff;
   font: inherit;
 }
@@ -2460,7 +2491,7 @@ body.intensity-theme .myo-notes-button:focus-visible {
       color: var(--ink);
     }
 
-    body[data-display-mode="light"] :is(.profile-choice, .color-scheme-options button, .switch-profile-button, .undo-structure-button, .shadow-form select, .myo-note-row input, .workout-context-menu),
+    body[data-display-mode="light"] :is(.profile-choice, .switch-profile-button, .undo-structure-button, .shadow-form select, .myo-note-row input, .workout-context-menu),
     body.intensity-theme[data-display-mode="light"] :is(.workout-choice, .add-workout-form input, .week-select, .set-input, .start-over-button) {
       background: #f2f2f2;
       color: var(--ink);
