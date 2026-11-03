@@ -652,7 +652,7 @@ test("set-deletion Cancel leaves data untouched and confirmed deletion records u
   });
 
   test("color schemes update the device theme and selected choice without changing workouts", () => {
-    const schemes = ["red", "magenta", "cyan", "yellow", "orange", "lime", "grape", "ultramarine"];
+    const schemes = ["red", "magenta", "cyan", "yellow", "orange", "lime", "ultramarine"];
     const buttons = schemes.map((scheme) => ({
       tagName: "BUTTON", dataset: { colorScheme: scheme },
       setAttribute(key, value) { this[key] = value; },
