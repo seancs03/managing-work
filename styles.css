@@ -120,23 +120,6 @@ body:is([data-color-scheme="cyan"], [data-color-scheme="yellow"], [data-color-sc
   color: #111111;
 }
 
-body[data-color-scheme="grape"] {
-  --theme-accent: #e8ff37;
-  --theme-welcome: #e8ff37;
-  --theme-bright: color-mix(in srgb, #e8ff37 70%, #ffffff);
-  --theme-logo: #e8ff37;
-  --theme-primary: #e8ff37;
-  --theme-hover: color-mix(in srgb, #e8ff37 75%, #000000);
-  --theme-border: color-mix(in srgb, #e8ff37 22%, #301170);
-  --theme-border-strong: color-mix(in srgb, #e8ff37 38%, #301170);
-  --theme-tint: color-mix(in srgb, #e8ff37 14%, #301170);
-  --theme-tint-deep: color-mix(in srgb, #e8ff37 18%, #301170);
-  --theme-line: color-mix(in srgb, #e8ff37 12%, #301170);
-  --theme-soft: color-mix(in srgb, #e8ff37 70%, #ffffff);
-  --theme-muted: color-mix(in srgb, #e8ff37 60%, #301170);
-  --theme-glow: color-mix(in srgb, #e8ff37 16%, transparent);
-}
-
 body[data-color-scheme="ultramarine"] {
   --theme-accent: #ff6a00;
   --theme-welcome: #ff6a00;
@@ -155,13 +138,6 @@ body[data-color-scheme="ultramarine"] {
 }
 
 /* Dark mode surfaces for the saturated schemes. */
-body.intensity-theme[data-display-mode="dark"][data-color-scheme="grape"] {
-  --paper: #5522d8;
-  --card: #301170;
-  --scheme-card: #301170;
-  --scheme-input: color-mix(in srgb, #301170 75%, #000000);
-}
-
 body.intensity-theme[data-display-mode="dark"][data-color-scheme="ultramarine"] {
   --paper: #2145ef;
   --card: #142a8d;
@@ -169,7 +145,7 @@ body.intensity-theme[data-display-mode="dark"][data-color-scheme="ultramarine"] 
   --scheme-input: color-mix(in srgb, #142a8d 75%, #000000);
 }
 
-body.intensity-theme[data-display-mode="light"]:is([data-color-scheme="grape"], [data-color-scheme="ultramarine"]) {
+body.intensity-theme[data-display-mode="light"][data-color-scheme="ultramarine"] {
   --theme-accent: color-mix(in srgb, var(--theme-primary) 45%, #000000);
   --theme-welcome: var(--theme-accent);
   --theme-bright: var(--theme-accent);
@@ -449,7 +425,7 @@ body.intensity-theme .add-exercise-button {
   color: #ffffff;
 }
 
-body.intensity-theme[data-display-mode="dark"]:is([data-color-scheme="grape"], [data-color-scheme="ultramarine"]) :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
+body.intensity-theme[data-display-mode="dark"][data-color-scheme="ultramarine"] :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
   color: #111111;
 }
 
