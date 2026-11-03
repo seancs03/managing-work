@@ -57,7 +57,9 @@ The backup itself and its logged workout values are not included in the reposito
 On touch devices, pull down from the top of the workout page and release past
 the threshold to run the same saved-data refresh as the header button. The page
 follows the finger with increasing resistance, holds during refresh and settles
-back on release. Only an accent-colored icon appears above it, without visible
+back on release. The spinner remains visible for at least 1.5 seconds while
+sync starts immediately; slower syncs keep it visible until finished.
+Only an accent-colored icon appears above it, without visible
 instruction text or a pill. A bolder icon marks the release threshold.
 Short pulls, horizontal gestures, form controls, nested scrollers and open
 dialogs do not trigger it. The accent-colored indicator spins during refresh

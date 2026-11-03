@@ -18,6 +18,7 @@ test("pull refresh requires a deliberate top-edge gesture and shares the refresh
   });
   const timers = new Map();
   let nextTimer = 0;
+  const timerDelays = new Map();
   const settle = () => { for (const [id, callback] of timers) { timers.delete(id); callback(); } };
   const icon = { style: { removeProperty() {} } };
   const indicator = {
@@ -32,7 +33,11 @@ test("pull refresh requires a deliberate top-edge gesture and shares the refresh
     selectedProfile: "sean", refreshWorkoutButton: { disabled: false },
     window: {
       scrollY: 0, getComputedStyle: () => ({ overflowY: "visible" }),
-      setTimeout: (callback) => { timers.set(++nextTimer, callback); return nextTimer; },
+      setTimeout: (callback, delay) => {
+        timers.set(++nextTimer, callback);
+        timerDelays.set(nextTimer, delay);
+        return nextTimer;
+      },
       clearTimeout: (id) => timers.delete(id),
     },
     document: {
@@ -68,11 +73,16 @@ test("pull refresh requires a deliberate top-edge gesture and shares the refresh
   assert.equal(calls, 1);
   assert.equal(classes.has("is-refreshing"), true);
   assert.equal(shell.style["--pull-distance"], "64px");
+  assert.ok(Array.from(timerDelays.values()).includes(1500));
   handlers.touchstart(event(0));
   handlers.touchmove(event(200));
   await handlers.touchend();
   assert.equal(calls, 1);
   release();
+  await Promise.resolve();
+  assert.equal(classes.has("is-refreshing"), true);
+  assert.equal(shell.style["--pull-distance"], "64px");
+  settle();
   await pending;
   assert.equal(shell.style["--pull-distance"], "0px");
   settle();
