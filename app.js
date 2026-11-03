@@ -3,10 +3,10 @@
 const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
 const COLOR_SCHEME_KEY = "spijker-track.color-scheme";
-const SCHEME_NATIVE_MODES = { ultramarine: "dark" };
-const DARK_ONLY_SCHEMES = ["ultramarine"];
+const SCHEME_NATIVE_MODES = { ultramarine: "dark", lava: "dark" };
+const DARK_ONLY_SCHEMES = ["ultramarine", "lava"];
 const DISPLAY_MODE_KEY = "spijker-track.display-mode";
-const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime", "ultramarine"];
+const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime", "ultramarine", "lava"];
 let mirroringEnabled = true;
 const cloudConfig = globalThis.WORKOUT_CLOUD_CONFIG ?? {};
 const cloudLoginPanel = document.getElementById("cloud-login-panel");
