@@ -80,6 +80,8 @@ New devices default to dark mode.
 Lava combines a rich red background, near-black cards, orange borders and
 electric-cyan accents for stronger contrast. Like Ultramarine Pop,
 it uses dark mode only; choosing it switches to dark mode automatically.
+Ultramarine Pop uses the same high-contrast surface hierarchy: rich blue page,
+near-black navy cards, dark inputs and brighter blue borders, with orange accents.
 
 The shadow picker preselects the previous week when available and focuses Apply
 shadow, allowing immediate confirmation. The week selector remains editable.
