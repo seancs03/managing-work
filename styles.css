@@ -1448,45 +1448,11 @@ h1 {
   flex: 1;
 }
 
-.exercise-setup-summary {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-
-.exercise-setup-editor {
-  margin-top: 8px;
-}
-
-.exercise-setup-editor label {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.exercise-setup-editor input {
-  width: 100%;
-  min-width: 0;
-}
-
-.exercise-heading-text > [hidden] {
-  display: none;
-}
-
 .exercise-name-heading {
   margin: 0;
   display: flex;
   align-items: center;
   gap: 7px;
-}
-
-.exercise-name-heading .exercise-name-editor {
-  min-width: 0;
-  max-width: 270px;
-  flex-shrink: 1;
 }
 
 .exercise-edit-button {
@@ -1983,6 +1949,59 @@ body.intensity-theme .myo-notes-button:focus-visible {
 .exercise-footer {
   padding: 10px 17px 13px;
   border-top: 1px solid #eeeeee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.exercise-info-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--theme-accent);
+  font: 700 15px "Manrope", sans-serif;
+  cursor: pointer;
+}
+
+.exercise-info-button:focus-visible {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 3px;
+}
+
+#exercise-edit-form :is(input, textarea) {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+#exercise-edit-form textarea {
+  resize: vertical;
+}
+
+#exercise-edit-info summary {
+  color: var(--theme-accent);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#exercise-edit-info label {
+  display: block;
+  margin: 12px 0 6px;
+}
+
+#exercise-info-content {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
 }
 
 .add-set-button {
