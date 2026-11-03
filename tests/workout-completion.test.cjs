@@ -7,19 +7,34 @@ const source = fs.readFileSync("app.js", "utf8");
 test("pull refresh requires a deliberate top-edge gesture and shares the refresh action", async () => {
   const handlers = {};
   const classes = new Set();
+  const classList = (values) => ({
+    add: (value) => values.add(value), remove: (value) => values.delete(value),
+    contains: (value) => values.has(value),
+    toggle: (value, enabled) => enabled ? values.add(value) : values.delete(value),
+  });
+  const style = () => ({
+    setProperty(key, value) { this[key] = value; },
+    removeProperty(key) { delete this[key]; },
+  });
+  const timers = new Map();
+  let nextTimer = 0;
+  const settle = () => { for (const [id, callback] of timers) { timers.delete(id); callback(); } };
   const icon = { style: { removeProperty() {} } };
-  const label = {};
   const indicator = {
-    hidden: true, style: { setProperty() {} },
-    querySelector: (selector) => selector === "span" ? label : icon,
-    classList: { add: (value) => classes.add(value), remove: (value) => classes.delete(value) },
+    hidden: true, style: style(),
+    querySelector: () => icon,
+    classList: classList(classes),
   };
-  const shell = { hidden: false };
+  const shell = { hidden: false, style: style(), classList: classList(new Set()) };
   const body = {};
   let modal = false, calls = 0, release;
   const context = loadFunctions({
     selectedProfile: "sean", refreshWorkoutButton: { disabled: false },
-    window: { scrollY: 0, getComputedStyle: () => ({ overflowY: "visible" }) },
+    window: {
+      scrollY: 0, getComputedStyle: () => ({ overflowY: "visible" }),
+      setTimeout: (callback) => { timers.set(++nextTimer, callback); return nextTimer; },
+      clearTimeout: (id) => timers.delete(id),
+    },
     document: {
       body, documentElement: { classList: { add() {} } },
       getElementById: (id) => id === "app-shell" ? shell : indicator,
@@ -38,19 +53,31 @@ test("pull refresh requires a deliberate top-edge gesture and shares the refresh
   handlers.touchmove(event(80));
   await handlers.touchend();
   assert.equal(calls, 0);
+  settle();
+  assert.equal(shell.classList.contains("pull-refresh-moving"), false);
   handlers.touchstart(event(0));
+  handlers.touchmove(event(60));
+  const smallPull = parseFloat(shell.style["--pull-distance"]);
   handlers.touchmove(event(160));
-  assert.equal(label.textContent, "Release to refresh");
+  const largePull = parseFloat(shell.style["--pull-distance"]);
+  assert.ok(largePull > smallPull);
+  assert.ok(largePull - smallPull < 100);
+  assert.equal(classes.has("is-ready"), true);
+  assert.equal(shell.classList.contains("is-pulling"), true);
   const pending = handlers.touchend();
   assert.equal(calls, 1);
   assert.equal(classes.has("is-refreshing"), true);
+  assert.equal(shell.style["--pull-distance"], "64px");
   handlers.touchstart(event(0));
   handlers.touchmove(event(200));
   await handlers.touchend();
   assert.equal(calls, 1);
   release();
   await pending;
+  assert.equal(shell.style["--pull-distance"], "0px");
+  settle();
   assert.equal(indicator.hidden, true);
+  assert.equal(shell.classList.contains("pull-refresh-moving"), false);
   assert.equal(classes.has("is-refreshing"), false);
   for (const blocked of ["scrolled", "dialog", "input", "horizontal", "cancel", "multitouch"]) {
     context.window.scrollY = blocked === "scrolled" ? 10 : 0;
@@ -62,8 +89,10 @@ test("pull refresh requires a deliberate top-edge gesture and shares the refresh
     handlers.touchmove(move);
     if (blocked === "cancel") handlers.touchcancel();
     await handlers.touchend();
+    settle();
     assert.equal(calls, 1, blocked);
   }
+  assert.doesNotMatch(fs.readFileSync("index.html", "utf8"), /<span>Pull to refresh/);
 });
 
 test("pencil popup loads a draft without changing exercise data", () => {

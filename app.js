@@ -3215,16 +3215,36 @@ window.setInterval(updateWorkoutTimerDisplay, 1000);
 function initializePullToRefresh() {
   const shell = document.getElementById("app-shell");
   const indicator = document.getElementById("pull-refresh-indicator");
-  const label = indicator.querySelector("span");
   let start = null;
   let distance = 0;
   let refreshing = false;
   let pulling = false;
+  let settleTimer = null;
+  const movePage = (offset, dragging = false) => {
+    if (settleTimer) window.clearTimeout(settleTimer);
+    settleTimer = null;
+    shell.classList.add("pull-refresh-moving");
+    for (const element of [shell, indicator]) {
+      element.classList.toggle("is-pulling", dragging);
+      element.style.setProperty("--pull-distance", `${offset}px`);
+    }
+    indicator.style.setProperty("--pull-progress", String(Math.min(1, offset / 64)));
+  };
   const reset = () => {
+    const wasMoving = pulling || refreshing || shell.classList.contains("pull-refresh-moving");
     start = null;
     distance = 0;
     pulling = false;
-    if (!refreshing) indicator.hidden = true;
+    if (!refreshing && wasMoving) {
+      movePage(0);
+      indicator.classList.remove("is-ready");
+      settleTimer = window.setTimeout(() => {
+        shell.classList.remove("pull-refresh-moving");
+        shell.style.removeProperty("--pull-distance");
+        indicator.hidden = true;
+        settleTimer = null;
+      }, 280);
+    }
   };
   const eligible = () => !shell.hidden && Boolean(selectedProfile)
     && !refreshWorkoutButton.disabled && !document.querySelector("dialog[open]");
@@ -3259,22 +3279,25 @@ function initializePullToRefresh() {
     }
     event.preventDefault();
     pulling = true;
-    distance = Math.min(96, Math.max(0, dy) * 0.45);
+    distance = 112 * (1 - Math.exp(-Math.max(0, dy) / 160));
     indicator.hidden = false;
-    indicator.style.setProperty("--pull-offset", `${distance}px`);
+    movePage(distance, true);
     indicator.querySelector("svg").style.transform = `rotate(${distance * 3}deg)`;
-    label.textContent = distance >= 64 ? "Release to refresh" : "Pull to refresh";
+    indicator.classList.toggle("is-ready", distance >= 64);
   }, { passive: false });
   document.addEventListener("touchend", async () => {
     const shouldRefresh = pulling && distance >= 64 && eligible();
-    reset();
-    if (!shouldRefresh || refreshing) return;
+    if (!shouldRefresh || refreshing) {
+      reset();
+      return;
+    }
     refreshing = true;
+    start = null;
+    pulling = false;
     indicator.hidden = false;
-    indicator.style.setProperty("--pull-offset", "40px");
+    movePage(64);
     indicator.querySelector("svg").style.removeProperty("transform");
     indicator.classList.add("is-refreshing");
-    label.textContent = "Refreshing...";
     try {
       await refreshWorkoutData();
     } finally {

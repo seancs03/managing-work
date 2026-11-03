@@ -156,20 +156,32 @@ body.intensity-theme[data-color-scheme="ultramarine"] :is(.storage-indicator, .s
 
 .pull-refresh-indicator {
   position: fixed;
-  top: max(8px, env(safe-area-inset-top));
+  top: 0;
   left: 50%;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: 1px solid var(--theme-accent);
-  border-radius: 24px;
-  background: var(--card);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
   color: var(--theme-accent);
-  font-size: 12px;
   pointer-events: none;
-  transform: translate(-50%, var(--pull-offset, 0px));
+  transform: translate(-50%, calc(var(--pull-distance, 0px) / 2 - 16px));
+  opacity: var(--pull-progress, 0);
+  transition: transform 260ms ease-out, opacity 180ms ease-out;
+}
+
+#app-shell.pull-refresh-moving {
+  transform: translate3d(0, var(--pull-distance, 0px), 0);
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#app-shell.is-pulling,
+.pull-refresh-indicator.is-pulling {
+  transition: none;
+}
+
+.pull-refresh-indicator.is-ready svg {
+  stroke-width: 2.8;
 }
 
 .pull-refresh-indicator[hidden] {
@@ -189,6 +201,10 @@ html.pull-refresh-enabled:has(#app-shell:not([hidden])) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  #app-shell.pull-refresh-moving,
+  .pull-refresh-indicator {
+    transition: none;
+  }
   .pull-refresh-indicator.is-refreshing svg {
     animation: none;
   }
