@@ -2925,7 +2925,7 @@ exerciseList.addEventListener("click", (event) => {
   }
   if (button.dataset.action === "exercise-info") {
     exerciseInfoReturnFocus = button;
-    document.getElementById("exercise-info-title").textContent = `${exercise.name || "Exercise"} setup`;
+    document.getElementById("exercise-info-title").textContent = "Setup";
     document.getElementById("exercise-info-content").textContent = exercise.setup?.trim()
       || "No machine / cable setup info added";
     exerciseInfoDialog.showModal();
