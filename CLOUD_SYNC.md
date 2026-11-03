@@ -77,7 +77,8 @@ The moon/sun control beside Undo switches dark/light display mode without
 changing the selected accent palette. The mode is stored on this device under
 `spijker-track.display-mode`, independently of profile/cloud workout state.
 New devices default to dark mode.
-Lava adds orange-red surfaces and electric-cyan accents. Like Ultramarine Pop,
+Lava combines a rich red background, near-black cards, orange borders and
+electric-cyan accents for stronger contrast. Like Ultramarine Pop,
 it uses dark mode only; choosing it switches to dark mode automatically.
 
 The shadow picker preselects the previous week when available and focuses Apply
