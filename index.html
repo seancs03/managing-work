@@ -240,10 +240,10 @@
       <dialog id="exercise-edit-dialog" class="shadow-dialog" aria-labelledby="exercise-edit-title">
         <form id="exercise-edit-form" class="shadow-form">
           <h2 id="exercise-edit-title">Edit exercise</h2>
-          <label for="exercise-edit-name">Exercise name</label>
+          <label for="exercise-edit-name" class="sr-only">Exercise name</label>
           <input id="exercise-edit-name" type="text" maxlength="60" required>
           <details id="exercise-edit-info">
-            <summary>Add / edit machine info</summary>
+            <summary><span aria-hidden="true">+</span> Add / edit machine info</summary>
             <label for="exercise-edit-setup">Machine / setup (optional)</label>
             <textarea id="exercise-edit-setup" maxlength="300" rows="3" placeholder="e.g. Seat 4, backrest 2"></textarea>
           </details>

@@ -1989,6 +1989,15 @@ body.intensity-theme .myo-notes-button:focus-visible {
   color: var(--theme-accent);
   cursor: pointer;
   font-size: 13px;
+  list-style: none;
+}
+
+#exercise-edit-info summary::-webkit-details-marker {
+  display: none;
+}
+
+#exercise-edit-info summary::marker {
+  content: "";
 }
 
 #exercise-edit-info label {
