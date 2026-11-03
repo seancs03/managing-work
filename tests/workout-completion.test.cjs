@@ -11,10 +11,17 @@ test("refresh preserves active shadows but clears completed, removed and deleted
     { id: "finished", status: "completed", shadowWorkoutId: "source" },
     { id: "removed", status: "in-progress", shadowWorkoutId: null },
     { id: "inactive", status: "planned", shadowWorkoutId: "source" },
+    { id: "source" },
   ];
   const context = loadFunctions({
     selectedProfile: "sean", storageKey: "profile.sean",
     activeShadowWorkouts: new Set(["active", "planned", "finished", "removed", "deleted"]),
+    workouts: [
+      { id: "active", status: "in-progress", shadowWorkoutId: "source" },
+      { id: "planned", status: "planned", shadowWorkoutId: "source" },
+      { id: "finished", status: "in-progress", shadowWorkoutId: "source" },
+      { id: "removed", status: "planned", shadowWorkoutId: "missing" },
+    ],
     mergePendingCompletions: (_, state) => state,
     localStorage: { setItem() {} },
     loadWorkouts: () => ({ workouts: refreshed, selectedWorkoutId: "active", selectedWeek: 2 }),
@@ -24,6 +31,12 @@ test("refresh preserves active shadows but clears completed, removed and deleted
   assert.equal(context.applyCloudState({ workouts: refreshed }), true);
   assert.deepEqual(Array.from(context.activeShadowWorkouts), ["active", "planned"]);
   assert.equal(context.workout.id, "active");
+  context.workouts[1].status = "completed";
+  context.workouts = JSON.parse(JSON.stringify(context.workouts));
+  refreshed[1] = { id: "planned", status: "completed", shadowWorkoutId: null };
+  assert.equal(context.applyCloudState({ workouts: refreshed }), true);
+  assert.equal(context.activeShadowWorkouts.has("planned"), true);
+  assert.equal(context.workouts[1].shadowWorkoutId, "source");
 });
 
 test("pull refresh requires a deliberate top-edge gesture and shares the refresh action", async () => {
