@@ -54,6 +54,10 @@ The backup itself and its logged workout values are not included in the reposito
 
 ## Structural undo
 
+The workout header and action group wrap within the available width. Timer
+digits and the pause/resume control keep their width as elapsed time grows
+into hours, moving the timer group onto another line when necessary.
+
 On touch devices, pull down from the top of the workout page and release past
 the threshold to run the same saved-data refresh as the header button. The page
 follows the finger with increasing resistance, holds during refresh and settles
