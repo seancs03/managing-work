@@ -120,114 +120,39 @@ body:is([data-color-scheme="cyan"], [data-color-scheme="yellow"], [data-color-sc
   color: #111111;
 }
 
-body[data-color-scheme="oxblood"] {
-  --theme-accent: #f3e3a2;
-  --theme-welcome: #f3e3a2;
-  --theme-bright: color-mix(in srgb, #f3e3a2 70%, #ffffff);
-  --theme-logo: #f3e3a2;
-  --theme-primary: #f3e3a2;
-  --theme-hover: color-mix(in srgb, #f3e3a2 75%, #000000);
-  --theme-border: color-mix(in srgb, #f3e3a2 18%, #3b202c);
-  --theme-border-strong: color-mix(in srgb, #f3e3a2 32%, #3b202c);
-  --theme-tint: color-mix(in srgb, #f3e3a2 12%, #3b202c);
-  --theme-tint-deep: color-mix(in srgb, #f3e3a2 16%, #3b202c);
-  --theme-line: color-mix(in srgb, #f3e3a2 10%, #3b202c);
-  --theme-soft: color-mix(in srgb, #f3e3a2 70%, #ffffff);
-  --theme-muted: color-mix(in srgb, #f3e3a2 60%, #3b202c);
-  --theme-glow: color-mix(in srgb, #f3e3a2 16%, transparent);
+.color-scheme-options {
+  display: grid;
+  gap: 10px;
 }
 
-body[data-color-scheme="aubergine"] {
-  --theme-accent: #b5f4d2;
-  --theme-welcome: #b5f4d2;
-  --theme-bright: color-mix(in srgb, #b5f4d2 70%, #ffffff);
-  --theme-logo: #b5f4d2;
-  --theme-primary: #b5f4d2;
-  --theme-hover: color-mix(in srgb, #b5f4d2 75%, #000000);
-  --theme-border: color-mix(in srgb, #b5f4d2 18%, #30243f);
-  --theme-border-strong: color-mix(in srgb, #b5f4d2 32%, #30243f);
-  --theme-tint: color-mix(in srgb, #b5f4d2 12%, #30243f);
-  --theme-tint-deep: color-mix(in srgb, #b5f4d2 16%, #30243f);
-  --theme-line: color-mix(in srgb, #b5f4d2 10%, #30243f);
-  --theme-soft: color-mix(in srgb, #b5f4d2 70%, #ffffff);
-  --theme-muted: color-mix(in srgb, #b5f4d2 60%, #30243f);
-  --theme-glow: color-mix(in srgb, #b5f4d2 16%, transparent);
+.color-scheme-options button {
+  padding: 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: 7px;
+  background: #1d1b1b;
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
 }
 
-body[data-color-scheme="parchment"] {
-  --theme-accent: #b92335;
-  --theme-welcome: #b92335;
-  --theme-bright: color-mix(in srgb, #b92335 70%, #ffffff);
-  --theme-logo: #b92335;
-  --theme-primary: #b92335;
-  --theme-hover: color-mix(in srgb, #b92335 75%, #000000);
-  --theme-border: color-mix(in srgb, #b92335 18%, #faf5eb);
-  --theme-border-strong: color-mix(in srgb, #b92335 32%, #faf5eb);
-  --theme-tint: color-mix(in srgb, #b92335 12%, #faf5eb);
-  --theme-tint-deep: color-mix(in srgb, #b92335 16%, #faf5eb);
-  --theme-line: color-mix(in srgb, #b92335 10%, #faf5eb);
-  --theme-soft: color-mix(in srgb, #b92335 70%, #ffffff);
-  --theme-muted: color-mix(in srgb, #b92335 60%, #faf5eb);
-  --theme-glow: color-mix(in srgb, #b92335 16%, transparent);
+.color-scheme-options button[aria-pressed="true"] {
+  border-color: var(--theme-accent);
 }
 
-body[data-color-scheme="petrol"] {
-  --theme-accent: #f0aac8;
-  --theme-welcome: #f0aac8;
-  --theme-bright: color-mix(in srgb, #f0aac8 70%, #ffffff);
-  --theme-logo: #f0aac8;
-  --theme-primary: #f0aac8;
-  --theme-hover: color-mix(in srgb, #f0aac8 75%, #000000);
-  --theme-border: color-mix(in srgb, #f0aac8 18%, #1c3d3c);
-  --theme-border-strong: color-mix(in srgb, #f0aac8 32%, #1c3d3c);
-  --theme-tint: color-mix(in srgb, #f0aac8 12%, #1c3d3c);
-  --theme-tint-deep: color-mix(in srgb, #f0aac8 16%, #1c3d3c);
-  --theme-line: color-mix(in srgb, #f0aac8 10%, #1c3d3c);
-  --theme-soft: color-mix(in srgb, #f0aac8 70%, #ffffff);
-  --theme-muted: color-mix(in srgb, #f0aac8 60%, #1c3d3c);
-  --theme-glow: color-mix(in srgb, #f0aac8 16%, transparent);
+.color-scheme-options button[aria-pressed="true"]::after {
+  content: "Selected";
+  float: right;
+  color: var(--theme-bright);
+  font-size: 11px;
 }
 
-/* Scheme surfaces: dark-native schemes tint dark mode; parchment tints light mode. */
-body.intensity-theme[data-display-mode="dark"][data-color-scheme="oxblood"] {
-  --paper: #26131b;
-  --card: #3b202c;
-  --scheme-card: #3b202c;
-  --scheme-input: color-mix(in srgb, #26131b 55%, #3b202c);
+.color-scheme-options button:focus-visible {
+  outline: 1px solid #bbbbbb;
+  outline-offset: -1px;
 }
 
-body.intensity-theme[data-display-mode="dark"][data-color-scheme="aubergine"] {
-  --paper: #1d1729;
-  --card: #30243f;
-  --scheme-card: #30243f;
-  --scheme-input: color-mix(in srgb, #1d1729 55%, #30243f);
-}
-
-body.intensity-theme[data-display-mode="dark"][data-color-scheme="petrol"] {
-  --paper: #102b2b;
-  --card: #1c3d3c;
-  --scheme-card: #1c3d3c;
-  --scheme-input: color-mix(in srgb, #102b2b 55%, #1c3d3c);
-}
-
-body.intensity-theme[data-display-mode="light"][data-color-scheme="parchment"] {
-  --paper: #eee5d5;
-  --card: #faf5eb;
-  --scheme-card: #faf5eb;
-  --scheme-input: #faf5eb;
-}
-
-body.intensity-theme[data-display-mode="light"]:is([data-color-scheme="oxblood"], [data-color-scheme="aubergine"], [data-color-scheme="petrol"]) {
-  --theme-accent: color-mix(in srgb, var(--theme-primary) 45%, #000000);
-  --theme-welcome: var(--theme-accent);
-  --theme-bright: var(--theme-accent);
-  --theme-logo: var(--theme-accent);
-  --theme-primary: var(--theme-accent);
-  --theme-hover: color-mix(in srgb, var(--theme-accent) 75%, #000000);
-}
-
-.color-scheme-select {
-  width: 100%;
+.color-scheme-options button[aria-pressed="true"]:focus-visible {
+  outline: none;
 }
 
 .brand:focus-visible {
@@ -375,7 +300,7 @@ body {
   min-height: 54px;
   border: 1px solid var(--theme-border-strong);
   border-radius: 8px;
-  background: var(--scheme-card, #151515);
+  background: #151515;
   color: #ffffff;
   cursor: pointer;
   font: 700 15px "Manrope", sans-serif;
@@ -458,7 +383,7 @@ body.intensity-theme .add-workout-form input,
 body.intensity-theme .week-select,
 body.intensity-theme .set-input {
   border-color: var(--theme-border);
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   color: #ffffff;
 }
 
@@ -497,10 +422,6 @@ body.intensity-theme .add-exercise-button {
   color: #ffffff;
 }
 
-body.intensity-theme[data-display-mode="dark"]:is([data-color-scheme="oxblood"], [data-color-scheme="aubergine"], [data-color-scheme="petrol"]) :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
-  color: #111111;
-}
-
 body.intensity-theme .workout-action-button:hover:not(:disabled),
 body.intensity-theme .add-workout-button:hover,
 body.intensity-theme .add-exercise-button:hover {
@@ -509,7 +430,7 @@ body.intensity-theme .add-exercise-button:hover {
 
 body.intensity-theme .start-over-button {
   border-color: var(--theme-border-strong);
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   color: #ffffff;
 }
 
@@ -769,7 +690,7 @@ button {
   padding: 0 10px;
   border: 1px solid var(--theme-border-strong);
   border-radius: 6px;
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   color: #ffffff;
   cursor: pointer;
   font-size: 10px;
@@ -813,7 +734,7 @@ button {
   padding: 0 12px;
   border: 1px solid var(--theme-border-strong);
   border-radius: 6px;
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   color: #ffffff;
   font: inherit;
   font-size: 11px;
@@ -1006,7 +927,7 @@ h1 {
   padding: 0 29px 0 10px;
   border: 1px solid var(--theme-border);
   border-radius: 7px;
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   color: #ffffff;
   font: 600 12px "DM Sans", sans-serif;
 }
@@ -1109,7 +1030,7 @@ h1 {
   z-index: 10;
   border: 1px solid var(--theme-border);
   border-radius: 8px;
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
@@ -1784,7 +1705,7 @@ h1 {
   padding: 0;
   border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: var(--scheme-card, #151515);
+  background: #151515;
   color: #f5f5f5;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65);
 }
@@ -1823,7 +1744,7 @@ h1 {
   padding: 0 10px;
   border: 1px solid var(--theme-border);
   border-radius: 7px;
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   color: #ffffff;
   font: inherit;
 }
@@ -1998,7 +1919,7 @@ body.intensity-theme .myo-notes-button:focus-visible {
   padding: 0 9px;
   border: 1px solid var(--theme-border);
   border-radius: 7px;
-  background: var(--scheme-input, #1d1b1b);
+  background: #1d1b1b;
   color: #ffffff;
   font: inherit;
 }
@@ -2539,18 +2460,10 @@ body.intensity-theme .myo-notes-button:focus-visible {
       color: var(--ink);
     }
 
-    body[data-display-mode="light"] :is(.profile-choice, .switch-profile-button, .undo-structure-button, .shadow-form select, .myo-note-row input, .workout-context-menu),
+    body[data-display-mode="light"] :is(.profile-choice, .color-scheme-options button, .switch-profile-button, .undo-structure-button, .shadow-form select, .myo-note-row input, .workout-context-menu),
     body.intensity-theme[data-display-mode="light"] :is(.workout-choice, .add-workout-form input, .week-select, .set-input, .start-over-button) {
       background: #f2f2f2;
       color: var(--ink);
-    }
-
-    body.intensity-theme[data-display-mode="light"][data-color-scheme="parchment"] :is(.workout-choice, .add-workout-form input, .week-select, .set-input, .start-over-button, .shadow-form select, .switch-profile-button, .undo-structure-button, .myo-note-row input, .workout-context-menu) {
-      background: var(--scheme-input);
-    }
-
-    body.intensity-theme[data-display-mode="light"][data-color-scheme="parchment"] :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
-      color: #ffffff;
     }
 
     body[data-display-mode="light"] .shadow-dialog {
