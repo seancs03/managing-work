@@ -98,19 +98,14 @@
       <dialog id="color-scheme-dialog" class="shadow-dialog" aria-labelledby="color-scheme-title">
         <div class="shadow-form">
           <h2 id="color-scheme-title">Color scheme</h2>
-          <label class="sr-only" for="color-scheme-select">Color scheme</label>
-          <select id="color-scheme-select" class="week-select color-scheme-select" aria-label="Choose color scheme">
-            <option value="red">Red</option>
-            <option value="magenta">Magenta</option>
-            <option value="cyan">Cyan</option>
-            <option value="yellow">Yellow</option>
-            <option value="orange">Orange</option>
-            <option value="lime">Lime</option>
-            <option value="oxblood">Oxblood / Butter</option>
-            <option value="aubergine">Aubergine / Mint</option>
-            <option value="parchment">Parchment / Crimson</option>
-            <option value="petrol">Petrol / Rose</option>
-          </select>
+          <div class="color-scheme-options" role="group" aria-label="Choose color scheme">
+            <button type="button" data-color-scheme="red" aria-pressed="true">Red</button>
+            <button type="button" data-color-scheme="magenta" aria-pressed="false">Magenta</button>
+            <button type="button" data-color-scheme="cyan" aria-pressed="false">Cyan</button>
+            <button type="button" data-color-scheme="yellow" aria-pressed="false">Yellow</button>
+            <button type="button" data-color-scheme="orange" aria-pressed="false">Orange</button>
+            <button type="button" data-color-scheme="lime" aria-pressed="false">Lime</button>
+          </div>
           <div class="shadow-dialog-actions">
             <button id="close-color-scheme" class="start-over-button" type="button">Close</button>
           </div>
