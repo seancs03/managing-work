@@ -170,6 +170,31 @@ function loadFunctions(context, names) {
   return sandbox;
 }
 
+test("saved shadow links stay invisible until activated in this app session", () => {
+  const set = { weight: "80", reps: "8", rpe: "8" };
+  const exercise = { planId: "bench", name: "Bench", sets: [set] };
+  const previous = { id: "previous", week: 1, templateId: "upper",
+    sessionNotes: ["Prior note"], exercises: [exercise] };
+  const current = { id: "current", week: 2, templateId: "upper",
+    shadowWorkoutId: previous.id, sessionNotes: [""], exercises: [exercise] };
+  const context = loadFunctions({
+    workout: current, workouts: [previous, current], activeShadowWorkouts: new Set(),
+    sessionNoteInputs: [{}],
+  }, ["hasActiveShadow", "findMatchingExercise", "findShadowSet", "renderSessionNotes", "getSetProgress"]);
+  assert.equal(context.hasActiveShadow(), false);
+  assert.equal(context.findShadowSet(exercise, set), null);
+  assert.equal(context.getSetProgress(exercise, set), null);
+  context.renderSessionNotes();
+  assert.equal(context.sessionNoteInputs[0].placeholder, "");
+  context.activeShadowWorkouts.add(current.id);
+  assert.equal(context.findShadowSet(exercise, set), set);
+  context.renderSessionNotes();
+  assert.equal(context.sessionNoteInputs[0].placeholder, "Prior note");
+  context.activeShadowWorkouts.clear();
+  assert.equal(context.findShadowSet(exercise, set), null);
+  assert.equal(current.shadowWorkoutId, previous.id);
+});
+
 test("set shadows use current set positions without changing either workout's structure", () => {
   const sourceExercise = { planId: "bench", name: "Incline bench", sets: [
     { planId: "s1", weight: "60", reps: "10", rpe: "8" },
@@ -181,7 +206,9 @@ test("set shadows use current set positions without changing either workout's st
   ] };
   const previous = { id: "week5", exercises: [sourceExercise] };
   const current = { id: "week6", shadowWorkoutId: previous.id, exercises: [exercise] };
-  const context = loadFunctions({ workout: current, workouts: [previous, current] }, ["findMatchingExercise", "findShadowSet"]);
+  const context = loadFunctions({ workout: current, workouts: [previous, current],
+    activeShadowWorkouts: new Set([current.id]),
+  }, ["hasActiveShadow", "findMatchingExercise", "findShadowSet"]);
   const snapshot = JSON.stringify([previous, current]);
   assert.equal(context.findShadowSet(exercise, exercise.sets[0]), sourceExercise.sets[0]);
   assert.equal(context.findShadowSet(exercise, exercise.sets[1]), sourceExercise.sets[1]);
@@ -212,7 +239,8 @@ test("session notes shadow the selected source without copying or overwriting lo
   const inputs = [{}, {}];
   const context = loadFunctions({
     workouts: [original, current], workout: current, sessionNoteInputs: inputs,
-  }, ["renderSessionNotes"]);
+    activeShadowWorkouts: new Set([current.id]),
+  }, ["hasActiveShadow", "renderSessionNotes"]);
   context.renderSessionNotes();
   assert.equal(inputs[0].value, "");
   assert.equal(inputs[0].placeholder, original.sessionNotes[0]);
@@ -287,8 +315,9 @@ test("shadow progress compares the source's own shadow or previous week, not the
   const week3 = makeWorkout("w3", 3, "11");
   const week4 = makeWorkout("w4", 4, "1");
   week4.shadowWorkoutId = "w3";
-  const context = loadFunctions({ workout: week4, workouts: [week1, week2, week3, week4] },
-    ["getFieldError", "parsePerformanceValue", "findMatchingExercise", "compareSetPerformance", "getSetProgress"]);
+  const context = loadFunctions({ workout: week4, workouts: [week1, week2, week3, week4],
+    activeShadowWorkouts: new Set([week4.id]) },
+    ["hasActiveShadow", "getFieldError", "parsePerformanceValue", "findMatchingExercise", "compareSetPerformance", "getSetProgress"]);
   const exercise = week4.exercises[0], set = exercise.sets[0];
   assert.equal(context.getSetProgress(exercise, set).symbol, ">");
   assert.equal(context.getSetProgress(exercise, set).previousWeek, 2);
@@ -331,10 +360,11 @@ test("shadow picker fully preselects the previous week and allows another week",
   const current = { id: "w7", week: 7, templateId: "upper" };
   const context = loadFunctions({
     workout: current,
+    activeShadowWorkouts: new Set(),
     workouts: [current, { id: "w5", week: 5, templateId: "upper" }, { id: "w6", week: 6, templateId: "upper" }],
     document: { createElement: () => ({}) }, shadowWeekSelect: select,
     shadowForm: { querySelector: () => submit }, clearShadowButton: {},
-  }, ["getShadowSources", "renderShadowWeekOptions"]);
+  }, ["hasActiveShadow", "getShadowSources", "renderShadowWeekOptions"]);
   context.renderShadowWeekOptions();
   assert.equal(select.value, "6");
   assert.equal(select.options.find((option) => option.selected).value, "6");
@@ -363,11 +393,12 @@ test("completed workout durations remain frozen even with a stale running timest
 
 test("finish persists a retry record; reopening merges it without losing other cloud workouts", () => {
   const storage = new Map();
-  const finished = { id: "a", status: "in-progress", timerElapsedMs: 10, timerStartedAt: 100 };
+  const finished = { id: "a", status: "in-progress", timerElapsedMs: 10, timerStartedAt: 100, shadowWorkoutId: "prior" };
   const context = loadFunctions({
     PROFILE_STORAGE_PREFIX: "profile.",
     selectedProfile: "sean", storageKey: "profile.sean", workouts: [finished],
     workout: finished, selectedWorkoutId: "a", selectedWeek: 1,
+    activeShadowWorkouts: new Set(["a"]),
     cloudEnabled: true, supabaseClient: {}, cloudSaveTimer: null,
     pendingStructuralUndo: null, updateUndoButton() {},
     localStorage: {
@@ -383,6 +414,8 @@ test("finish persists a retry record; reopening merges it without losing other c
   }, ["getWorkoutElapsedMs", "readPendingCompletions", "mergePendingCompletions", "saveWorkout", "finishWorkout"]);
   context.finishWorkout();
   assert.equal(finished.status, "completed");
+  assert.equal(context.activeShadowWorkouts.has("a"), false);
+  assert.equal(finished.shadowWorkoutId, "prior");
   assert.equal(finished.timerStartedAt, null);
   assert.equal(finished.timerElapsedMs, 1010);
   const cloud = { workouts: [{ id: "a", status: "in-progress" }, { id: "b", title: "Other device" }] };

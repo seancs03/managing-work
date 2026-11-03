@@ -1276,6 +1276,7 @@ function applyCloudState(state) {
     state = mergePendingCompletions(selectedProfile, state);
     localStorage.setItem(storageKey, JSON.stringify(state));
     const profileState = loadWorkouts();
+    activeShadowWorkouts.clear();
     workouts = profileState.workouts;
     selectedWorkoutId = profileState.selectedWorkoutId;
     selectedWeek = profileState.selectedWeek;
@@ -1857,8 +1858,14 @@ function findMatchingExercise(sourceWorkout, exercise) {
   );
 }
 
+const activeShadowWorkouts = new Set();
+
+function hasActiveShadow() {
+  return Boolean(workout?.shadowWorkoutId && activeShadowWorkouts.has(workout.id));
+}
+
 function findShadowSet(exercise, set) {
-  if (!workout?.shadowWorkoutId) return null;
+  if (!hasActiveShadow()) return null;
   const shadowWorkout = workouts.find((item) => item.id === workout.shadowWorkoutId);
   const shadowExercise = findMatchingExercise(shadowWorkout, exercise);
   const setIndex = exercise.sets.indexOf(set);
@@ -1898,7 +1905,7 @@ function compareSetPerformance(current, previous) {
 }
 
 function getSetProgress(exercise, set) {
-  if (!workout?.shadowWorkoutId || workout.status === "completed") return null;
+  if (!hasActiveShadow() || workout.status === "completed") return null;
   const sourceWorkout = workouts.find((item) => item.id === workout.shadowWorkoutId);
   if (!sourceWorkout) return null;
   const previousWorkout = sourceWorkout.shadowWorkoutId
@@ -1953,7 +1960,7 @@ function renderShadowWeekOptions() {
   shadowWeekSelect.value = String(defaultWeek);
   shadowWeekSelect.disabled = sources.length === 0;
   shadowForm.querySelector('[type="submit"]').disabled = sources.length === 0;
-  clearShadowButton.hidden = !workout?.shadowWorkoutId;
+  clearShadowButton.hidden = !hasActiveShadow();
 }
 
 function renderWorkoutChoices() {
@@ -2266,8 +2273,8 @@ function render() {
   updateWorkoutTimerDisplay();
   startOverButton.hidden = !workout || workout.status === "planned";
   shadowButton.hidden = !workout;
-  shadowButton.textContent = workout?.shadowWorkoutId ? "Remove shadow" : "Shadow";
-  shadowButton.title = workout?.shadowWorkoutId
+  shadowButton.textContent = hasActiveShadow() ? "Remove shadow" : "Shadow";
+  shadowButton.title = hasActiveShadow()
     ? `Shadowing ${workouts.find((item) => item.id === workout.shadowWorkoutId)?.title ?? "another workout"}`
     : "Choose a workout to shadow";
   deleteWorkoutDayButton.title = !mirroringEnabled ? "Delete this workout day from this week only" : workout?.week === 1
@@ -2448,7 +2455,7 @@ deleteWorkoutDialog.addEventListener("close", () => {
 
 shadowButton.addEventListener("click", () => {
   if (!workout) return;
-  if (workout.shadowWorkoutId) {
+  if (hasActiveShadow()) {
     removeWorkoutShadow();
     return;
   }
@@ -2466,6 +2473,7 @@ shadowForm.addEventListener("submit", (event) => {
   );
   if (!workout || !sourceWorkout) return;
   workout.shadowWorkoutId = sourceWorkout.id;
+  activeShadowWorkouts.add(workout.id);
   shadowDialog.close();
   render();
   saveWorkout();
@@ -2481,6 +2489,7 @@ clearShadowButton.addEventListener("click", () => {
 function removeWorkoutShadow(closeDialog = false) {
   if (!workout) return;
   workout.shadowWorkoutId = null;
+  activeShadowWorkouts.delete(workout.id);
   if (closeDialog) shadowDialog.close();
   render();
   saveWorkout();
@@ -2516,7 +2525,8 @@ workoutTitle.addEventListener("input", () => {
 });
 
 function renderSessionNotes() {
-  const shadowWorkout = workouts.find((item) => item.id === workout?.shadowWorkoutId);
+  const shadowWorkout = hasActiveShadow()
+    ? workouts.find((item) => item.id === workout.shadowWorkoutId) : null;
   sessionNoteInputs.forEach((input, index) => {
     input.value = workout?.sessionNotes[index] ?? "";
     const shadowNote = shadowWorkout?.sessionNotes[index] ?? "";
@@ -2540,6 +2550,7 @@ function finishWorkout() {
   workout.timerElapsedMs = getWorkoutElapsedMs(workout);
   workout.timerStartedAt = null;
   workout.status = "completed";
+  activeShadowWorkouts.delete(workout.id);
   document.getElementById("announcements").textContent = `${workout.title} finished.`;
   render();
   saveWorkout(true);
