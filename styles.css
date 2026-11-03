@@ -250,6 +250,12 @@ body.intensity-theme[data-color-scheme="lava"] :is(.storage-indicator, .session-
 
 html {
   background-color: #000000;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
 
 body {
