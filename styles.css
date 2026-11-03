@@ -1190,6 +1190,8 @@ h1 {
 
 .session-controls {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
@@ -1201,7 +1203,10 @@ h1 {
 
 .workout-start-controls {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
@@ -1209,7 +1214,10 @@ h1 {
 
 .workout-action-timer {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -1228,6 +1236,7 @@ h1 {
 
 .workout-timer-display {
   min-width: 52px;
+  flex: 0 0 auto;
   color: var(--ink);
   font: 700 13px "Manrope", sans-serif;
   font-variant-numeric: tabular-nums;
@@ -1235,6 +1244,7 @@ h1 {
 }
 
 .workout-timer-toggle {
+  flex: 0 0 28px;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -1304,12 +1314,18 @@ h1 {
   min-height: 84px;
   padding: 19px 23px 17px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   border: 1px solid var(--line);
   border-radius: 12px 12px 0 0;
   background: var(--card);
+}
+
+.session-heading > div:first-child {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .session-controls {
