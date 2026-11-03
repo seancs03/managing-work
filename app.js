@@ -3298,7 +3298,7 @@ function initializePullToRefresh() {
     movePage(64);
     indicator.querySelector("svg").style.removeProperty("transform");
     indicator.classList.add("is-refreshing");
-    const minimumSpin = new Promise((resolve) => window.setTimeout(resolve, 1500));
+    const minimumSpin = new Promise((resolve) => window.setTimeout(resolve, 750));
     try {
       await refreshWorkoutData();
     } finally {

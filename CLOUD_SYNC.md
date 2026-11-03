@@ -61,7 +61,7 @@ into hours, moving the timer group onto another line when necessary.
 On touch devices, pull down from the top of the workout page and release past
 the threshold to run the same saved-data refresh as the header button. The page
 follows the finger with increasing resistance, holds during refresh and settles
-back on release. The spinner remains visible for at least 1.5 seconds while
+back on release. The spinner remains visible for at least 0.75 seconds while
 sync starts immediately; slower syncs keep it visible until finished.
 Only an accent-colored icon appears above it, without visible
 instruction text or a pill. A bolder icon marks the release threshold.
