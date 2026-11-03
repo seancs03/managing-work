@@ -1958,8 +1958,7 @@ body.intensity-theme .myo-notes-button:focus-visible {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+  border: 0;
   background: transparent;
   color: var(--theme-accent);
   font: 700 15px "Manrope", sans-serif;
