@@ -73,7 +73,7 @@ test("pull refresh requires a deliberate top-edge gesture and shares the refresh
   assert.equal(calls, 1);
   assert.equal(classes.has("is-refreshing"), true);
   assert.equal(shell.style["--pull-distance"], "64px");
-  assert.ok(Array.from(timerDelays.values()).includes(1500));
+  assert.ok(Array.from(timerDelays.values()).includes(750));
   handlers.touchstart(event(0));
   handlers.touchmove(event(200));
   await handlers.touchend();
