@@ -127,13 +127,13 @@ body[data-color-scheme="ultramarine"] {
   --theme-logo: #ff6a00;
   --theme-primary: #ff6a00;
   --theme-hover: color-mix(in srgb, #ff6a00 75%, #000000);
-  --theme-border: color-mix(in srgb, #ff6a00 22%, #142a8d);
-  --theme-border-strong: color-mix(in srgb, #ff6a00 38%, #142a8d);
+  --theme-border: color-mix(in srgb, #8fb0ff 45%, #142a8d);
+  --theme-border-strong: color-mix(in srgb, #8fb0ff 70%, #142a8d);
   --theme-tint: color-mix(in srgb, #ff6a00 14%, #142a8d);
   --theme-tint-deep: color-mix(in srgb, #ff6a00 18%, #142a8d);
-  --theme-line: color-mix(in srgb, #ff6a00 12%, #142a8d);
+  --theme-line: color-mix(in srgb, #8fb0ff 30%, #142a8d);
   --theme-soft: color-mix(in srgb, #ff6a00 70%, #ffffff);
-  --theme-muted: color-mix(in srgb, #ff6a00 60%, #142a8d);
+  --theme-muted: #a9c3ff;
   --theme-glow: color-mix(in srgb, #ff6a00 16%, transparent);
 }
 
@@ -142,7 +142,11 @@ body.intensity-theme[data-display-mode="dark"][data-color-scheme="ultramarine"] 
   --paper: #2145ef;
   --card: #142a8d;
   --scheme-card: #142a8d;
-  --scheme-input: color-mix(in srgb, #142a8d 75%, #000000);
+  --scheme-input: #2a4fdb;
+}
+
+body.intensity-theme[data-color-scheme="ultramarine"] :is(.storage-indicator, .session-date, .workout-choice-status, .exercise-progress, .set-number, .stat-label, .volume-label, .summary-footnote, .privacy-note) {
+  color: #bcd0ff;
 }
 
 .color-scheme-select {
