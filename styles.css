@@ -153,6 +153,35 @@ body.intensity-theme[data-color-scheme="ultramarine"] :is(.storage-indicator, .s
   width: 100%;
 }
 
+body[data-color-scheme="lava"] {
+  --theme-accent: #00edff;
+  --theme-welcome: #00edff;
+  --theme-bright: #83f6ff;
+  --theme-logo: #00edff;
+  --theme-primary: #00edff;
+  --theme-hover: #00c8db;
+  --theme-border: #ef8874;
+  --theme-border-strong: #ffb09d;
+  --theme-tint: #8b261c;
+  --theme-tint-deep: #7d2018;
+  --theme-line: #b94a36;
+  --theme-soft: #83f6ff;
+  --theme-muted: #ffd2c5;
+  --theme-glow: rgba(255, 91, 20, 0.3);
+}
+
+body.intensity-theme[data-display-mode="dark"][data-color-scheme="lava"] {
+  --paper: #ff401b;
+  --card: #8b2013;
+  --scheme-card: #8b2013;
+  --scheme-input: #a52c1a;
+  --muted: #ffd2c5;
+}
+
+body.intensity-theme[data-color-scheme="lava"] :is(.storage-indicator, .session-date, .workout-choice-status, .exercise-progress, .set-number, .stat-label, .volume-label, .summary-footnote, .privacy-note) {
+  color: #ffd2c5;
+}
+
 .brand:focus-visible {
   outline: 2px solid var(--theme-accent);
   outline-offset: 3px;
@@ -421,6 +450,10 @@ body.intensity-theme .add-exercise-button {
 }
 
 body.intensity-theme[data-display-mode="dark"][data-color-scheme="ultramarine"] :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
+  color: #111111;
+}
+
+body.intensity-theme[data-display-mode="dark"][data-color-scheme="lava"] :is(.workout-action-button, .add-workout-button, .add-exercise-button) {
   color: #111111;
 }
 
