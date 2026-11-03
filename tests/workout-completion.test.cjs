@@ -4,6 +4,28 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
+test("refresh preserves active shadows but clears completed, removed and deleted workouts", () => {
+  const refreshed = [
+    { id: "active", status: "in-progress", shadowWorkoutId: "source" },
+    { id: "planned", status: "planned", shadowWorkoutId: "source" },
+    { id: "finished", status: "completed", shadowWorkoutId: "source" },
+    { id: "removed", status: "in-progress", shadowWorkoutId: null },
+    { id: "inactive", status: "planned", shadowWorkoutId: "source" },
+  ];
+  const context = loadFunctions({
+    selectedProfile: "sean", storageKey: "profile.sean",
+    activeShadowWorkouts: new Set(["active", "planned", "finished", "removed", "deleted"]),
+    mergePendingCompletions: (_, state) => state,
+    localStorage: { setItem() {} },
+    loadWorkouts: () => ({ workouts: refreshed, selectedWorkoutId: "active", selectedWeek: 2 }),
+    render() {}, storageModeLabel: {}, document: { getElementById: () => ({}) },
+    showNotice(message) { throw new Error(message); },
+  }, ["applyCloudState"]);
+  assert.equal(context.applyCloudState({ workouts: refreshed }), true);
+  assert.deepEqual(Array.from(context.activeShadowWorkouts), ["active", "planned"]);
+  assert.equal(context.workout.id, "active");
+});
+
 test("pull refresh requires a deliberate top-edge gesture and shares the refresh action", async () => {
   const handlers = {};
   const classes = new Set();

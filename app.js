@@ -1276,8 +1276,13 @@ function applyCloudState(state) {
     state = mergePendingCompletions(selectedProfile, state);
     localStorage.setItem(storageKey, JSON.stringify(state));
     const profileState = loadWorkouts();
-    activeShadowWorkouts.clear();
     workouts = profileState.workouts;
+    for (const id of activeShadowWorkouts) {
+      const refreshedWorkout = workouts.find((item) => item.id === id);
+      if (!refreshedWorkout?.shadowWorkoutId || refreshedWorkout.status === "completed") {
+        activeShadowWorkouts.delete(id);
+      }
+    }
     selectedWorkoutId = profileState.selectedWorkoutId;
     selectedWeek = profileState.selectedWeek;
     workout = workouts.find((item) => item.id === selectedWorkoutId) ?? null;
@@ -1586,6 +1591,7 @@ async function activateProfile(profile) {
       return;
     }
   }
+  activeShadowWorkouts.clear();
   workouts = profileState.workouts;
   if (!cloudEnabled) {
     resetBailMeter();

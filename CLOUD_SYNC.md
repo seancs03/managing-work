@@ -109,6 +109,9 @@ Finishing a workout switches its shadow off; resuming does not re-enable it.
 Press Shadow to enable it before or during training. This applies to set
 placeholders, technique references, progress symbols and session-note placeholders.
 Saved source links remain as historical comparison metadata, not activation.
+Refreshing saved data (button or pull gesture) and incoming cloud updates retain
+shadows activated in the current session, unless that workout is completed,
+deleted or its shadow source is removed.
 
 Enabling LLP or MYO replaces its checkbox with the count input, keeping the
 table uncluttered. Clearing the count and committing/leaving the field disables
