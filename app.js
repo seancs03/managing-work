@@ -2927,7 +2927,7 @@ exerciseList.addEventListener("click", (event) => {
     exerciseInfoReturnFocus = button;
     document.getElementById("exercise-info-title").textContent = `${exercise.name || "Exercise"} setup`;
     document.getElementById("exercise-info-content").textContent = exercise.setup?.trim()
-      || "No machine or setup info yet. Use the pencil beside the exercise name to add it.";
+      || "No machine / cable setup info added";
     exerciseInfoDialog.showModal();
     document.getElementById("close-exercise-info").focus({ preventScroll: true });
     return;
