@@ -145,15 +145,6 @@ body.intensity-theme[data-display-mode="dark"][data-color-scheme="ultramarine"] 
   --scheme-input: color-mix(in srgb, #142a8d 75%, #000000);
 }
 
-body.intensity-theme[data-display-mode="light"][data-color-scheme="ultramarine"] {
-  --theme-accent: color-mix(in srgb, var(--theme-primary) 45%, #000000);
-  --theme-welcome: var(--theme-accent);
-  --theme-bright: var(--theme-accent);
-  --theme-logo: var(--theme-accent);
-  --theme-primary: var(--theme-accent);
-  --theme-hover: color-mix(in srgb, var(--theme-accent) 75%, #000000);
-}
-
 .color-scheme-select {
   width: 100%;
 }
