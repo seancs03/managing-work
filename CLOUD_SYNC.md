@@ -55,10 +55,14 @@ The backup itself and its logged workout values are not included in the reposito
 ## Structural undo
 
 On touch devices, pull down from the top of the workout page and release past
-the indicated threshold to run the same saved-data refresh as the header button.
+the threshold to run the same saved-data refresh as the header button. The page
+follows the finger with increasing resistance, holds during refresh and settles
+back on release. Only an accent-colored icon appears above it, without visible
+instruction text or a pill. A bolder icon marks the release threshold.
 Short pulls, horizontal gestures, form controls, nested scrollers and open
 dialogs do not trigger it. The accent-colored indicator spins during refresh
-(static when reduced motion is requested). Existing sync/concurrent-edit guards
+(static with no settling animation when reduced motion is requested).
+No vibration is promised on iPhone web apps. Existing sync/concurrent-edit guards
 and visible failure feedback apply; this never resets workout data.
 
 Pressing an exercise name opens a read-only list of its
