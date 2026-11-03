@@ -81,6 +81,13 @@ New devices default to dark mode.
 The shadow picker preselects the previous week when available and focuses Apply
 shadow, allowing immediate confirmation. The week selector remains editable.
 
+Shadow display is opt-in per app session. Reopening/reloading the app or loading
+a profile starts with all shadows off, even for an in-progress workout.
+Finishing a workout switches its shadow off; resuming does not re-enable it.
+Press Shadow to enable it before or during training. This applies to set
+placeholders, technique references, progress symbols and session-note placeholders.
+Saved source links remain as historical comparison metadata, not activation.
+
 Enabling LLP or MYO replaces its checkbox with the count input, keeping the
 table uncluttered. Clearing the count and committing/leaving the field disables
 the technique and restores the unchecked box; MYO also clears its local notes.
