@@ -4,23 +4,28 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("app.js", "utf8");
-test("finishing pencil editing restores the history-linked name", () => {
-  const name = { hidden: true };
-  const editor = { hidden: false };
-  const summary = { hidden: true, textContent: "Seat 4" };
-  const input = { hidden: false, closest: (selector) => ({
-    querySelector: (query) => selector === ".exercise-name-heading" ? name
-      : query === ".exercise-setup-editor" ? editor : summary,
-  }) };
-  const context = loadFunctions({}, ["finishExerciseNameEdit"]);
-  context.finishExerciseNameEdit(input);
-  assert.equal(input.hidden, true);
-  assert.equal(name.hidden, false);
-  assert.equal(editor.hidden, true);
-  assert.equal(summary.hidden, false);
-  summary.textContent = "";
-  context.finishExerciseNameEdit(input);
-  assert.equal(summary.hidden, true);
+test("pencil popup loads a draft without changing exercise data", () => {
+  const fields = {
+    "exercise-edit-name": { setCustomValidity(value) { this.validity = value; }, focus() { this.focused = true; } },
+    "exercise-edit-setup": {},
+    "exercise-edit-info": {},
+  };
+  const context = loadFunctions({
+    workout: { id: "current" }, exerciseEditDialog: { showModal() { this.open = true; } },
+    document: { getElementById: (id) => fields[id] },
+  }, ["openExerciseEditor"]);
+  const exercise = { id: "bench", name: "Bench", setup: "Seat 4" };
+  const snapshot = JSON.stringify(exercise);
+  context.openExerciseEditor(exercise, {});
+  assert.equal(fields["exercise-edit-name"].value, "Bench");
+  assert.equal(fields["exercise-edit-name"].focused, true);
+  assert.equal(fields["exercise-edit-setup"].value, "Seat 4");
+  assert.equal(fields["exercise-edit-info"].open, true);
+  fields["exercise-edit-name"].value = "Draft only";
+  assert.equal(JSON.stringify(exercise), snapshot);
+  context.openExerciseEditor({ ...exercise, setup: "" }, {});
+  assert.equal(fields["exercise-edit-info"].open, false);
+  assert.equal(fields["exercise-edit-name"].value, "Bench");
 });
 test("equipment setup survives normalization, mirroring, isolated edits and undo", () => {
   let id = 0;

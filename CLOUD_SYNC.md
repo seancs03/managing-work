@@ -62,9 +62,12 @@ Weight, reps, RPE, LLP and MYO counts retain their
 original text; opening history does not change selection, logs or shadowing.
 History uses the currently opened exercise name and does not label earlier
 weeks with their old exercise names.
-The pencil immediately beside the name enables renaming and an optional
-300-character Machine / setup field. Enter or leaving the editing area closes
-both fields. Saved setup appears beneath the name; blank setup adds no text.
+The pencil immediately beside the name opens an editing popup with the name
+and an expandable optional 300-character Machine / setup field. Save commits
+both together; Cancel or Escape discards edits. Blank names are rejected.
+The scheme-colored question mark at the bottom right of each exercise opens a
+read-only setup popup (or instructions to add info if blank). Setup is not
+displayed inline, keeping the card uncluttered.
 Setup is profile-specific workout data included in local/cloud saves and backups.
 Changes follow the mirroring toggle, affecting the current and later matching
 weeks when on, or only the current week when off. Structural Undo includes setup.

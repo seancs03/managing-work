@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#000000">
     <meta name="description" content="A simple, private workout log for tracking every set.">
     <title>SPIJKER TRACK — workout log</title>
-    <link rel="stylesheet" href="styles.css?v=4190e287">
+    <link rel="stylesheet" href="styles.css?v=exercise-setup-popup">
     <script src="cloud-config.js" defer></script>
     <script src="workout-targets.js?v=4190e287" defer></script>
-    <script src="app.js?v=4190e287" defer></script>
+    <script src="app.js?v=exercise-setup-popup" defer></script>
   </head>
   <body class="intensity-theme">
     <main id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
@@ -235,6 +235,31 @@
             <span class="shadow-dialog-spacer"></span>
             <button id="cancel-bail-button" class="start-over-button" type="button">Cancel</button>
             <button id="confirm-bail-button" class="workout-action-button" type="button">BAIL</button>
+          </div>
+        </div>
+      </dialog>
+      <dialog id="exercise-edit-dialog" class="shadow-dialog" aria-labelledby="exercise-edit-title">
+        <form id="exercise-edit-form" class="shadow-form">
+          <h2 id="exercise-edit-title">Edit exercise</h2>
+          <label for="exercise-edit-name">Exercise name</label>
+          <input id="exercise-edit-name" type="text" maxlength="60" required>
+          <details id="exercise-edit-info">
+            <summary>Add / edit machine info</summary>
+            <label for="exercise-edit-setup">Machine / setup (optional)</label>
+            <textarea id="exercise-edit-setup" maxlength="300" rows="3" placeholder="e.g. Seat 4, backrest 2"></textarea>
+          </details>
+          <div class="shadow-dialog-actions">
+            <button id="cancel-exercise-edit" class="start-over-button" type="button">Cancel</button>
+            <button class="workout-action-button" type="submit">Save</button>
+          </div>
+        </form>
+      </dialog>
+      <dialog id="exercise-info-dialog" class="shadow-dialog" aria-labelledby="exercise-info-title">
+        <div class="shadow-form">
+          <h2 id="exercise-info-title">Machine / setup</h2>
+          <p id="exercise-info-content"></p>
+          <div class="shadow-dialog-actions">
+            <button id="close-exercise-info" class="start-over-button" type="button">Close</button>
           </div>
         </div>
       </dialog>

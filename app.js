@@ -830,7 +830,7 @@ function beginStructuralUndo(label, input = null) {
 }
 
 document.addEventListener("focusin", (event) => {
-  if (event.target === workoutTitle || event.target.matches?.("input[data-exercise-name], input[data-exercise-setup]")) {
+  if (event.target === workoutTitle) {
     structuralEditStarts.set(event.target, JSON.parse(JSON.stringify(serializeWorkoutState())));
   }
 });
@@ -2094,19 +2094,6 @@ function renderExerciseCard(exercise, index) {
   titleWrap.append(createElement("span", "exercise-index", String(index + 1)));
 
   const headingWrap = createElement("div", "exercise-heading-text");
-  const nameLabel = createElement("label", "sr-only", "Exercise name");
-  nameLabel.htmlFor = `exercise-name-${exercise.id}`;
-  const nameInput = document.createElement("input");
-  nameInput.className = "exercise-name-editor";
-  nameInput.type = "text";
-  nameInput.maxLength = 60;
-  nameInput.value = exercise.name;
-  nameInput.hidden = true;
-  nameInput.disabled = exercise.bailed === true;
-  nameInput.id = `exercise-name-${exercise.id}`;
-  nameInput.dataset.exerciseId = exercise.id;
-  nameInput.dataset.exerciseName = "true";
-  nameInput.setAttribute("aria-label", `Exercise ${index + 1} name`);
   const heading = createElement("h2", "exercise-name-heading");
   heading.setAttribute("aria-label", `Exercise: ${exercise.name || "unnamed exercise"}`);
   const historyButton = createElement("button", "exercise-history-name", exercise.name || "Unnamed exercise");
@@ -2123,27 +2110,10 @@ function renderExerciseCard(exercise, index) {
   editButton.setAttribute("aria-label", `Edit name and setup of ${exercise.name || "exercise"}`);
   editButton.title = "Edit exercise name and machine / setup";
   editButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>';
-  heading.append(nameLabel, historyButton, nameInput, editButton);
+  heading.append(historyButton, editButton);
   const progress = createElement("span", "exercise-progress");
   progress.id = `progress-${exercise.id}`;
   headingWrap.append(heading, progress);
-  const setupSummary = createElement("p", "exercise-setup-summary", exercise.setup || "");
-  setupSummary.hidden = !exercise.setup;
-  const setupEditor = createElement("div", "exercise-setup-editor");
-  setupEditor.hidden = true;
-  const setupLabel = createElement("label", "", "Machine / setup (optional)");
-  setupLabel.htmlFor = `exercise-setup-${exercise.id}`;
-  const setupInput = document.createElement("input");
-  setupInput.type = "text";
-  setupInput.id = setupLabel.htmlFor;
-  setupInput.maxLength = 300;
-  setupInput.value = exercise.setup || "";
-  setupInput.placeholder = "e.g. Seat 4, backrest 2";
-  setupInput.dataset.exerciseSetup = "true";
-  setupInput.dataset.exerciseId = exercise.id;
-  setupInput.disabled = exercise.bailed === true;
-  setupEditor.append(setupLabel, setupInput);
-  headingWrap.append(setupSummary, setupEditor);
   titleWrap.append(headingWrap);
   header.append(titleWrap);
 
@@ -2218,6 +2188,14 @@ function renderExerciseCard(exercise, index) {
   addSet.disabled = exercise.bailed === true;
   addSet.append(createElement("span", "", "+"), document.createTextNode("Add set"));
   footer.append(addSet);
+  const infoButton = createElement("button", "exercise-info-button", "?");
+  infoButton.type = "button";
+  infoButton.id = `exercise-info-${exercise.id}`;
+  infoButton.dataset.action = "exercise-info";
+  infoButton.dataset.exerciseId = exercise.id;
+  infoButton.title = "Machine / setup info";
+  infoButton.setAttribute("aria-label", `View machine and setup info for ${exercise.name || "exercise"}`);
+  footer.append(infoButton);
   card.append(header, tableWrap, footer);
   card.querySelectorAll("input[data-llp]").forEach((llpCheckbox) => {
     const setIndex = exercise.sets.findIndex((set) => set.id === llpCheckbox.dataset.setId);
@@ -2753,84 +2731,66 @@ exerciseList.addEventListener("input", (event) => {
     return;
   }
 
-  const setupInput = event.target.closest("input[data-exercise-setup]");
-  if (setupInput) {
-    const exercise = workout.exercises.find((item) => item.id === setupInput.dataset.exerciseId);
-    if (!exercise || exercise.bailed) return;
-    beginStructuralUndo("Edit exercise setup", setupInput);
-    exercise.setup = setupInput.value.slice(0, 300);
-    const summary = setupInput.closest(".exercise-heading-text").querySelector(".exercise-setup-summary");
-    summary.textContent = exercise.setup;
-    applyWorkoutPlanEdit(workout, workouts);
-    saveWorkout();
-    return;
-  }
-  const nameInput = event.target.closest("input[data-exercise-name]");
-  if (!nameInput) return;
-  const exercise = workout.exercises.find((item) => item.id === nameInput.dataset.exerciseId);
-  if (!exercise) return;
-  beginStructuralUndo("Rename exercise", nameInput);
-  exercise.name = nameInput.value.slice(0, 60);
-  const historyName = nameInput.closest(".exercise-name-heading").querySelector(".exercise-history-name");
-  historyName.textContent = exercise.name || "Unnamed exercise";
-  historyName.setAttribute("aria-label", `View history for ${exercise.name || "exercise"}`);
-  nameInput.closest(".exercise-name-heading").querySelector(".exercise-edit-button")
-    .setAttribute("aria-label", `Edit name and setup of ${exercise.name || "exercise"}`);
-  applyWorkoutPlanEdit(workout, workouts);
-  propagateExerciseName(workout, exercise, workouts);
-  const removeButton = nameInput.closest(".exercise-card").querySelector('[data-action="remove-exercise"]');
-  removeButton.setAttribute("aria-label", `Remove ${exercise.name || "exercise"}`);
-  const card = nameInput.closest(".exercise-card");
-  const heading = card.querySelector(".exercise-name-heading");
-  heading.setAttribute("aria-label", `Exercise: ${exercise.name || "unnamed exercise"}`);
-  card.querySelectorAll("input[data-field]").forEach((setInput) => {
-    const setIndex = exercise.sets.findIndex((set) => set.id === setInput.dataset.setId);
-    const fieldLabel = {
-      weight: "weight in kilograms",
-      reps: "reps",
-      rpe: "RPE from 1 to 10",
-      llpReps: "number of long-length partial reps",
-      myoReps: "number of MYO sets",
-    }[setInput.dataset.field];
-    setInput.setAttribute("aria-label", `Set ${setIndex + 1} for ${exercise.name || "unnamed exercise"}, ${fieldLabel}`);
-  });
-  card.querySelectorAll(".remove-set").forEach((removeSetButton) => {
-    const setIndex = exercise.sets.findIndex((set) => set.id === removeSetButton.dataset.setId);
-    removeSetButton.setAttribute("aria-label", `Remove set ${setIndex + 1} from ${exercise.name || "unnamed exercise"}`);
-  });
-  card.querySelectorAll(".myo-cell").forEach((cell, setIndex) => {
-    const set = exercise.sets[setIndex];
-    if (set && cell.querySelector("input[data-field='myoReps']")) {
-      updateMyoNotesButton(cell, exercise, set, setIndex + 1);
-    }
-  });
-  nameInput.setAttribute("aria-label", `Exercise ${workout.exercises.indexOf(exercise) + 1} name`);
-  saveWorkout();
 });
 
-function finishExerciseNameEdit(input) {
-  const heading = input.closest(".exercise-name-heading");
-  input.hidden = true;
-  heading.querySelector(".exercise-history-name").hidden = false;
-  const container = input.closest(".exercise-heading-text");
-  container.querySelector(".exercise-setup-editor").hidden = true;
-  const summary = container.querySelector(".exercise-setup-summary");
-  summary.hidden = !summary.textContent.trim();
+const exerciseEditDialog = document.getElementById("exercise-edit-dialog");
+const exerciseInfoDialog = document.getElementById("exercise-info-dialog");
+let exerciseEditContext = null;
+let exerciseInfoReturnFocus = null;
+
+function openExerciseEditor(exercise, trigger) {
+  exerciseEditContext = { workoutId: workout.id, exerciseId: exercise.id, trigger };
+  document.getElementById("exercise-edit-name").value = exercise.name;
+  document.getElementById("exercise-edit-name").setCustomValidity("");
+  document.getElementById("exercise-edit-setup").value = exercise.setup || "";
+  document.getElementById("exercise-edit-info").open = Boolean(exercise.setup?.trim());
+  exerciseEditDialog.showModal();
+  document.getElementById("exercise-edit-name").focus({ preventScroll: true });
 }
 
-exerciseList.addEventListener("focusout", (event) => {
-  const container = event.target.closest(".exercise-heading-text");
-  if (!container || container.contains(event.relatedTarget)) return;
-  const input = container.querySelector("input[data-exercise-name]");
-  if (input && !input.hidden) finishExerciseNameEdit(input);
-});
-exerciseList.addEventListener("keydown", (event) => {
-  const field = event.target.closest("input[data-exercise-name], input[data-exercise-setup]");
-  const input = field?.closest(".exercise-heading-text").querySelector("input[data-exercise-name]");
-  if (!input || event.key !== "Enter") return;
+document.getElementById("exercise-edit-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  finishExerciseNameEdit(input);
-  input.closest(".exercise-name-heading").querySelector(".exercise-edit-button").focus();
+  const exercise = workout?.id === exerciseEditContext?.workoutId
+    ? workout.exercises.find((item) => item.id === exerciseEditContext.exerciseId) : null;
+  if (!exercise || exercise.bailed) {
+    showNotice("This exercise is no longer available for editing. Close this popup and reopen the workout.");
+    return;
+  }
+  const nameInput = document.getElementById("exercise-edit-name");
+  if (!nameInput.value.trim()) {
+    nameInput.setCustomValidity("Enter an exercise name.");
+    nameInput.reportValidity();
+    return;
+  }
+  const name = nameInput.value.trim().slice(0, 60);
+  const setup = document.getElementById("exercise-edit-setup").value.trim().slice(0, 300);
+  if (name !== exercise.name || setup !== (exercise.setup || "")) {
+    beginStructuralUndo("Edit exercise name and setup");
+    exercise.name = name;
+    exercise.setup = setup;
+    applyWorkoutPlanEdit(workout, workouts);
+    propagateExerciseName(workout, exercise, workouts);
+    saveWorkout();
+    renderExercises();
+  }
+  exerciseEditDialog.close();
+});
+document.getElementById("exercise-edit-name").addEventListener("input", (event) => {
+  event.target.setCustomValidity("");
+});
+document.getElementById("cancel-exercise-edit").addEventListener("click", () => exerciseEditDialog.close());
+exerciseEditDialog.addEventListener("close", () => {
+  const context = exerciseEditContext;
+  const trigger = context?.trigger?.isConnected ? context.trigger
+    : Array.from(exerciseList.querySelectorAll('[data-action="edit-name"]'))
+      .find((button) => button.dataset.exerciseId === context?.exerciseId);
+  trigger?.focus({ preventScroll: true });
+  exerciseEditContext = null;
+});
+document.getElementById("close-exercise-info").addEventListener("click", () => exerciseInfoDialog.close());
+exerciseInfoDialog.addEventListener("close", () => {
+  if (exerciseInfoReturnFocus?.isConnected) exerciseInfoReturnFocus.focus({ preventScroll: true });
+  exerciseInfoReturnFocus = null;
 });
 
 function clearSetTechnique(set, field) {
@@ -2960,15 +2920,16 @@ exerciseList.addEventListener("click", (event) => {
   }
   if (button.dataset.action === "edit-name") {
     if (exercise.bailed) return;
-    const heading = button.closest(".exercise-name-heading");
-    heading.querySelector(".exercise-history-name").hidden = true;
-    const input = heading.querySelector("input[data-exercise-name]");
-    input.hidden = false;
-    const container = heading.closest(".exercise-heading-text");
-    container.querySelector(".exercise-setup-editor").hidden = false;
-    container.querySelector(".exercise-setup-summary").hidden = true;
-    input.focus({ preventScroll: true });
-    input.select();
+    openExerciseEditor(exercise, button);
+    return;
+  }
+  if (button.dataset.action === "exercise-info") {
+    exerciseInfoReturnFocus = button;
+    document.getElementById("exercise-info-title").textContent = `${exercise.name || "Exercise"} setup`;
+    document.getElementById("exercise-info-content").textContent = exercise.setup?.trim()
+      || "No machine or setup info yet. Use the pencil beside the exercise name to add it.";
+    exerciseInfoDialog.showModal();
+    document.getElementById("close-exercise-info").focus({ preventScroll: true });
     return;
   }
   if (button.dataset.action === "myo-notes") {
