@@ -1276,11 +1276,17 @@ function applyCloudState(state) {
     state = mergePendingCompletions(selectedProfile, state);
     localStorage.setItem(storageKey, JSON.stringify(state));
     const profileState = loadWorkouts();
+    const previousWorkouts = workouts;
     workouts = profileState.workouts;
     for (const id of activeShadowWorkouts) {
       const refreshedWorkout = workouts.find((item) => item.id === id);
-      if (!refreshedWorkout?.shadowWorkoutId || refreshedWorkout.status === "completed") {
+      const previousWorkout = previousWorkouts.find((item) => item.id === id);
+      const source = workouts.find((item) => item.id === previousWorkout?.shadowWorkoutId);
+      if (!refreshedWorkout || !source || source.templateId !== refreshedWorkout.templateId
+        || (refreshedWorkout.status === "completed" && previousWorkout?.status !== "completed")) {
         activeShadowWorkouts.delete(id);
+      } else {
+        refreshedWorkout.shadowWorkoutId = source.id;
       }
     }
     selectedWorkoutId = profileState.selectedWorkoutId;
