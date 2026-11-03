@@ -138,20 +138,20 @@ body[data-color-scheme="grape"] {
 }
 
 body[data-color-scheme="ultramarine"] {
-  --theme-accent: #ff7869;
-  --theme-welcome: #ff7869;
-  --theme-bright: color-mix(in srgb, #ff7869 70%, #ffffff);
-  --theme-logo: #ff7869;
-  --theme-primary: #ff7869;
-  --theme-hover: color-mix(in srgb, #ff7869 75%, #000000);
-  --theme-border: color-mix(in srgb, #ff7869 22%, #142a8d);
-  --theme-border-strong: color-mix(in srgb, #ff7869 38%, #142a8d);
-  --theme-tint: color-mix(in srgb, #ff7869 14%, #142a8d);
-  --theme-tint-deep: color-mix(in srgb, #ff7869 18%, #142a8d);
-  --theme-line: color-mix(in srgb, #ff7869 12%, #142a8d);
-  --theme-soft: color-mix(in srgb, #ff7869 70%, #ffffff);
-  --theme-muted: color-mix(in srgb, #ff7869 60%, #142a8d);
-  --theme-glow: color-mix(in srgb, #ff7869 16%, transparent);
+  --theme-accent: #ff6a00;
+  --theme-welcome: #ff6a00;
+  --theme-bright: color-mix(in srgb, #ff6a00 70%, #ffffff);
+  --theme-logo: #ff6a00;
+  --theme-primary: #ff6a00;
+  --theme-hover: color-mix(in srgb, #ff6a00 75%, #000000);
+  --theme-border: color-mix(in srgb, #ff6a00 22%, #142a8d);
+  --theme-border-strong: color-mix(in srgb, #ff6a00 38%, #142a8d);
+  --theme-tint: color-mix(in srgb, #ff6a00 14%, #142a8d);
+  --theme-tint-deep: color-mix(in srgb, #ff6a00 18%, #142a8d);
+  --theme-line: color-mix(in srgb, #ff6a00 12%, #142a8d);
+  --theme-soft: color-mix(in srgb, #ff6a00 70%, #ffffff);
+  --theme-muted: color-mix(in srgb, #ff6a00 60%, #142a8d);
+  --theme-glow: color-mix(in srgb, #ff6a00 16%, transparent);
 }
 
 /* Dark mode surfaces for the saturated schemes. */
