@@ -483,6 +483,7 @@ function normalizeWorkout(source) {
           id: typeof exercise.id === "string" ? exercise.id : makeId(),
           planId: typeof exercise.planId === "string" ? exercise.planId : makeId(),
           name: typeof exercise.name === "string" ? exercise.name.slice(0, 60) : "Exercise",
+          setup: typeof exercise.setup === "string" ? exercise.setup.slice(0, 300) : "",
           bailed: exercise.bailed === true,
           bailSnapshot: Array.isArray(exercise.bailSnapshot)
             ? exercise.bailSnapshot
@@ -551,6 +552,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true, 
         id: makeId(),
         planId: exercise.planId,
         name: exercise.name,
+        setup: exercise.setup ?? "",
         sets: exercise.sets.map((set) => ({
           id: makeId(),
           planId: set.planId,
@@ -586,6 +588,7 @@ function syncWorkoutPlan(sourceWorkout, allWorkouts, createMissingWeeks = true, 
         id: existingExercise?.id ?? makeId(),
         planId: planExercise.planId,
         name: planExercise.name,
+        setup: planExercise.setup ?? "",
         bailed: existingExercise?.bailed === true,
         bailSnapshot: existingExercise?.bailSnapshot ?? null,
         sets: planExercise.sets.map((planSet, setIndex) => {
@@ -827,7 +830,7 @@ function beginStructuralUndo(label, input = null) {
 }
 
 document.addEventListener("focusin", (event) => {
-  if (event.target === workoutTitle || event.target.matches?.("input[data-exercise-name]")) {
+  if (event.target === workoutTitle || event.target.matches?.("input[data-exercise-name], input[data-exercise-setup]")) {
     structuralEditStarts.set(event.target, JSON.parse(JSON.stringify(serializeWorkoutState())));
   }
 });
@@ -842,6 +845,7 @@ function workoutStructure(item) {
     excludedWeeks: item.excludedWeeks ?? [],
     exercises: item.exercises.map((exercise) => ({
       id: exercise.id, planId: exercise.planId, name: exercise.name,
+      setup: exercise.setup ?? "",
       sets: exercise.sets.map((set) => ({ id: set.id, planId: set.planId })),
     })),
   };
@@ -871,6 +875,7 @@ function restoreStructuralUndo(record, current) {
         const liveExercise = live?.exercises.find((item) => item.id === exercise.id);
         return {
           ...exercise, ...liveExercise, name: exercise.name, planId: exercise.planId,
+          setup: exercise.setup ?? "",
           sets: exercise.sets.map((set) =>
             liveExercise?.sets.find((item) => item.id === set.id) ?? set),
         };
@@ -2115,13 +2120,30 @@ function renderExerciseCard(exercise, index) {
   editButton.dataset.action = "edit-name";
   editButton.dataset.exerciseId = exercise.id;
   editButton.disabled = exercise.bailed === true;
-  editButton.setAttribute("aria-label", `Edit name of ${exercise.name || "exercise"}`);
-  editButton.title = "Edit exercise name";
+  editButton.setAttribute("aria-label", `Edit name and setup of ${exercise.name || "exercise"}`);
+  editButton.title = "Edit exercise name and machine / setup";
   editButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>';
   heading.append(nameLabel, historyButton, nameInput, editButton);
   const progress = createElement("span", "exercise-progress");
   progress.id = `progress-${exercise.id}`;
   headingWrap.append(heading, progress);
+  const setupSummary = createElement("p", "exercise-setup-summary", exercise.setup || "");
+  setupSummary.hidden = !exercise.setup;
+  const setupEditor = createElement("div", "exercise-setup-editor");
+  setupEditor.hidden = true;
+  const setupLabel = createElement("label", "", "Machine / setup (optional)");
+  setupLabel.htmlFor = `exercise-setup-${exercise.id}`;
+  const setupInput = document.createElement("input");
+  setupInput.type = "text";
+  setupInput.id = setupLabel.htmlFor;
+  setupInput.maxLength = 300;
+  setupInput.value = exercise.setup || "";
+  setupInput.placeholder = "e.g. Seat 4, backrest 2";
+  setupInput.dataset.exerciseSetup = "true";
+  setupInput.dataset.exerciseId = exercise.id;
+  setupInput.disabled = exercise.bailed === true;
+  setupEditor.append(setupLabel, setupInput);
+  headingWrap.append(setupSummary, setupEditor);
   titleWrap.append(headingWrap);
   header.append(titleWrap);
 
@@ -2731,6 +2753,18 @@ exerciseList.addEventListener("input", (event) => {
     return;
   }
 
+  const setupInput = event.target.closest("input[data-exercise-setup]");
+  if (setupInput) {
+    const exercise = workout.exercises.find((item) => item.id === setupInput.dataset.exerciseId);
+    if (!exercise || exercise.bailed) return;
+    beginStructuralUndo("Edit exercise setup", setupInput);
+    exercise.setup = setupInput.value.slice(0, 300);
+    const summary = setupInput.closest(".exercise-heading-text").querySelector(".exercise-setup-summary");
+    summary.textContent = exercise.setup;
+    applyWorkoutPlanEdit(workout, workouts);
+    saveWorkout();
+    return;
+  }
   const nameInput = event.target.closest("input[data-exercise-name]");
   if (!nameInput) return;
   const exercise = workout.exercises.find((item) => item.id === nameInput.dataset.exerciseId);
@@ -2741,7 +2775,7 @@ exerciseList.addEventListener("input", (event) => {
   historyName.textContent = exercise.name || "Unnamed exercise";
   historyName.setAttribute("aria-label", `View history for ${exercise.name || "exercise"}`);
   nameInput.closest(".exercise-name-heading").querySelector(".exercise-edit-button")
-    .setAttribute("aria-label", `Edit name of ${exercise.name || "exercise"}`);
+    .setAttribute("aria-label", `Edit name and setup of ${exercise.name || "exercise"}`);
   applyWorkoutPlanEdit(workout, workouts);
   propagateExerciseName(workout, exercise, workouts);
   const removeButton = nameInput.closest(".exercise-card").querySelector('[data-action="remove-exercise"]');
@@ -2778,14 +2812,21 @@ function finishExerciseNameEdit(input) {
   const heading = input.closest(".exercise-name-heading");
   input.hidden = true;
   heading.querySelector(".exercise-history-name").hidden = false;
+  const container = input.closest(".exercise-heading-text");
+  container.querySelector(".exercise-setup-editor").hidden = true;
+  const summary = container.querySelector(".exercise-setup-summary");
+  summary.hidden = !summary.textContent.trim();
 }
 
 exerciseList.addEventListener("focusout", (event) => {
-  const input = event.target.closest("input[data-exercise-name]");
-  if (input) finishExerciseNameEdit(input);
+  const container = event.target.closest(".exercise-heading-text");
+  if (!container || container.contains(event.relatedTarget)) return;
+  const input = container.querySelector("input[data-exercise-name]");
+  if (input && !input.hidden) finishExerciseNameEdit(input);
 });
 exerciseList.addEventListener("keydown", (event) => {
-  const input = event.target.closest("input[data-exercise-name]");
+  const field = event.target.closest("input[data-exercise-name], input[data-exercise-setup]");
+  const input = field?.closest(".exercise-heading-text").querySelector("input[data-exercise-name]");
   if (!input || event.key !== "Enter") return;
   event.preventDefault();
   finishExerciseNameEdit(input);
@@ -2923,6 +2964,9 @@ exerciseList.addEventListener("click", (event) => {
     heading.querySelector(".exercise-history-name").hidden = true;
     const input = heading.querySelector("input[data-exercise-name]");
     input.hidden = false;
+    const container = heading.closest(".exercise-heading-text");
+    container.querySelector(".exercise-setup-editor").hidden = false;
+    container.querySelector(".exercise-setup-summary").hidden = true;
     input.focus({ preventScroll: true });
     input.select();
     return;

@@ -6,11 +6,58 @@ const vm = require("node:vm");
 const source = fs.readFileSync("app.js", "utf8");
 test("finishing pencil editing restores the history-linked name", () => {
   const name = { hidden: true };
-  const input = { hidden: false, closest: () => ({ querySelector: () => name }) };
+  const editor = { hidden: false };
+  const summary = { hidden: true, textContent: "Seat 4" };
+  const input = { hidden: false, closest: (selector) => ({
+    querySelector: (query) => selector === ".exercise-name-heading" ? name
+      : query === ".exercise-setup-editor" ? editor : summary,
+  }) };
   const context = loadFunctions({}, ["finishExerciseNameEdit"]);
   context.finishExerciseNameEdit(input);
   assert.equal(input.hidden, true);
   assert.equal(name.hidden, false);
+  assert.equal(editor.hidden, true);
+  assert.equal(summary.hidden, false);
+  summary.textContent = "";
+  context.finishExerciseNameEdit(input);
+  assert.equal(summary.hidden, true);
+});
+test("equipment setup survives normalization, mirroring, isolated edits and undo", () => {
+  let id = 0;
+  const context = loadFunctions({
+    makeId: () => `new-${++id}`, mirroringEnabled: true,
+  }, ["normalizeWorkout", "syncWorkoutPlan", "applyWorkoutPlanEdit",
+    "stableSerialize", "workoutStructure", "restoreStructuralUndo"]);
+  const make = (week) => context.normalizeWorkout({
+    id: `week-${week}`, templateId: "upper", templateStartWeek: 1, week,
+    exercises: [{ id: `bench-${week}`, planId: "bench", name: "Bench",
+      setup: "Seat 4", sets: [{ planId: "set", weight: "80", reps: "8" }] }],
+  });
+  const weeks = [make(1), make(2), make(3)];
+  const before = JSON.parse(JSON.stringify({ workouts: weeks }));
+  weeks[1].exercises[0].setup = "Seat 6";
+  context.applyWorkoutPlanEdit(weeks[1], weeks);
+  assert.equal(weeks[0].exercises[0].setup, "Seat 4");
+  assert.equal(weeks[2].exercises[0].setup, "Seat 6");
+  assert.equal(weeks[2].exercises[0].sets[0].weight, "80");
+  const after = JSON.parse(JSON.stringify({ workouts: weeks }));
+  const restored = context.restoreStructuralUndo({ before, after }, { workouts: weeks });
+  assert.equal(restored.workouts.find((item) => item.week === 2).exercises[0].setup, "Seat 4");
+  context.mirroringEnabled = false;
+  weeks[1].exercises[0].setup = "";
+  context.applyWorkoutPlanEdit(weeks[1], weeks);
+  context.syncWorkoutPlan(weeks[0], weeks, false);
+  assert.equal(weeks[1].exercises[0].setup, "");
+  assert.equal(weeks[2].exercises[0].setup, "Seat 6");
+  assert.equal(context.normalizeWorkout({ exercises: [{ setup: 5 }] }).exercises[0].setup, "");
+  assert.equal(context.normalizeWorkout({ exercises: [{ setup: "x".repeat(400) }] }).exercises[0].setup.length, 300);
+  const newWeeks = [make(1)];
+  context.createWorkout = (title, templateId, templateStartWeek) => ({
+    id: `created-${++id}`, title, templateId, templateStartWeek, exercises: [],
+  });
+  context.syncWorkoutPlan(newWeeks[0], newWeeks, true);
+  assert.equal(newWeeks.length, 12);
+  assert.equal(newWeeks[11].exercises[0].setup, "Seat 4");
 });
 test("exercise history includes logged days and blank Week 1 sets without changing state", () => {
   const exercise = { planId: "bench", name: "Bench", sets: [] };

@@ -1448,6 +1448,34 @@ h1 {
   flex: 1;
 }
 
+.exercise-setup-summary {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.exercise-setup-editor {
+  margin-top: 8px;
+}
+
+.exercise-setup-editor label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.exercise-setup-editor input {
+  width: 100%;
+  min-width: 0;
+}
+
+.exercise-heading-text > [hidden] {
+  display: none;
+}
+
 .exercise-name-heading {
   margin: 0;
   display: flex;
