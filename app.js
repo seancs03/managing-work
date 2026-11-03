@@ -4,6 +4,7 @@ const LEGACY_STORAGE_KEY = "settle.workout.v1";
 const PROFILE_STORAGE_PREFIX = "settle.workout.v1.profile.";
 const COLOR_SCHEME_KEY = "spijker-track.color-scheme";
 const SCHEME_NATIVE_MODES = { ultramarine: "dark" };
+const DARK_ONLY_SCHEMES = ["ultramarine"];
 const DISPLAY_MODE_KEY = "spijker-track.display-mode";
 const COLOR_SCHEMES = ["red", "magenta", "cyan", "yellow", "orange", "lime", "ultramarine"];
 let mirroringEnabled = true;
@@ -225,7 +226,13 @@ try {
   showNotice("Your display mode could not be loaded. Dark mode is being used.");
   console.error("Display mode load failed:", error);
 }
+const lightModeUnavailableDialog = document.getElementById("light-mode-unavailable-dialog");
+document.getElementById("close-light-mode-unavailable").addEventListener("click", () => lightModeUnavailableDialog.close());
 document.getElementById("display-mode-button").addEventListener("click", () => {
+  if (DARK_ONLY_SCHEMES.includes(document.body.dataset.colorScheme) && document.body.dataset.displayMode !== "light") {
+    lightModeUnavailableDialog.showModal();
+    return;
+  }
   const mode = document.body.dataset.displayMode === "light" ? "dark" : "light";
   applyDisplayMode(mode);
   try {
@@ -241,6 +248,7 @@ const colorSchemeButton = document.getElementById("color-scheme-button");
 try {
   const savedScheme = localStorage.getItem(COLOR_SCHEME_KEY);
   applyColorScheme(COLOR_SCHEMES.includes(savedScheme) ? savedScheme : "red");
+  if (DARK_ONLY_SCHEMES.includes(savedScheme)) applyDisplayMode("dark");
 } catch (error) {
   showNotice("Your color preference could not be loaded. The default red theme is being used.");
   console.error("Color scheme load failed:", error);
