@@ -1357,7 +1357,7 @@ async function refreshWorkoutData() {
         ? currentWorkoutId : state.selectedWorkoutId,
     });
     window.scrollTo(scrollX, scrollY);
-    showRefreshFeedback(applied ? "Refreshed" : "Refresh failed", 3000);
+    showRefreshFeedback(applied ? "Refreshed" : "Refresh failed", applied ? 750 : 3000);
     if (applied) document.getElementById("announcements").textContent = "Saved workout data refreshed.";
   } catch (error) {
     if (selectedProfile === profile) {
