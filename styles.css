@@ -1150,6 +1150,47 @@ h1 {
   gap: 8px;
 }
 
+.workout-list.is-reordering .workout-choice {
+  animation: workout-wiggle 0.26s ease-in-out infinite alternate;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.workout-list.is-reordering .workout-choice:nth-child(even) {
+  animation-delay: -0.13s;
+  animation-direction: alternate-reverse;
+}
+
+.workout-list.is-reordering .workout-choice.is-dragging {
+  animation: none;
+  cursor: grabbing;
+  scale: 1.08;
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.reorder-done-button {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--theme-border-strong);
+  border-radius: 7px;
+  background: var(--theme-logo);
+  color: #ffffff;
+  cursor: pointer;
+  font: 700 12px "DM Sans", sans-serif;
+}
+
+@keyframes workout-wiggle {
+  from { rotate: -1.6deg; }
+  to { rotate: 1.6deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workout-list.is-reordering .workout-choice { animation: none; }
+}
+
 .plan-note {
   margin: 11px 0 0;
   color: var(--muted);
