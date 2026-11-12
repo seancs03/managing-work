@@ -907,3 +907,24 @@ test("set-deletion Cancel leaves data untouched and confirmed deletion records u
   assert.equal(exercise.sets.length, 0);
   assert.equal(recorded, 1);
 });
+
+test("moving a workout day swaps it with its neighbour in every mirrored week", () => {
+  const make = (week, templateId) => ({ id: `${templateId}-${week}`, week, templateId, title: templateId });
+  const build = () => {
+    const list = [];
+    for (const week of [1, 2]) for (const t of ["upper", "lower", "push", "pull", "legs"]) list.push(make(week, t));
+    return list;
+  };
+  const run = (mirroringEnabled) => {
+    const context = loadFunctions({
+      workouts: build(), mirroringEnabled, render() {}, saveWorkout() {}, beginStructuralUndo() {},
+      document: { getElementById: () => ({}), },
+      workoutList: { querySelector: () => null },
+    }, ["moveWorkoutDay"]);
+    context.moveWorkoutDay("pull-1", -1);
+    return context.workouts.map((item) => `${item.week}:${item.templateId}`);
+  };
+  assert.deepEqual(run(true).filter((item) => item.startsWith("1:")), ["1:upper", "1:lower", "1:pull", "1:push", "1:legs"]);
+  assert.deepEqual(run(true).filter((item) => item.startsWith("2:")), ["2:upper", "2:lower", "2:pull", "2:push", "2:legs"]);
+  assert.deepEqual(run(false).filter((item) => item.startsWith("2:")), ["2:upper", "2:lower", "2:push", "2:pull", "2:legs"]);
+});

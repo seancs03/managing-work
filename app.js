@@ -37,6 +37,8 @@ const workoutPlanner = document.querySelector(".workout-planner");
 const weekSelect = document.getElementById("week-select");
 const workoutContextMenu = document.getElementById("workout-context-menu");
 const deleteWorkoutButton = document.getElementById("delete-workout-button");
+const moveWorkoutEarlierButton = document.getElementById("move-workout-earlier-button");
+const moveWorkoutLaterButton = document.getElementById("move-workout-later-button");
 const deleteWorkoutDayButton = document.getElementById("delete-workout-day-button");
 const deleteWorkoutDialog = document.getElementById("delete-workout-dialog");
 const deleteWorkoutDialogTitle = document.getElementById("delete-workout-dialog-title");
@@ -2009,11 +2011,40 @@ function openWorkoutContextMenu(button, x, y) {
   deleteWorkoutButton.textContent = !mirroringEnabled ? "Delete day from this week" : contextWorkout?.week === 1
     ? "Delete day from all weeks"
     : `Delete day from Week ${contextWorkout?.week ?? selectedWeek} onward`;
+  const weekWorkouts = workouts.filter((item) => item.week === contextWorkout?.week);
+  const position = weekWorkouts.findIndex((item) => item.id === contextWorkoutId);
+  moveWorkoutEarlierButton.hidden = position < 1;
+  moveWorkoutLaterButton.hidden = position < 0 || position >= weekWorkouts.length - 1;
   workoutContextMenu.hidden = false;
   const bounds = workoutContextMenu.getBoundingClientRect();
   workoutContextMenu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
   workoutContextMenu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8))}px`;
-  deleteWorkoutButton.focus();
+  (moveWorkoutEarlierButton.hidden ? moveWorkoutLaterButton.hidden ? deleteWorkoutButton : moveWorkoutLaterButton : moveWorkoutEarlierButton).focus();
+}
+
+function moveWorkoutDay(workoutId, direction) {
+  const moved = workouts.find((item) => item.id === workoutId);
+  if (!moved) return;
+  const weekWorkouts = workouts.filter((item) => item.week === moved.week);
+  const neighbor = weekWorkouts[weekWorkouts.indexOf(moved) + direction];
+  if (!neighbor) return;
+  beginStructuralUndo(`Move workout day: ${moved.title}, Week ${moved.week}${mirroringEnabled ? " onward" : " only"}`);
+  const weeks = mirroringEnabled
+    ? [...new Set(workouts.filter((item) => item.week >= moved.week).map((item) => item.week))]
+    : [moved.week];
+  weeks.forEach((week) => {
+    const first = workouts.find((item) => item.week === week && item.templateId === moved.templateId);
+    const second = workouts.find((item) => item.week === week && item.templateId === neighbor.templateId);
+    if (!first || !second || (week === moved.week && (first !== moved || second !== neighbor))) return;
+    const firstIndex = workouts.indexOf(first);
+    const secondIndex = workouts.indexOf(second);
+    [workouts[firstIndex], workouts[secondIndex]] = [workouts[secondIndex], workouts[firstIndex]];
+  });
+  render();
+  saveWorkout();
+  document.getElementById("announcements").textContent =
+    `${moved.title} moved ${direction < 0 ? "earlier" : "later"}.`;
+  workoutList.querySelector(`[data-workout-id="${workoutId}"]`)?.focus();
 }
 
 function openDeleteWorkoutDialog(workoutId, returnFocus = null) {
@@ -2388,6 +2419,34 @@ workoutList.addEventListener("contextmenu", (event) => {
   openWorkoutContextMenu(button, event.clientX, event.clientY);
 });
 
+let workoutLongPressTimer = null;
+let workoutLongPressFired = false;
+let workoutLongPressOrigin = null;
+const cancelWorkoutLongPress = () => { clearTimeout(workoutLongPressTimer); workoutLongPressTimer = null; };
+workoutList.addEventListener("pointerdown", (event) => {
+  const button = event.target.closest("button[data-workout-id]");
+  if (!button || event.pointerType !== "touch") return;
+  workoutLongPressFired = false;
+  const { clientX, clientY } = event;
+  workoutLongPressOrigin = { x: clientX, y: clientY };
+  workoutLongPressTimer = setTimeout(() => {
+    workoutLongPressFired = true;
+    openWorkoutContextMenu(button, clientX, clientY);
+  }, 500);
+});
+["pointerup", "pointercancel"].forEach((type) => workoutList.addEventListener(type, cancelWorkoutLongPress));
+workoutList.addEventListener("pointermove", (event) => {
+  if (workoutLongPressOrigin && Math.hypot(event.clientX - workoutLongPressOrigin.x, event.clientY - workoutLongPressOrigin.y) > 10) {
+    cancelWorkoutLongPress();
+  }
+});
+workoutList.addEventListener("click", (event) => {
+  if (!workoutLongPressFired) return;
+  workoutLongPressFired = false;
+  event.stopImmediatePropagation();
+  event.preventDefault();
+}, true);
+
 workoutList.addEventListener("keydown", (event) => {
   if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return;
   const button = event.target.closest("button[data-workout-id]");
@@ -2436,6 +2495,15 @@ function confirmDeleteWorkoutDay() {
       : `${deletedWorkout.title} deleted from Week ${deletedWorkout.week} onward.`;
   (workoutList.querySelector(".workout-choice") || newWorkoutNameInput).focus();
 }
+
+[[moveWorkoutEarlierButton, -1], [moveWorkoutLaterButton, 1]].forEach(([button, direction]) => {
+  button.addEventListener("click", () => {
+    if (!contextWorkoutId) return;
+    const targetId = contextWorkoutId;
+    closeWorkoutContextMenu();
+    moveWorkoutDay(targetId, direction);
+  });
+});
 
 deleteWorkoutButton.addEventListener("click", () => {
   if (!contextWorkoutId) return;

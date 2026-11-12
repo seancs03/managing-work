@@ -1192,6 +1192,8 @@ h1 {
 }
 
 .workout-choice {
+  -webkit-touch-callout: none;
+  user-select: none;
   min-height: 36px;
   padding: 6px 11px;
   display: inline-flex;
