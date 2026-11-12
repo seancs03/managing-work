@@ -37,8 +37,6 @@ const workoutPlanner = document.querySelector(".workout-planner");
 const weekSelect = document.getElementById("week-select");
 const workoutContextMenu = document.getElementById("workout-context-menu");
 const deleteWorkoutButton = document.getElementById("delete-workout-button");
-const moveWorkoutEarlierButton = document.getElementById("move-workout-earlier-button");
-const moveWorkoutLaterButton = document.getElementById("move-workout-later-button");
 const deleteWorkoutDayButton = document.getElementById("delete-workout-day-button");
 const deleteWorkoutDialog = document.getElementById("delete-workout-dialog");
 const deleteWorkoutDialogTitle = document.getElementById("delete-workout-dialog-title");
@@ -1995,6 +1993,7 @@ function renderWorkoutChoices() {
       item.status === "in-progress" ? "In progress" : item.status === "completed" ? "Completed" : "Planned"));
     workoutList.append(button);
   });
+  renderReorderDoneButton();
 }
 
 function closeWorkoutContextMenu(returnFocus = false) {
@@ -2011,40 +2010,11 @@ function openWorkoutContextMenu(button, x, y) {
   deleteWorkoutButton.textContent = !mirroringEnabled ? "Delete day from this week" : contextWorkout?.week === 1
     ? "Delete day from all weeks"
     : `Delete day from Week ${contextWorkout?.week ?? selectedWeek} onward`;
-  const weekWorkouts = workouts.filter((item) => item.week === contextWorkout?.week);
-  const position = weekWorkouts.findIndex((item) => item.id === contextWorkoutId);
-  moveWorkoutEarlierButton.hidden = position < 1;
-  moveWorkoutLaterButton.hidden = position < 0 || position >= weekWorkouts.length - 1;
   workoutContextMenu.hidden = false;
   const bounds = workoutContextMenu.getBoundingClientRect();
   workoutContextMenu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
   workoutContextMenu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8))}px`;
-  (moveWorkoutEarlierButton.hidden ? moveWorkoutLaterButton.hidden ? deleteWorkoutButton : moveWorkoutLaterButton : moveWorkoutEarlierButton).focus();
-}
-
-function moveWorkoutDay(workoutId, direction) {
-  const moved = workouts.find((item) => item.id === workoutId);
-  if (!moved) return;
-  const weekWorkouts = workouts.filter((item) => item.week === moved.week);
-  const neighbor = weekWorkouts[weekWorkouts.indexOf(moved) + direction];
-  if (!neighbor) return;
-  beginStructuralUndo(`Move workout day: ${moved.title}, Week ${moved.week}${mirroringEnabled ? " onward" : " only"}`);
-  const weeks = mirroringEnabled
-    ? [...new Set(workouts.filter((item) => item.week >= moved.week).map((item) => item.week))]
-    : [moved.week];
-  weeks.forEach((week) => {
-    const first = workouts.find((item) => item.week === week && item.templateId === moved.templateId);
-    const second = workouts.find((item) => item.week === week && item.templateId === neighbor.templateId);
-    if (!first || !second || (week === moved.week && (first !== moved || second !== neighbor))) return;
-    const firstIndex = workouts.indexOf(first);
-    const secondIndex = workouts.indexOf(second);
-    [workouts[firstIndex], workouts[secondIndex]] = [workouts[secondIndex], workouts[firstIndex]];
-  });
-  render();
-  saveWorkout();
-  document.getElementById("announcements").textContent =
-    `${moved.title} moved ${direction < 0 ? "earlier" : "later"}.`;
-  workoutList.querySelector(`[data-workout-id="${workoutId}"]`)?.focus();
+  deleteWorkoutButton.focus();
 }
 
 function openDeleteWorkoutDialog(workoutId, returnFocus = null) {
@@ -2416,37 +2386,150 @@ workoutList.addEventListener("contextmenu", (event) => {
   const button = event.target.closest("button[data-workout-id]");
   if (!button) return;
   event.preventDefault();
+  if (lastWorkoutPointerType === "touch" || workoutReorderMode) return;
   openWorkoutContextMenu(button, event.clientX, event.clientY);
 });
 
-let workoutLongPressTimer = null;
-let workoutLongPressFired = false;
-let workoutLongPressOrigin = null;
-const cancelWorkoutLongPress = () => { clearTimeout(workoutLongPressTimer); workoutLongPressTimer = null; };
-workoutList.addEventListener("pointerdown", (event) => {
-  const button = event.target.closest("button[data-workout-id]");
-  if (!button || event.pointerType !== "touch") return;
-  workoutLongPressFired = false;
-  const { clientX, clientY } = event;
-  workoutLongPressOrigin = { x: clientX, y: clientY };
-  workoutLongPressTimer = setTimeout(() => {
-    workoutLongPressFired = true;
-    openWorkoutContextMenu(button, clientX, clientY);
-  }, 500);
-});
-["pointerup", "pointercancel"].forEach((type) => workoutList.addEventListener(type, cancelWorkoutLongPress));
-workoutList.addEventListener("pointermove", (event) => {
-  if (workoutLongPressOrigin && Math.hypot(event.clientX - workoutLongPressOrigin.x, event.clientY - workoutLongPressOrigin.y) > 10) {
-    cancelWorkoutLongPress();
+const WORKOUT_HOLD_MS = 450;
+let workoutReorderMode = false;
+let workoutPress = null;
+let workoutDrag = null;
+let lastWorkoutPointerType = "mouse";
+
+function renderReorderDoneButton() {
+  workoutList.querySelector(".reorder-done-button")?.remove();
+  workoutList.classList.toggle("is-reordering", workoutReorderMode);
+  if (!workoutReorderMode) return;
+  const done = createElement("button", "reorder-done-button", "Done");
+  done.type = "button";
+  workoutList.append(done);
+}
+
+function setWorkoutReorderMode(active) {
+  workoutReorderMode = active;
+  if (active) closeWorkoutContextMenu();
+  renderReorderDoneButton();
+  if (active) document.getElementById("announcements").textContent =
+    "Reorder mode. Drag workout days to change their order, then press Done.";
+}
+
+// Applies the visible order of one week to that week, and to later weeks when mirroring.
+function reorderWorkoutDays(orderedIds) {
+  const first = workouts.find((item) => item.id === orderedIds[0]);
+  if (!first) return false;
+  const keyOf = (item) => item.templateId ?? item.id;
+  const order = orderedIds.map((id) => workouts.find((item) => item.id === id)).filter(Boolean).map(keyOf);
+  const current = workouts.filter((item) => item.week === first.week && order.includes(keyOf(item))).map(keyOf);
+  if (current.join("|") === order.join("|")) return false;
+  beginStructuralUndo(`Reorder workout days, Week ${first.week}${mirroringEnabled ? " onward" : " only"}`);
+  const weeks = mirroringEnabled
+    ? [...new Set(workouts.filter((item) => item.week >= first.week).map((item) => item.week))]
+    : [first.week];
+  weeks.forEach((week) => {
+    const slots = [];
+    workouts.forEach((item, index) => { if (item.week === week && order.includes(keyOf(item))) slots.push(index); });
+    const sorted = slots.map((index) => workouts[index]).sort((a, b) => order.indexOf(keyOf(a)) - order.indexOf(keyOf(b)));
+    slots.forEach((index, position) => { workouts[index] = sorted[position]; });
+  });
+  return true;
+}
+
+function startWorkoutDrag(button, pointerId, x, y) {
+  workoutDrag = { button, pointerId, startX: x, startY: y };
+  button.classList.add("is-dragging");
+  try { button.setPointerCapture(pointerId); } catch { /* pointer already released */ }
+}
+
+function endWorkoutDrag() {
+  if (!workoutDrag) return;
+  const { button } = workoutDrag;
+  workoutDrag = null;
+  button.classList.remove("is-dragging");
+  button.style.transform = "";
+  const ids = [...workoutList.querySelectorAll("button[data-workout-id]")].map((item) => item.dataset.workoutId);
+  if (reorderWorkoutDays(ids)) {
+    render();
+    saveWorkout();
+    document.getElementById("announcements").textContent = "Workout day order changed.";
   }
+}
+
+workoutList.addEventListener("pointerdown", (event) => {
+  lastWorkoutPointerType = event.pointerType;
+  if (event.button > 0) return;
+  const button = event.target.closest("button[data-workout-id]");
+  if (!button) return;
+  if (workoutReorderMode) {
+    event.preventDefault();
+    startWorkoutDrag(button, event.pointerId, event.clientX, event.clientY);
+    return;
+  }
+  const origin = { x: event.clientX, y: event.clientY };
+  workoutPress = {
+    button, origin, pointerId: event.pointerId, fired: false,
+    timer: setTimeout(() => {
+      workoutPress.fired = true;
+      setWorkoutReorderMode(true);
+      startWorkoutDrag(button, event.pointerId, origin.x, origin.y);
+    }, WORKOUT_HOLD_MS),
+  };
 });
+
+workoutList.addEventListener("pointermove", (event) => {
+  if (workoutPress && !workoutPress.fired
+    && Math.hypot(event.clientX - workoutPress.origin.x, event.clientY - workoutPress.origin.y) > 10) {
+    clearTimeout(workoutPress.timer);
+    workoutPress = null;
+  }
+  if (!workoutDrag || event.pointerId !== workoutDrag.pointerId) return;
+  const { button } = workoutDrag;
+  button.style.transform = `translate(${event.clientX - workoutDrag.startX}px, ${event.clientY - workoutDrag.startY}px)`;
+  const siblings = [...workoutList.querySelectorAll("button[data-workout-id]")];
+  const target = siblings.find((item) => {
+    if (item === button) return false;
+    const box = item.getBoundingClientRect();
+    return event.clientX >= box.left && event.clientX <= box.right
+      && event.clientY >= box.top && event.clientY <= box.bottom;
+  });
+  if (!target) return;
+  const beforeLeft = button.offsetLeft, beforeTop = button.offsetTop;
+  const movingEarlier = siblings.indexOf(target) < siblings.indexOf(button);
+  workoutList.insertBefore(button, movingEarlier ? target : target.nextSibling);
+  workoutDrag.startX += button.offsetLeft - beforeLeft;
+  workoutDrag.startY += button.offsetTop - beforeTop;
+  button.style.transform = `translate(${event.clientX - workoutDrag.startX}px, ${event.clientY - workoutDrag.startY}px)`;
+});
+
+["pointerup", "pointercancel"].forEach((type) => workoutList.addEventListener(type, () => {
+  if (workoutPress) clearTimeout(workoutPress.timer);
+  endWorkoutDrag();
+  // Keep the press flag until the click that follows the release has been swallowed.
+  if (workoutPress?.fired) setTimeout(() => { workoutPress = null; }, 0);
+  else workoutPress = null;
+}));
+
 workoutList.addEventListener("click", (event) => {
-  if (!workoutLongPressFired) return;
-  workoutLongPressFired = false;
-  event.stopImmediatePropagation();
-  event.preventDefault();
+  if (event.target.closest(".reorder-done-button")) {
+    setWorkoutReorderMode(false);
+    return;
+  }
+  if ((workoutReorderMode || workoutPress?.fired) && event.target.closest("button[data-workout-id]")) {
+    event.stopImmediatePropagation();
+    event.preventDefault();
+  }
 }, true);
 
+// Stops the page scrolling while a day is being dragged.
+document.addEventListener("touchmove", (event) => {
+  if (workoutDrag) event.preventDefault();
+}, { passive: false });
+
+document.addEventListener("click", (event) => {
+  if (workoutReorderMode && !workoutList.contains(event.target)) setWorkoutReorderMode(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && workoutReorderMode) setWorkoutReorderMode(false);
+});
 workoutList.addEventListener("keydown", (event) => {
   if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return;
   const button = event.target.closest("button[data-workout-id]");
@@ -2495,15 +2578,6 @@ function confirmDeleteWorkoutDay() {
       : `${deletedWorkout.title} deleted from Week ${deletedWorkout.week} onward.`;
   (workoutList.querySelector(".workout-choice") || newWorkoutNameInput).focus();
 }
-
-[[moveWorkoutEarlierButton, -1], [moveWorkoutLaterButton, 1]].forEach(([button, direction]) => {
-  button.addEventListener("click", () => {
-    if (!contextWorkoutId) return;
-    const targetId = contextWorkoutId;
-    closeWorkoutContextMenu();
-    moveWorkoutDay(targetId, direction);
-  });
-});
 
 deleteWorkoutButton.addEventListener("click", () => {
   if (!contextWorkoutId) return;

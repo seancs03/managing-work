@@ -908,23 +908,31 @@ test("set-deletion Cancel leaves data untouched and confirmed deletion records u
   assert.equal(recorded, 1);
 });
 
-test("moving a workout day swaps it with its neighbour in every mirrored week", () => {
-  const make = (week, templateId) => ({ id: `${templateId}-${week}`, week, templateId, title: templateId });
+test("reordering workout days applies the visible order to this week and later weeks", () => {
+  const make = (week, templateId) => ({ id: `${templateId}-${week}`, week, templateId });
   const build = () => {
     const list = [];
     for (const week of [1, 2]) for (const t of ["upper", "lower", "push", "pull", "legs"]) list.push(make(week, t));
     return list;
   };
-  const run = (mirroringEnabled) => {
+  const ids = ["upper-1", "lower-1", "pull-1", "push-1", "legs-1"];
+  const run = (mirroringEnabled, orderedIds) => {
+    let undoLabel = null;
     const context = loadFunctions({
-      workouts: build(), mirroringEnabled, render() {}, saveWorkout() {}, beginStructuralUndo() {},
-      document: { getElementById: () => ({}), },
-      workoutList: { querySelector: () => null },
-    }, ["moveWorkoutDay"]);
-    context.moveWorkoutDay("pull-1", -1);
-    return context.workouts.map((item) => `${item.week}:${item.templateId}`);
+      workouts: build(), mirroringEnabled, beginStructuralUndo(label) { undoLabel = label; },
+    }, ["reorderWorkoutDays"]);
+    const changed = context.reorderWorkoutDays(orderedIds);
+    const weekOrder = (week) => context.workouts.filter((item) => item.week === week).map((item) => item.templateId);
+    return { changed, undoLabel, week1: weekOrder(1), week2: weekOrder(2) };
   };
-  assert.deepEqual(run(true).filter((item) => item.startsWith("1:")), ["1:upper", "1:lower", "1:pull", "1:push", "1:legs"]);
-  assert.deepEqual(run(true).filter((item) => item.startsWith("2:")), ["2:upper", "2:lower", "2:pull", "2:push", "2:legs"]);
-  assert.deepEqual(run(false).filter((item) => item.startsWith("2:")), ["2:upper", "2:lower", "2:push", "2:pull", "2:legs"]);
+  const mirrored = run(true, ids);
+  assert.equal(mirrored.changed, true);
+  assert.deepEqual(mirrored.week1, ["upper", "lower", "pull", "push", "legs"]);
+  assert.deepEqual(mirrored.week2, ["upper", "lower", "pull", "push", "legs"]);
+  const single = run(false, ids);
+  assert.deepEqual(single.week1, ["upper", "lower", "pull", "push", "legs"]);
+  assert.deepEqual(single.week2, ["upper", "lower", "push", "pull", "legs"]);
+  const unchanged = run(true, ["upper-1", "lower-1", "push-1", "pull-1", "legs-1"]);
+  assert.equal(unchanged.changed, false);
+  assert.equal(unchanged.undoLabel, null);
 });
